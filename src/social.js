@@ -3,7 +3,7 @@
  */
 
 const Social = {
-    friends: [
+    friends: JSON.parse(localStorage.getItem('kawaii-friends')) || [
         { id: 'SparklyKitten-2024', username: 'Magic Kitten' },
         { id: 'BubblyCloud-9999', username: 'Cloudie' }
     ],
@@ -56,6 +56,7 @@ const Social = {
         if (this.friends.find(f => f.id === friend.id)) return;
 
         this.friends.push(friend);
+        localStorage.setItem('kawaii-friends', JSON.stringify(this.friends));
         this.renderFriendList();
     },
 

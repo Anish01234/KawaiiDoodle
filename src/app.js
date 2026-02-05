@@ -64,19 +64,44 @@ const App = {
         }
     },
 
+    async handleSignIn() {
+        if (!this.state.supabase) {
+            this.toast('Connect to the magic forest first! 🌲', 'blue');
+            return;
+        }
+
+        try {
+            App.toast('Whispering to the forest... 🍃', 'blue');
+            const { data, error } = await this.state.supabase.auth.signInAnonymously();
+
+            if (error) throw error;
+
+            this.state.user.id = data.user.id;
+            await this.syncProfile();
+            this.toast('Signed in magically! ✨', 'pink');
+            this.renderView();
+        } catch (e) {
+            console.error(e);
+            this.toast('Magic sign-in failed 😭', 'blue');
+        }
+    },
+
     async syncProfile() {
         if (!this.state.supabase) return;
-        // In a real app, we'd use sb.auth.user()
-        // For this demo, we'll try to upsert the profile based on the local ID
         try {
+            const user = (await this.state.supabase.auth.getUser()).data.user;
+            if (!user) return;
+
             const { error } = await this.state.supabase
                 .from('profiles')
                 .upsert({
-                    id: (await this.state.supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000000',
+                    id: user.id,
                     username: this.state.user.username,
                     kawaii_id: this.state.user.kawaiiId
                 });
-            if (error) console.log("Profile sync failed (likely no auth):", error.message);
+
+            if (error) console.log("Profile sync failed:", error.message);
+            else console.log("✨ Profile synced with the forest!");
         } catch (e) { console.log("Sync error:", e); }
     },
 
@@ -94,6 +119,28 @@ const App = {
             .subscribe();
 
         console.log("📡 Listening for forest magic...");
+    },
+
+    async handleGoogleSignIn() {
+        if (!this.state.supabase) {
+            this.toast('Connect to the magic forest first! 🌲', 'blue');
+            return;
+        }
+
+        try {
+            App.toast('Flying to Google magic... 🌈', 'blue');
+            const { error } = await this.state.supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname
+                }
+            });
+
+            if (error) throw error;
+        } catch (e) {
+            console.error(e);
+            this.toast('Google magic failed 😭', 'blue');
+        }
     },
 
     handleSaveConfig() {
@@ -239,6 +286,14 @@ const App = {
                     <p class="text-pink-500 font-bold">ID: ${App.state.user.kawaiiId}</p>
                 </div>
                 
+                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
+                    <p class="text-[10px] font-medium mb-1">Sync your profile to the magic forest!</p>
+                    <button onclick="App.handleGoogleSignIn()" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold shadow-md text-xs hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="log-in" class="w-3 h-3"></i> Google Sign-In ✨
+                    </button>
+                    <button onclick="App.handleSignIn()" class="bg-pink-100 text-pink-500 px-6 py-2 rounded-full font-bold shadow-sm text-[10px] hover:bg-pink-200 active:scale-95 transition-all">Sign In Anonymously</button>
+                </div>
+
                 <div class="bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
                     <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 border-b border-gray-100 pb-2">
                         <i data-lucide="settings" class="w-4 h-4"></i> Magic Settings
@@ -295,7 +350,7 @@ const App = {
         s.className = 'sparkle-particle';
         s.style.left = `${x - 7}px`;
         s.style.top = `${y - 7}px`;
-        s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', '#white'][Math.floor(Math.random() * 4)];
+        s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', 'white'][Math.floor(Math.random() * 4)];
         document.body.appendChild(s);
         setTimeout(() => s.remove(), 800);
     }
