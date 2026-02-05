@@ -127,6 +127,11 @@ window.initCanvas = function () {
     document.getElementById('send-doodle').addEventListener('click', async () => {
         const data = canvas.toDataURL('image/png');
 
+        if (!App.state.activeRecipient) {
+            App.toast('Select a friend first! 👆', 'blue');
+            return;
+        }
+
         const sb = App.state.supabase;
         if (!sb) {
             App.state.lastDoodle = data;
@@ -139,20 +144,32 @@ window.initCanvas = function () {
             App.toast('Sending magic... 🚀', 'pink');
             const user = (await sb.auth.getUser()).data.user;
 
+            // Find destination UUID from kawaii_id
+            const { data: target, error: targetError } = await sb
+                .from('profiles')
+                .select('id')
+                .eq('kawaii_id', App.state.activeRecipient)
+                .single();
+
+            if (targetError || !target) throw new Error("Could not find friend in cloud!");
+
             const { error } = await sb
                 .from('doodles')
                 .insert({
                     sender_id: user.id,
-                    receiver_id: user.id, // For demo, sending to self
+                    receiver_id: target.id,
                     image_data: data
                 });
 
             if (error) throw error;
             App.toast('Doodle sent with magic! 💖', 'pink');
             App.setView('home');
+            App.loadHistory(); // Refresh history
         } catch (e) {
             console.error(e);
             App.toast(`Send failed: ${e.message || 'Check database'} 😭`, 'blue');
         }
     });
+
+    if (window.Social) Social.renderRecipientBubbles();
 };

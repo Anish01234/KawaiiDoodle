@@ -12,6 +12,7 @@ const App = {
         session: null,
         lastDoodle: null,
         history: [],
+        activeRecipient: null,
         supabase: null,
         config: {
             url: window.CONFIG?.SUPABASE_URL || localStorage.getItem('sb-url') || '',
@@ -265,6 +266,9 @@ const App = {
 
         setTimeout(() => {
             if (window.lucide) lucide.createIcons();
+            // Populate dynamic lists
+            if (viewName === 'friends' && window.Social) Social.renderFriendList();
+            if (viewName === 'history') this.loadHistory();
         }, 0);
     },
 
@@ -387,6 +391,15 @@ const App = {
                 <canvas id="drawing-canvas" class="flex-1 bg-white rounded-bubbly border-4 border-pink-200 shadow-inner w-full touch-none"></canvas>
                 
                 <div class="flex flex-col gap-3 bg-white/60 p-4 rounded-bubbly shadow-sm">
+                    <!-- Recipient Selection Bar -->
+                    <div id="recipient-selection" class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-pink-100 mb-1 no-scrollbar">
+                        <span class="text-[10px] font-bold text-pink-400 whitespace-nowrap">SEND TO:</span>
+                        <div id="friend-bubbles" class="flex gap-2">
+                           <!-- Injected by initCanvas -->
+                           <p class="text-[10px] text-gray-400">Loading friends...</p>
+                        </div>
+                    </div>
+
                     <div class="flex justify-between items-center gap-4">
                         <div class="flex gap-2">
                             <button class="color-btn w-6 h-6 rounded-full bg-pink-400 border-2 border-white" data-color="#FFD1DC" title="Soft Pink"></button>

@@ -47,11 +47,11 @@ const Social = {
                 App.toast(`Found ${data.username}! ✨`, 'pink');
                 this.sendFriendRequest(data);
             } else {
-                App.toast('ID not found in the cloud 🥺', 'blue');
+                App.toast('ID not found... Double check it! 🥺', 'blue');
             }
         } catch (e) {
             console.error(e);
-            App.toast('Search failed... 😭', 'blue');
+            App.toast('ID not found or magic failed... 😭', 'blue');
         }
     },
 
@@ -182,33 +182,68 @@ const Social = {
             return;
         }
 
-        list.innerHTML = this.friends.map(f => `
-            <div class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between animate-float" style="animation-delay: ${Math.random()}s">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white">
-                        <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
+        list.innerHTML = this.friends.map(f => {
+            const isActive = App.state.activeRecipient === f.id;
+            return `
+                <div class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 ${isActive ? 'border-pink-400 bg-pink-50' : 'border-transparent'} animate-float" style="animation-delay: ${Math.random()}s">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 ${isActive ? 'bg-pink-400' : 'bg-pink-100'} rounded-full flex items-center justify-center border-2 border-white transition-colors">
+                            <i data-lucide="user" class="w-5 h-5 ${isActive ? 'text-white' : 'text-pink-400'}"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm ${isActive ? 'text-pink-600' : ''}">${f.username}</p>
+                            <p class="text-[10px] ${isActive ? 'text-pink-400' : 'text-pink-300'}">ID: ${f.id} ${f.status === 'pending' ? '(Pending 💌)' : ''}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-bold text-sm">${f.username}</p>
-                        <p class="text-[10px] text-pink-300">ID: ${f.id} ${f.status === 'pending' ? '(Pending 💌)' : ''}</p>
+                    <div class="flex gap-2">
+                        ${f.status === 'pending' && !f.isRequester ? `
+                            <button onclick="Social.acceptFriendRequest('${f.relId}', {username: '${f.username}'})" class="w-8 h-8 bg-green-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                <i data-lucide="check" class="w-4 h-4"></i>
+                            </button>
+                        ` : ''}
+                        ${f.status === 'accepted' || f.id === 'kawaii-6789' ? `
+                            <button onclick="Social.setActiveRecipient('${f.id}')" class="px-3 py-1 ${isActive ? 'bg-pink-500' : 'bg-blue-400'} text-white rounded-full text-[10px] font-black shadow-sm hover:scale-105 active:scale-95 transition-all">
+                                ${isActive ? 'SELECTED 💖' : 'SELECT 🎨'}
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
-                <div class="flex gap-2">
-                    ${f.status === 'pending' && !f.isRequester ? `
-                        <button onclick="Social.acceptFriendRequest('${f.relId}', {username: '${f.username}'})" class="w-8 h-8 bg-green-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
-                            <i data-lucide="check" class="w-4 h-4"></i>
-                        </button>
-                    ` : ''}
-                    ${f.status === 'accepted' || f.id === 'kawaii-6789' ? `
-                        <button onclick="App.setView('draw')" class="w-8 h-8 bg-blue-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
-                            <i data-lucide="pen-tool" class="w-4 h-4"></i>
-                        </button>
-                    ` : ''}
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         if (window.lucide) lucide.createIcons();
+    },
+
+    setActiveRecipient(id) {
+        App.state.activeRecipient = id;
+        App.toast('New recipient set! 🎯', 'pink');
+        this.renderFriendList();
+        if (App.state.view === 'draw') this.renderRecipientBubbles();
+    },
+
+    renderRecipientBubbles() {
+        const container = document.getElementById('friend-bubbles');
+        if (!container) return;
+
+        const onlineFriends = this.friends.filter(f => f.status === 'accepted' || f.id === 'kawaii-6789');
+
+        if (onlineFriends.length === 0) {
+            container.innerHTML = `<p class="text-[10px] text-gray-400 italic">Add friends to send doodles! 🥺</p>`;
+            return;
+        }
+
+        container.innerHTML = onlineFriends.map(f => {
+            const isActive = App.state.activeRecipient === f.id;
+            return `
+                <button onclick="Social.setActiveRecipient('${f.id}')" 
+                        class="flex flex-col items-center gap-1 transition-all ${isActive ? 'scale-110' : 'opacity-60 scale-90'}">
+                    <div class="w-10 h-10 rounded-full border-2 ${isActive ? 'border-pink-500 bg-pink-100' : 'border-gray-200 bg-white'} flex items-center justify-center overflow-hidden">
+                        <span class="text-xs font-bold ${isActive ? 'text-pink-500' : 'text-gray-400'}">${f.username[0].toUpperCase()}</span>
+                    </div>
+                    <span class="text-[8px] font-bold ${isActive ? 'text-pink-500' : 'text-gray-400'} max-w-[40px] truncate">${f.username}</span>
+                </button>
+            `;
+        }).join('');
     }
 };
 
