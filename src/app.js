@@ -275,6 +275,7 @@ const App = {
     setupNavigation() {
         document.getElementById('nav-draw').addEventListener('click', () => this.setView('draw'));
         document.getElementById('nav-home').addEventListener('click', () => this.setView('home'));
+        document.getElementById('header-home').addEventListener('click', () => this.setView('home'));
         document.getElementById('btn-friends').addEventListener('click', () => this.setView('friends'));
         document.getElementById('btn-profile').addEventListener('click', () => this.setView('profile'));
 

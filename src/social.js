@@ -40,18 +40,18 @@ const Social = {
             const { data, error } = await sb
                 .from('profiles')
                 .select('*')
-                .eq('kawaii_id', id)
+                .ilike('kawaii_id', id)
                 .single();
 
             if (data) {
                 App.toast(`Found ${data.username}! ✨`, 'pink');
                 this.sendFriendRequest(data);
             } else {
-                App.toast('ID not found... Double check it! 🥺', 'blue');
+                App.toast(`ID "${id}" not found... 🥺`, 'blue');
             }
         } catch (e) {
             console.error(e);
-            App.toast('ID not found or magic failed... 😭', 'blue');
+            App.toast('Search failed or ID not found... 😭', 'blue');
         }
     },
 

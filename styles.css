@@ -10,6 +10,11 @@ body {
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+#app-nav {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
 }
 
 /* Floating Elements Animation */
