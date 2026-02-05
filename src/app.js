@@ -12,9 +12,24 @@ const App = {
         lastDoodle: null,
         supabase: null,
         config: {
-            url: localStorage.getItem('sb-url') || '',
-            key: localStorage.getItem('sb-key') || ''
+            url: window.CONFIG?.SUPABASE_URL || localStorage.getItem('sb-url') || '',
+            key: window.CONFIG?.SUPABASE_KEY || localStorage.getItem('sb-key') || ''
+        },
+        magicClickCount: 0
+    },
+
+    handleMagicSequence() {
+        this.state.magicClickCount++;
+        if (this.state.magicClickCount >= 5) {
+            const adminSettings = document.getElementById('admin-settings');
+            if (adminSettings) {
+                adminSettings.classList.toggle('hidden');
+                this.toast(adminSettings.classList.contains('hidden') ? 'Magic settings hidden 🤫' : 'Magic settings revealed! ✨', 'blue');
+            }
+            this.state.magicClickCount = 0;
         }
+        clearTimeout(this.magicTimeout);
+        this.magicTimeout = setTimeout(() => this.state.magicClickCount = 0, 2000);
     },
 
     init() {
@@ -55,11 +70,11 @@ const App = {
         if (this.state.config.url && this.state.config.key && window.supabase) {
             try {
                 this.state.supabase = supabase.createClient(this.state.config.url, this.state.config.key);
-                console.log("⚡ Supabase connected!");
+                console.log("⚡ Cloud Sync Connected!");
                 this.subscribeToDoodles();
                 this.syncProfile();
             } catch (e) {
-                console.error("Supabase init failed:", e);
+                console.error("Cloud Sync init failed:", e);
             }
         }
     },
@@ -123,12 +138,12 @@ const App = {
 
     async handleGoogleSignIn() {
         if (!this.state.supabase) {
-            this.toast('Connect to the magic forest first! 🌲', 'blue');
+            this.toast('Please connect to the cloud first!', 'blue');
             return;
         }
 
         try {
-            App.toast('Flying to Google magic... 🌈', 'blue');
+            App.toast('Connecting to Google...', 'blue');
             const { error } = await this.state.supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -139,7 +154,7 @@ const App = {
             if (error) throw error;
         } catch (e) {
             console.error(e);
-            this.toast('Google magic failed 😭', 'blue');
+            this.toast('Google connection failed', 'blue');
         }
     },
 
@@ -191,6 +206,10 @@ const App = {
         document.getElementById('nav-home').addEventListener('click', () => this.setView('home'));
         document.getElementById('btn-friends').addEventListener('click', () => this.setView('friends'));
         document.getElementById('btn-profile').addEventListener('click', () => this.setView('profile'));
+
+        // Magic Sequence Listener
+        const title = document.querySelector('header h1');
+        if (title) title.addEventListener('click', () => this.handleMagicSequence());
     },
 
     renderView() {
@@ -287,30 +306,32 @@ const App = {
                 </div>
                 
                 <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
-                    <p class="text-[10px] font-medium mb-1">Sync your profile to the magic forest!</p>
+                    <p class="text-[10px] font-medium mb-1">Backup your profile to the cloud!</p>
                     <button onclick="App.handleGoogleSignIn()" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold shadow-md text-xs hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="log-in" class="w-3 h-3"></i> Google Sign-In ✨
+                        <i data-lucide="log-in" class="w-3 h-3"></i> Google Account
                     </button>
-                    <button onclick="App.handleSignIn()" class="bg-pink-100 text-pink-500 px-6 py-2 rounded-full font-bold shadow-sm text-[10px] hover:bg-pink-200 active:scale-95 transition-all">Sign In Anonymously</button>
+                    <button onclick="App.handleSignIn()" class="bg-pink-100 text-pink-500 px-6 py-2 rounded-full font-bold shadow-sm text-[10px] hover:bg-pink-200 active:scale-95 transition-all">Enable Cloud Sync</button>
                 </div>
 
-                <div class="bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
+                <!-- Hidden Technical Settings -->
+                <div id="admin-settings" class="hidden bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
                     <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 border-b border-gray-100 pb-2">
-                        <i data-lucide="settings" class="w-4 h-4"></i> Magic Settings
+                        <i data-lucide="settings" class="w-4 h-4"></i> Account Connection
                     </h3>
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">SUPABASE URL</label>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">CONNECTION URL</label>
                         <input id="sb-url" type="text" value="${App.state.config.url}" placeholder="https://xyz.supabase.co" class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
                     </div>
                     <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">SUPABASE ANON KEY</label>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">ACCESS KEY</label>
                         <input id="sb-key" type="password" value="${App.state.config.key}" placeholder="eyJhbG..." class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
                     </div>
                     <button onclick="App.handleSaveConfig()" class="bg-pink-400 text-white px-8 py-2 rounded-full font-bold shadow-md hover:bg-pink-500 active:scale-95 transition-all mt-2">
-                        Connect ✨
+                        Save Setup
                     </button>
-                    ${App.state.supabase ? '<p class="text-[10px] text-green-500 text-center font-bold animate-pulse">✓ Connected to the forest</p>' : '<p class="text-[10px] text-red-400 text-center font-bold">✗ Not connected yet</p>'}
                 </div>
+                
+                <p class="text-center text-[10px] text-green-500 font-bold ${App.state.supabase ? 'opacity-100' : 'opacity-0'}">✓ Multi-device sync active</p>
                 
                 <a href="?view=widget" target="_blank" class="w-full bg-blue-100/50 p-4 rounded-bubbly flex items-center justify-between hover:bg-blue-200/50 transition-colors">
                     <div class="flex items-center gap-3">

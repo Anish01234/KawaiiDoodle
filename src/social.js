@@ -15,17 +15,17 @@ const Social = {
 
     async searchFriend(id) {
         if (!id) return;
-        App.toast(`Searching for magic ID: ${id}...`, 'blue');
+        App.toast(`Searching for ID: ${id}...`, 'blue');
 
         const sb = App.state.supabase;
         if (!sb) {
             // Mock if no supabase
             setTimeout(() => {
                 if (id.toLowerCase() === 'kawaii') {
-                    App.toast('Found a new friend! ✨', 'pink');
+                    App.toast('Found a friend! ✨', 'pink');
                     this.addFriend({ id: 'kawaii-6789', username: 'Magic Bunny' });
                 } else {
-                    App.toast('Friend not found... Try "kawaii"! 🥺', 'blue');
+                    App.toast('ID not found... Try "kawaii"! 🥺', 'blue');
                 }
             }, 1000);
             return;
@@ -43,11 +43,11 @@ const Social = {
                 App.toast(`Found ${data.username}! ✨`, 'pink');
                 this.addFriend({ id: data.kawaii_id, username: data.username });
             } else {
-                App.toast('Friend not found in the magic forest 🥺', 'blue');
+                App.toast('ID not found in the cloud 🥺', 'blue');
             }
         } catch (e) {
             console.error(e);
-            App.toast('Search failed... Magic is weak 😭', 'blue');
+            App.toast('Search failed... 😭', 'blue');
         }
     },
 
