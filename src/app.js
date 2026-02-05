@@ -37,44 +37,66 @@ const App = {
 
     async init() {
         console.log("✨ Kawaii App Initializing...");
-        this.initSupabase();
+        try {
+            this.initSupabase();
 
-        // Check for session
-        if (this.state.supabase) {
-            const { data: { session } } = await this.state.supabase.auth.getSession();
-            this.state.session = session;
+            // Check for session
+            if (this.state.supabase) {
+                const { data: { session }, error } = await this.state.supabase.auth.getSession();
+                if (error) throw error;
 
-            if (session) {
-                // If logged in, fetch profile
-                const { data: profile } = await this.state.supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
+                this.state.session = session;
 
-                if (profile && profile.username && profile.kawaii_id) {
-                    this.state.user.username = profile.username;
-                    this.state.user.kawaiiId = profile.kawaii_id;
-                    localStorage.setItem('user-name', profile.username);
-                    localStorage.setItem('user-id', profile.kawaii_id);
-                    this.loadAppData();
+                if (session) {
+                    // If logged in, fetch profile
+                    const { data: profile } = await this.state.supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+
+                    if (profile && profile.username && profile.kawaii_id) {
+                        this.state.user.username = profile.username;
+                        this.state.user.kawaiiId = profile.kawaii_id;
+                        localStorage.setItem('user-name', profile.username);
+                        localStorage.setItem('user-id', profile.kawaii_id);
+                        this.loadAppData();
+                    } else {
+                        // Logged in but profile is missing or blank? Go to setup!
+                        console.log("🍭 Profile missing or blank, heading to setup...");
+                        this.setView('setup');
+                        this.finalizeInit();
+                        return;
+                    }
                 } else {
-                    // Logged in but profile is missing or blank? Go to setup!
-                    console.log("🍭 Profile missing or blank, heading to setup...");
-                    return this.setView('setup');
+                    // Not logged in? Go to landing
+                    this.setView('landing');
+                    this.finalizeInit();
+                    return;
                 }
-            } else {
-                // Not logged in? Go to landing
-                return this.setView('landing');
             }
+
+            // Listen for URL params (e.g., ?view=widget)
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('view') === 'widget') {
+                this.setView('widget');
+                this.finalizeInit();
+                return;
+            }
+
+            this.renderView();
+            this.finalizeInit();
+
+        } catch (e) {
+            console.error("Critical Init Error:", e);
+            this.toast('Magic startup failed... trying offline mode 🩹', 'blue');
+            this.state.view = 'landing';
+            this.renderView();
+            this.finalizeInit();
         }
+    },
 
-        // Listen for URL params (e.g., ?view=widget)
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('view') === 'widget') return this.setView('widget');
-
-        this.renderView();
-
+    finalizeInit() {
         this.setupNavigation();
         if (window.lucide) lucide.createIcons();
     },
