@@ -614,7 +614,23 @@ window.addEventListener('DOMContentLoaded', () => {
     App.init();
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js')
-            .then(reg => console.log('✨ Service Worker Registered!', reg))
+            .then(reg => {
+                console.log('✨ Service Worker Registered!', reg);
+                reg.addEventListener('updatefound', () => {
+                    const newWorker = reg.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            App.toast('New magic found! Updating... 🔄', 'pink');
+                        }
+                    });
+                });
+            })
             .catch(err => console.log('😭 Service Worker Failed!', err));
+
+        // Auto-reload when new SW takes control
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('🔄 New Service Worker took control, reloading...');
+            window.location.reload();
+        });
     }
 });
