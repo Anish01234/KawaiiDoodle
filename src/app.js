@@ -477,6 +477,8 @@ const App = {
     }
 };
 
+window.App = App;
+
 window.addEventListener('mousedown', (e) => App.createSparkle(e.clientX, e.clientY));
 window.addEventListener('touchstart', (e) => {
     const t = e.touches[0];
