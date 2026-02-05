@@ -101,7 +101,7 @@ const App = {
                 this.toast('Creating your magic identity... ✨', 'pink');
                 const { error } = await this.state.supabase
                     .from('profiles')
-                    .insert({
+                    .upsert({
                         id: this.state.session.user.id,
                         username: username,
                         kawaii_id: id
