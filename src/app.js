@@ -55,6 +55,7 @@ const App = {
                     this.state.user.kawaiiId = profile.kawaii_id;
                     localStorage.setItem('user-name', profile.username);
                     localStorage.setItem('user-id', profile.kawaii_id);
+                    this.loadAppData();
                 } else {
                     // Logged in but no profile? Go to setup
                     return this.setView('setup');
@@ -67,8 +68,9 @@ const App = {
 
         // Listen for URL params (e.g., ?view=widget)
         const params = new URLSearchParams(window.location.search);
-        if (params.get('view') === 'widget') this.setView('widget');
-        else this.renderView();
+        if (params.get('view') === 'widget') return this.setView('widget');
+
+        this.renderView();
 
         this.setupNavigation();
         if (window.lucide) lucide.createIcons();
@@ -122,16 +124,22 @@ const App = {
         if (this.state.config.url && this.state.config.key && window.supabase) {
             try {
                 this.state.supabase = supabase.createClient(this.state.config.url, this.state.config.key);
-                console.log("⚡ Cloud Sync Connected!");
-                this.subscribeToDoodles();
-                this.syncProfile();
-                if (window.Social) {
-                    Social.loadFriends();
-                    Social.listenToSocial();
-                }
+                console.log("⚡ Cloud Sync Connected to:", this.state.config.url);
             } catch (e) {
                 console.error("Cloud Sync init failed:", e);
             }
+        }
+    },
+
+    async loadAppData() {
+        if (!this.state.supabase || !this.state.session) return;
+
+        this.subscribeToDoodles();
+        this.syncProfile();
+
+        if (window.Social) {
+            Social.loadFriends();
+            Social.listenToSocial();
         }
     },
 

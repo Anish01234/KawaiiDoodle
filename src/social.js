@@ -118,26 +118,34 @@ const Social = {
                     id,
                     status,
                     user_id,
-                    friend_id,
-                    profiles!friends_user_id_fkey(kawaii_id, username),
-                    friend:profiles!friends_friend_id_fkey(kawaii_id, username)
+                    friend_id
                 `)
                 .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
 
             if (error) throw error;
 
-            this.friends = data.map(rel => {
-                const isRequester = rel.user_id === user.id;
-                const other = isRequester ? rel.friend : rel.profiles;
-                return {
-                    id: other.kawaii_id,
-                    username: other.username,
-                    status: rel.status,
-                    relId: rel.id,
-                    isRequester
-                };
-            });
+            // Fetch profiles for those friends manually to be safe
+            const friendsList = [];
+            for (const rel of data) {
+                const otherId = rel.user_id === user.id ? rel.friend_id : rel.user_id;
+                const { data: profile } = await sb
+                    .from('profiles')
+                    .select('kawaii_id, username')
+                    .eq('id', otherId)
+                    .single();
 
+                if (profile) {
+                    friendsList.push({
+                        id: profile.kawaii_id,
+                        username: profile.username,
+                        status: rel.status,
+                        relId: rel.id,
+                        isRequester: rel.user_id === user.id
+                    });
+                }
+            }
+
+            this.friends = friendsList;
             this.renderFriendList();
         } catch (e) { console.error("Load friends failed:", e); }
     },

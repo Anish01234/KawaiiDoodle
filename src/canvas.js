@@ -130,7 +130,7 @@ window.initCanvas = function () {
             App.setView('home');
         } catch (e) {
             console.error(e);
-            App.toast('Magic send failed 😭', 'blue');
+            App.toast(`Send failed: ${e.message || 'Check database'} 😭`, 'blue');
         }
     });
 };
