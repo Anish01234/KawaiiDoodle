@@ -68,17 +68,17 @@
         </header>
 
         <!-- Main Content Area -->
-        <main id="content" class="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center">
+        <main id="content" class="flex-1 overflow-y-auto p-4 flex flex-col items-center">
             <!-- Content will be injected here by app.js -->
-            <div id="loading" class="flex flex-col items-center gap-4 animate-bounce">
+            <div id="loading" class="flex flex-col items-center gap-4 animate-bounce mt-20">
                 <i data-lucide="sparkles" class="w-12 h-12 text-yellow-400"></i>
                 <p class="font-bold">Magic loading...</p>
             </div>
         </main>
 
-        <!-- Floating Navigation -->
-        <nav
-            class="fixed bottom-6 left-1/2 -translate-x-1/2 flex gap-4 bg-white/80 backdrop-blur-lg p-3 rounded-full shadow-lg border border-white/20">
+        <!-- Dynamic Navigation -->
+        <nav id="app-nav"
+            class="flex gap-4 justify-center bg-white/80 backdrop-blur-lg p-3 rounded-t-bubbly shadow-lg border-t border-white/20">
             <button id="nav-draw"
                 class="w-14 h-14 bg-pink-400 text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all">
                 <i data-lucide="pen-tool"></i>
@@ -90,7 +90,7 @@
         </nav>
 
         <!-- Toast Notification Area -->
-        <div id="toasts" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none"></div>
+        <div id="toasts" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none"></div>
 
     </div>
 

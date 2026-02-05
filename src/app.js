@@ -11,6 +11,7 @@ const App = {
         },
         session: null,
         lastDoodle: null,
+        history: [],
         supabase: null,
         config: {
             url: window.CONFIG?.SUPABASE_URL || localStorage.getItem('sb-url') || '',
@@ -141,6 +142,25 @@ const App = {
             Social.loadFriends();
             Social.listenToSocial();
         }
+        this.loadHistory();
+    },
+
+    async loadHistory() {
+        if (!this.state.supabase || !this.state.session) return;
+        try {
+            const { data, error } = await this.state.supabase
+                .from('doodles')
+                .select('*')
+                .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            this.state.history = data;
+            if (data.length > 0) this.state.lastDoodle = data[0].image_data;
+            if (this.state.view === 'home' || this.state.view === 'history') this.renderView();
+        } catch (e) {
+            console.error("History load failed:", e);
+        }
     },
 
 
@@ -228,11 +248,13 @@ const App = {
         const header = document.querySelector('header');
         const nav = document.querySelector('nav');
 
-        if (viewName === 'widget') {
+        if (viewName === 'widget' || viewName === 'landing' || viewName === 'setup') {
             header.style.display = 'none';
             nav.style.display = 'none';
-            document.body.classList.remove('bg-kawaii-pink');
-            document.body.classList.add('bg-transparent'); // For widget feel
+            if (viewName === 'widget') {
+                document.body.classList.remove('bg-kawaii-pink');
+                document.body.classList.add('bg-transparent');
+            }
         } else {
             header.style.display = 'flex';
             nav.style.display = 'flex';
@@ -284,6 +306,7 @@ const App = {
                 break;
             case 'friends': content.innerHTML = this.templates.friends(); break;
             case 'profile': content.innerHTML = this.templates.profile(); break;
+            case 'history': content.innerHTML = this.templates.history(); break;
             case 'widget': content.innerHTML = this.templates.widget(); break;
             default: content.innerHTML = `<div>404 - Kawaii Not Found 😭</div>`;
         }
@@ -337,9 +360,14 @@ const App = {
                     <h2 class="text-2xl font-bold text-white drop-shadow-md">Stay Kawaii, ${App.state.user.username.split(' ')[0]}! ✨</h2>
                     <p class="text-[10px] text-white/70">ID: ${App.state.user.kawaiiId}</p>
                 </div>
-                <button onclick="App.setView('draw')" class="btn-bubbly btn-primary mt-4">
-                    Send a Doodle 🎨
-                </button>
+                <div class="flex gap-4">
+                    <button onclick="App.setView('draw')" class="btn-bubbly btn-primary">
+                        Doodle! 🎨
+                    </button>
+                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500">
+                        History 📜
+                    </button>
+                </div>
             </div>
         `,
         widget: () => `
@@ -452,6 +480,26 @@ const App = {
                     <i data-lucide="chevron-right" class="text-blue-400"></i>
                 </a>
                 <p class="text-center text-[10px] text-gray-500">Your data is stored safely in the cloud.</p>
+            </div>
+        `,
+        history: () => `
+            <div class="w-full max-w-md flex flex-col gap-4">
+                <header class="text-center mb-2">
+                    <h2 class="text-2xl font-black text-white drop-shadow-md">Magic History 📜</h2>
+                    <p class="text-white/70 text-xs italic">All your sent and received doodles ✨</p>
+                </header>
+                <div class="flex flex-col gap-4">
+                    ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
+                App.state.history.map(d => `
+                        <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
+                            <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
+                            <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
+                                <span>${d.sender_id === App.state.session.user.id ? 'SENT 📤' : 'RECEIVED 📥'}</span>
+                                <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
             </div>
         `
     },

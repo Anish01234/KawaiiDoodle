@@ -21,45 +21,67 @@ window.initCanvas = function () {
     ctx.lineCap = 'round';
     ctx.lineWidth = size;
 
+    function getCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        let x, y;
+
+        if (e.touches && e.touches[0]) {
+            x = e.touches[0].clientX - rect.left;
+            y = e.touches[0].clientY - rect.top;
+        } else {
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+        }
+
+        // Scale coordinates to internal canvas resolution
+        return {
+            x: x * (canvas.width / rect.width),
+            y: y * (canvas.height / rect.height)
+        };
+    }
+
     function draw(e) {
         if (!isDrawing || mode === 'stamp') return;
-        const x = e.offsetX || (e.touches ? e.touches[0].clientX - rect.left : 0);
-        const y = e.offsetY || (e.touches ? e.touches[0].clientY - rect.top : 0);
+        const coords = getCoords(e);
 
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
-        ctx.lineTo(x, y);
+        ctx.lineTo(coords.x, coords.y);
         ctx.stroke();
-        [lastX, lastY] = [x, y];
+        [lastX, lastY] = [coords.x, coords.y];
     }
 
     canvas.addEventListener('mousedown', e => {
+        const coords = getCoords(e);
         if (mode === 'stamp') {
-            placeStamp(e.offsetX, e.offsetY);
+            placeStamp(coords.x, coords.y);
             return;
         }
         isDrawing = true;
-        [lastX, lastY] = [e.offsetX, e.offsetY];
+        [lastX, lastY] = [coords.x, coords.y];
     });
 
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', () => isDrawing = false);
-    canvas.addEventListener('mouseout', () => isDrawing = false);
+    canvas.addEventListener('mouseleave', () => isDrawing = false);
 
     // Touch Support
     canvas.addEventListener('touchstart', e => {
         e.preventDefault();
-        const t = e.touches[0];
-        const x = t.clientX - rect.left;
-        const y = t.clientY - rect.top;
+        const coords = getCoords(e);
         if (mode === 'stamp') {
-            placeStamp(x, y);
+            placeStamp(coords.x, coords.y);
             return;
         }
         isDrawing = true;
-        [lastX, lastY] = [x, y];
-    });
-    canvas.addEventListener('touchmove', draw);
+        [lastX, lastY] = [coords.x, coords.y];
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', e => {
+        e.preventDefault();
+        draw(e);
+    }, { passive: false });
+
     canvas.addEventListener('touchend', () => isDrawing = false);
 
     function placeStamp(x, y) {
