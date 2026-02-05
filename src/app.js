@@ -51,14 +51,15 @@ const App = {
                     .eq('id', session.user.id)
                     .single();
 
-                if (profile) {
+                if (profile && profile.username && profile.kawaii_id) {
                     this.state.user.username = profile.username;
                     this.state.user.kawaiiId = profile.kawaii_id;
                     localStorage.setItem('user-name', profile.username);
                     localStorage.setItem('user-id', profile.kawaii_id);
                     this.loadAppData();
                 } else {
-                    // Logged in but no profile? Go to setup
+                    // Logged in but profile is missing or blank? Go to setup!
+                    console.log("🍭 Profile missing or blank, heading to setup...");
                     return this.setView('setup');
                 }
             } else {
@@ -165,7 +166,7 @@ const App = {
 
 
     async syncProfile() {
-        if (!this.state.supabase) return;
+        if (!this.state.supabase || !this.state.user.username || !this.state.user.kawaiiId) return;
         try {
             const user = (await this.state.supabase.auth.getUser()).data.user;
             if (!user) return;
