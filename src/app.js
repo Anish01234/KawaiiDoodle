@@ -121,7 +121,8 @@ const App = {
 
     async handleGoogleSignIn() {
         if (!this.state.supabase) {
-            this.toast('Cloud connection needed! 🚀', 'blue');
+            this.toast('Login is currently unavailable! 🥺', 'blue');
+            console.error("Owner: Please set your SUPABASE_URL and KEY in src/config.js to enable login.");
             return;
         }
 
