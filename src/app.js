@@ -6,9 +6,10 @@ const App = {
     state: {
         view: 'home',
         user: {
-            username: localStorage.getItem('user-name') || 'Lucky Bunny',
+            username: localStorage.getItem('user-name') || '',
             kawaiiId: localStorage.getItem('user-id') || ''
         },
+        session: null,
         lastDoodle: null,
         supabase: null,
         config: {
@@ -32,10 +33,37 @@ const App = {
         this.magicTimeout = setTimeout(() => this.state.magicClickCount = 0, 2000);
     },
 
-    init() {
+    async init() {
         console.log("✨ Kawaii App Initializing...");
-        if (!this.state.user.kawaiiId) this.generateKawaiiId();
         this.initSupabase();
+
+        // Check for session
+        if (this.state.supabase) {
+            const { data: { session } } = await this.state.supabase.auth.getSession();
+            this.state.session = session;
+
+            if (session) {
+                // If logged in, fetch profile
+                const { data: profile } = await this.state.supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (profile) {
+                    this.state.user.username = profile.username;
+                    this.state.user.kawaiiId = profile.kawaii_id;
+                    localStorage.setItem('user-name', profile.username);
+                    localStorage.setItem('user-id', profile.kawaii_id);
+                } else {
+                    // Logged in but no profile? Go to setup
+                    return this.setView('setup');
+                }
+            } else {
+                // Not logged in? Go to landing
+                return this.setView('landing');
+            }
+        }
 
         // Listen for URL params (e.g., ?view=widget)
         const params = new URLSearchParams(window.location.search);
@@ -58,12 +86,36 @@ const App = {
         return id;
     },
 
-    updateUsername(newName) {
-        if (!newName) return;
-        this.state.user.username = newName;
-        localStorage.setItem('user-name', newName);
-        this.toast('Kawaii name updated! ✨', 'pink');
-        this.renderView();
+    async completeSetup(username) {
+        if (!username || username.length < 2) {
+            this.toast('Choose a longer name! 🌸', 'blue');
+            return;
+        }
+
+        const id = this.generateKawaiiId();
+        this.state.user.username = username;
+        localStorage.setItem('user-name', username);
+
+        if (this.state.supabase && this.state.session) {
+            try {
+                this.toast('Creating your magic identity... ✨', 'pink');
+                const { error } = await this.state.supabase
+                    .from('profiles')
+                    .insert({
+                        id: this.state.session.user.id,
+                        username: username,
+                        kawaii_id: id
+                    });
+
+                if (error) throw error;
+                this.setView('home');
+            } catch (e) {
+                console.error(e);
+                this.toast('Profile setup failed 😭', 'blue');
+            }
+        } else {
+            this.setView('home');
+        }
     },
 
     initSupabase() {
@@ -131,7 +183,7 @@ const App = {
             const { error } = await this.state.supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.origin + window.location.pathname
+                    redirectTo: window.location.href.split('#')[0].split('?')[0]
                 }
             });
 
@@ -198,7 +250,25 @@ const App = {
 
     renderView() {
         const content = document.getElementById('content');
+        const header = document.querySelector('header');
+        const nav = document.querySelector('nav');
+
+        // Force Landing if no session
+        if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget') {
+            this.state.view = 'landing';
+        }
+
         switch (this.state.view) {
+            case 'landing':
+                content.innerHTML = this.templates.landing();
+                header.style.display = 'none';
+                nav.style.display = 'none';
+                break;
+            case 'setup':
+                content.innerHTML = this.templates.setup();
+                header.style.display = 'none';
+                nav.style.display = 'none';
+                break;
             case 'home': content.innerHTML = this.templates.home(); break;
             case 'draw':
                 content.innerHTML = this.templates.draw();
@@ -212,6 +282,40 @@ const App = {
     },
 
     templates: {
+        landing: () => `
+            <div class="flex flex-col items-center justify-center min-h-[60vh] gap-8 text-center animate-float">
+                <div class="relative">
+                    <div class="w-40 h-40 bg-white/40 rounded-full border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
+                        <i data-lucide="sparkles" class="w-20 h-20 text-yellow-300 animate-pulse"></i>
+                    </div>
+                    <div class="absolute -top-4 -right-4 bg-pink-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg rotate-12">KAWAII!</div>
+                </div>
+                <div>
+                    <h1 class="text-4xl font-extrabold text-white drop-shadow-lg mb-2">Kawaii Doodle</h1>
+                    <p class="text-white/80 font-medium italic">Hand-drawn magic for friends ✨</p>
+                </div>
+                <button onclick="App.handleGoogleSignIn()" class="bg-white text-pink-500 px-8 py-4 rounded-full font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
+                    <i data-lucide="log-in" class="w-6 h-6"></i> Enter the Magic
+                </button>
+                <p class="text-white/50 text-[10px] max-w-[200px]">Sign in with your Google account to start doodling!</p>
+            </div>
+        `,
+        setup: () => `
+            <div class="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center">
+                <div class="bg-white/80 p-8 rounded-bubbly shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-float">
+                    <div>
+                        <h2 class="text-2xl font-black text-pink-500 mb-2">Welcome Home! 🏡</h2>
+                        <p class="text-gray-500 text-sm italic">What should your friends call you?</p>
+                    </div>
+                    <div>
+                        <input id="setup-name" type="text" placeholder="Your Sweet Name..." class="w-full bg-pink-50 px-6 py-4 rounded-full border-none focus:ring-4 focus:ring-pink-300 outline-none text-center font-bold text-pink-600 text-lg">
+                    </div>
+                    <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="bg-pink-500 text-white w-full py-4 rounded-full font-black text-lg shadow-lg hover:bg-pink-600 active:scale-95 transition-all">
+                        Let's Go! 🚀
+                    </button>
+                </div>
+            </div>
+        `,
         home: () => `
             <div class="flex flex-col items-center gap-6 animate-float">
                 <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
@@ -298,14 +402,14 @@ const App = {
                     <i data-lucide="user" class="w-12 h-12 text-gray-300"></i>
                 </div>
                 <div class="text-center">
-                    <input id="user-name-input" type="text" value="${App.state.user.username}" onchange="App.updateUsername(this.value)" class="bg-transparent text-center text-xl font-bold border-none outline-none focus:ring-2 focus:ring-pink-200 rounded-lg py-1">
-                    <p class="text-pink-500 font-bold">ID: ${App.state.user.kawaiiId}</p>
+                    <p class="text-xl font-bold border-none outline-none py-1">${App.state.user.username}</p>
+                    <p class="text-pink-500 font-bold text-xs">ID: ${App.state.user.kawaiiId}</p>
                 </div>
                 
                 <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
-                    <p class="text-[10px] font-medium mb-1">Sign in to save your doodles and find friends!</p>
-                    <button onclick="App.handleGoogleSignIn()" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold shadow-md text-xs hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="log-in" class="w-3 h-3"></i> Use Google Account
+                    <p class="text-[10px] font-medium mb-1">Signed in via Google ✨</p>
+                    <button onclick="App.state.supabase.auth.signOut().then(() => location.reload())" class="bg-gray-100 text-gray-500 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-gray-200 active:scale-95 transition-all">
+                        Sign Out
                     </button>
                 </div>
 
