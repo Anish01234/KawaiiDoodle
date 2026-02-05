@@ -15,11 +15,16 @@ const Social = {
 
     async searchFriend(id) {
         if (!id) return;
+        if (id === App.state.user.kawaiiId) {
+            App.toast("You can't add yourself! 😹", 'blue');
+            return;
+        }
+
         App.toast(`Searching for ID: ${id}...`, 'blue');
 
         const sb = App.state.supabase;
         if (!sb) {
-            // Mock if no supabase
+            // Mock logic
             setTimeout(() => {
                 if (id.toLowerCase() === 'kawaii') {
                     App.toast('Found a friend! ✨', 'pink');
@@ -31,7 +36,6 @@ const Social = {
             return;
         }
 
-        // Actual Supabase Search
         try {
             const { data, error } = await sb
                 .from('profiles')
@@ -41,7 +45,7 @@ const Social = {
 
             if (data) {
                 App.toast(`Found ${data.username}! ✨`, 'pink');
-                this.addFriend({ id: data.kawaii_id, username: data.username });
+                this.sendFriendRequest(data);
             } else {
                 App.toast('ID not found in the cloud 🥺', 'blue');
             }
@@ -51,10 +55,111 @@ const Social = {
         }
     },
 
-    addFriend(friend) {
-        // Prevent duplicates
-        if (this.friends.find(f => f.id === friend.id)) return;
+    async sendFriendRequest(targetProfile) {
+        const sb = App.state.supabase;
+        if (!sb) return;
 
+        try {
+            const user = (await sb.auth.getUser()).data.user;
+            if (!user) return;
+
+            const { error } = await sb
+                .from('friends')
+                .insert({
+                    user_id: user.id,
+                    friend_id: targetProfile.id,
+                    status: 'pending'
+                });
+
+            if (error) {
+                if (error.code === '23505') App.toast('Already sent! 💌', 'blue');
+                else throw error;
+            } else {
+                App.toast(`Request sent to ${targetProfile.username}! 🌸`, 'pink');
+            }
+        } catch (e) {
+            console.error(e);
+            App.toast('Failed to send request 🥺', 'blue');
+        }
+    },
+
+    async acceptFriendRequest(requestId, requesterProfile) {
+        const sb = App.state.supabase;
+        if (!sb) return;
+
+        try {
+            const { error } = await sb
+                .from('friends')
+                .update({ status: 'accepted' })
+                .eq('id', requestId);
+
+            if (error) throw error;
+
+            App.toast(`Now friends with ${requesterProfile.username}! 🎉`, 'pink');
+            this.loadFriends();
+        } catch (e) {
+            console.error(e);
+            App.toast('Failed to accept 😭', 'blue');
+        }
+    },
+
+    async loadFriends() {
+        const sb = App.state.supabase;
+        if (!sb) return;
+
+        try {
+            const user = (await sb.auth.getUser()).data.user;
+            if (!user) return;
+
+            // Get accepted friends
+            const { data, error } = await sb
+                .from('friends')
+                .select(`
+                    id,
+                    status,
+                    user_id,
+                    friend_id,
+                    profiles!friends_user_id_fkey(kawaii_id, username),
+                    friend:profiles!friends_friend_id_fkey(kawaii_id, username)
+                `)
+                .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+
+            if (error) throw error;
+
+            this.friends = data.map(rel => {
+                const isRequester = rel.user_id === user.id;
+                const other = isRequester ? rel.friend : rel.profiles;
+                return {
+                    id: other.kawaii_id,
+                    username: other.username,
+                    status: rel.status,
+                    relId: rel.id,
+                    isRequester
+                };
+            });
+
+            this.renderFriendList();
+        } catch (e) { console.error("Load friends failed:", e); }
+    },
+
+    listenToSocial() {
+        const sb = App.state.supabase;
+        if (!sb) return;
+
+        sb.channel('social_updates')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'friends' }, payload => {
+                this.loadFriends();
+                App.toast('New friend request! 🌸', 'pink');
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'friends' }, payload => {
+                this.loadFriends();
+                if (payload.new.status === 'accepted') App.toast('Friend request accepted! ✨', 'pink');
+            })
+            .subscribe();
+    },
+
+    addFriend(friend) {
+        if (this.friends.find(f => f.id === friend.id)) return;
         this.friends.push(friend);
         localStorage.setItem('kawaii-friends', JSON.stringify(this.friends));
         this.renderFriendList();
@@ -65,24 +170,33 @@ const Social = {
         if (!list) return;
 
         if (this.friends.length === 0) {
-            list.innerHTML = `<p class="text-center text-sm text-gray-500 py-10 italic">Your friend list is empty... for now! 🥺</p>`;
+            list.innerHTML = `<p class="text-center text-sm text-gray-500 py-10 italic">Your list is cozy and empty... for now! 🥺</p>`;
             return;
         }
 
         list.innerHTML = this.friends.map(f => `
-            <div class="bg-white/80 p-3 rounded-full shadow-sm flex items-center justify-between animate-float" style="animation-delay: ${Math.random()}s">
+            <div class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between animate-float" style="animation-delay: ${Math.random()}s">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white">
                         <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
                     </div>
                     <div>
                         <p class="font-bold text-sm">${f.username}</p>
-                        <p class="text-[10px] text-pink-300">ID: ${f.id}</p>
+                        <p class="text-[10px] text-pink-300">ID: ${f.id} ${f.status === 'pending' ? '(Pending 💌)' : ''}</p>
                     </div>
                 </div>
-                <button onclick="App.setView('draw')" class="w-8 h-8 bg-blue-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
-                    <i data-lucide="pen-tool" class="w-4 h-4"></i>
-                </button>
+                <div class="flex gap-2">
+                    ${f.status === 'pending' && !f.isRequester ? `
+                        <button onclick="Social.acceptFriendRequest('${f.relId}', {username: '${f.username}'})" class="w-8 h-8 bg-green-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                        </button>
+                    ` : ''}
+                    ${f.status === 'accepted' || f.id === 'kawaii-6789' ? `
+                        <button onclick="App.setView('draw')" class="w-8 h-8 bg-blue-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
+                            <i data-lucide="pen-tool" class="w-4 h-4"></i>
+                        </button>
+                    ` : ''}
+                </div>
             </div>
         `).join('');
 

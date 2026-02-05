@@ -1,116 +1,136 @@
-/**
- * Kawaii Doodle - Canvas Logic
- */
-
 window.initCanvas = function () {
     const canvas = document.getElementById('drawing-canvas');
     if (!canvas) return;
+
+    // Set canvas resolution
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
 
     const ctx = canvas.getContext('2d');
     let isDrawing = false;
     let lastX = 0;
     let lastY = 0;
+    let color = '#FF6B6B';
+    let size = 5;
+    let mode = 'pen'; // 'pen' or 'stamp'
+    let stampValue = '💖';
 
-    // Default brush settings
-    let brushColor = '#F472B6'; // Hot pink (Tailwind pink-400)
-    let brushSize = 6;
-
-    function resize() {
-        const rect = canvas.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.strokeStyle = brushColor;
-        ctx.lineWidth = brushSize;
-    }
-
-    window.addEventListener('resize', resize);
-    resize();
-
-    function startDrawing(e) {
-        isDrawing = true;
-        const pos = getPos(e);
-        [lastX, lastY] = [pos.x, pos.y];
-    }
+    ctx.strokeStyle = color;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = size;
 
     function draw(e) {
-        if (!isDrawing) return;
-        e.preventDefault();
-        const pos = getPos(e);
+        if (!isDrawing || mode === 'stamp') return;
+        const x = e.offsetX || (e.touches ? e.touches[0].clientX - rect.left : 0);
+        const y = e.offsetY || (e.touches ? e.touches[0].clientY - rect.top : 0);
+
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
-        ctx.lineTo(pos.x, pos.y);
+        ctx.lineTo(x, y);
         ctx.stroke();
-        [lastX, lastY] = [pos.x, pos.y];
+        [lastX, lastY] = [x, y];
     }
 
-    function stopDrawing() { isDrawing = false; }
+    canvas.addEventListener('mousedown', e => {
+        if (mode === 'stamp') {
+            placeStamp(e.offsetX, e.offsetY);
+            return;
+        }
+        isDrawing = true;
+        [lastX, lastY] = [e.offsetX, e.offsetY];
+    });
 
-    function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-    }
-
-    canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
-    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('mouseup', () => isDrawing = false);
+    canvas.addEventListener('mouseout', () => isDrawing = false);
+
+    // Touch Support
+    canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const t = e.touches[0];
+        const x = t.clientX - rect.left;
+        const y = t.clientY - rect.top;
+        if (mode === 'stamp') {
+            placeStamp(x, y);
+            return;
+        }
+        isDrawing = true;
+        [lastX, lastY] = [x, y];
+    });
     canvas.addEventListener('touchmove', draw);
-    canvas.addEventListener('touchend', stopDrawing);
+    canvas.addEventListener('touchend', () => isDrawing = false);
+
+    function placeStamp(x, y) {
+        ctx.font = `${size * 4}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(stampValue, x, y);
+    }
+
+    // Color Pickers
+    document.querySelectorAll('.color-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            color = btn.dataset.color;
+            ctx.strokeStyle = color;
+            mode = 'pen';
+            App.toast(`Magic color: ${btn.title || 'selected'}! ✨`, 'pink');
+        });
+    });
+
+    // Stamp Selection
+    document.querySelectorAll('.stamp-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            mode = 'stamp';
+            stampValue = btn.dataset.stamp;
+            App.toast(`Magic stamp: ${stampValue}! 🍭`, 'pink');
+        });
+    });
+
+    // Size Slider
+    const sizeSlider = document.getElementById('brush-size');
+    if (sizeSlider) {
+        sizeSlider.addEventListener('input', e => {
+            size = e.target.value;
+            ctx.lineWidth = size;
+        });
+    }
 
     document.getElementById('clear-canvas').addEventListener('click', () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        App.toast('Canvas cleared! ✨', 'blue');
+        App.toast('Canvas cleared! 🧊', 'blue');
     });
 
     document.getElementById('send-doodle').addEventListener('click', async () => {
-        const dataUrl = canvas.toDataURL('image/png', 0.5); // Compressing a bit
-        const sb = App.state.supabase;
+        const data = canvas.toDataURL('image/png');
 
+        const sb = App.state.supabase;
         if (!sb) {
-            App.toast('Doodle sent with magic! 💖 (Demo)', 'pink');
-            setTimeout(() => App.setView('home'), 1000);
+            App.state.lastDoodle = data;
+            App.toast('Local doodle saved! 🎨', 'pink');
+            App.setView('home');
             return;
         }
 
-        // Actual Supabase Push
         try {
-            App.toast('Flying drawing magic... 🚀', 'blue');
+            App.toast('Sending magic... 🚀', 'pink');
+            const user = (await sb.auth.getUser()).data.user;
 
-            // In a real app, we'd need the receiver_id. 
-            // For this demo, we'll just insert into 'doodles' and assume
-            // we are broadcasting to anyone listening.
             const { error } = await sb
                 .from('doodles')
-                .insert([{
-                    sender_id: sb.auth.user()?.id || '00000000-0000-0000-0000-000000000000',
-                    receiver_id: '00000000-0000-0000-0000-000000000000', // Demo broadcast
-                    image_data: dataUrl
-                }]);
+                .insert({
+                    sender_id: user.id,
+                    receiver_id: user.id, // For demo, sending to self
+                    image_data: data
+                });
 
             if (error) throw error;
-
-            App.toast('Doodle shared! ✨', 'pink');
-            setTimeout(() => App.setView('home'), 1000);
+            App.toast('Doodle sent with magic! 💖', 'pink');
+            App.setView('home');
         } catch (e) {
             console.error(e);
-            App.toast('Magic failed to fly... 😭', 'blue');
+            App.toast('Magic send failed 😭', 'blue');
         }
-    });
-
-    // Color buttons
-    const colorBtns = document.querySelectorAll('.w-8.h-8');
-    colorBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const color = window.getComputedStyle(btn).backgroundColor;
-            brushColor = color;
-            ctx.strokeStyle = color;
-            colorBtns.forEach(b => b.classList.remove('ring-4', 'ring-white/50'));
-            btn.classList.add('ring-4', 'ring-white/50');
-        });
     });
 };

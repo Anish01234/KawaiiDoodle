@@ -73,6 +73,10 @@ const App = {
                 console.log("⚡ Cloud Sync Connected!");
                 this.subscribeToDoodles();
                 this.syncProfile();
+                if (window.Social) {
+                    Social.loadFriends();
+                    Social.listenToSocial();
+                }
             } catch (e) {
                 console.error("Cloud Sync init failed:", e);
             }
@@ -260,15 +264,28 @@ const App = {
         draw: () => `
             <div class="w-full h-full flex flex-col gap-4">
                 <canvas id="drawing-canvas" class="flex-1 bg-white rounded-bubbly border-4 border-pink-200 shadow-inner w-full touch-none"></canvas>
-                <div class="flex justify-between items-center bg-white/60 p-3 rounded-full gap-3">
-                    <div class="flex gap-2">
-                        <button class="w-8 h-8 rounded-full bg-pink-400 border-2 border-white shadow-sm ring-4 ring-white/50"></button>
-                        <button class="w-8 h-8 rounded-full bg-blue-400 border-2 border-white shadow-sm"></button>
-                        <button class="w-8 h-8 rounded-full bg-yellow-400 border-2 border-white shadow-sm"></button>
+                
+                <div class="flex flex-col gap-3 bg-white/60 p-4 rounded-bubbly shadow-sm">
+                    <div class="flex justify-between items-center gap-4">
+                        <div class="flex gap-2">
+                            <button class="color-btn w-6 h-6 rounded-full bg-pink-400 border-2 border-white" data-color="#FFD1DC" title="Soft Pink"></button>
+                            <button class="color-btn w-6 h-6 rounded-full bg-blue-400 border-2 border-white" data-color="#BDE0FE" title="Sky Blue"></button>
+                            <button class="color-btn w-6 h-6 rounded-full bg-yellow-400 border-2 border-white" data-color="#FAFAD2" title="Lemon"></button>
+                            <button class="color-btn w-6 h-6 rounded-full bg-green-400 border-2 border-white" data-color="#C1F0C1" title="Mint"></button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="💖">💖</button>
+                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="🍭">🍭</button>
+                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="⭐">⭐</button>
+                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="🎀">🎀</button>
+                        </div>
                     </div>
-                    <div class="flex gap-3">
+                    
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="brush" class="w-4 h-4 text-gray-400"></i>
+                        <input id="brush-size" type="range" min="2" max="30" value="5" class="flex-1 accent-pink-400">
                         <button id="clear-canvas" class="p-2 hover:bg-red-50 text-red-400 rounded-full transition-colors">
-                            <i data-lucide="trash-2"></i>
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
                         <button id="send-doodle" class="bg-pink-500 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-pink-600 active:scale-95 transition-all">
                             Send! 🚀
