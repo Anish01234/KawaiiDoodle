@@ -110,8 +110,8 @@ const App = {
                 if (error) throw error;
                 this.setView('home');
             } catch (e) {
-                console.error(e);
-                this.toast('Profile setup failed 😭', 'blue');
+                console.error("Profile Setup Error:", e);
+                this.toast(`Setup failed: ${e.message || 'Check your SQL Editor'} 😭`, 'blue');
             }
         } else {
             this.setView('home');
