@@ -83,27 +83,6 @@ const App = {
         }
     },
 
-    async handleSignIn() {
-        if (!this.state.supabase) {
-            this.toast('Connect to the magic forest first! 🌲', 'blue');
-            return;
-        }
-
-        try {
-            App.toast('Whispering to the forest... 🍃', 'blue');
-            const { data, error } = await this.state.supabase.auth.signInAnonymously();
-
-            if (error) throw error;
-
-            this.state.user.id = data.user.id;
-            await this.syncProfile();
-            this.toast('Signed in magically! ✨', 'pink');
-            this.renderView();
-        } catch (e) {
-            console.error(e);
-            this.toast('Magic sign-in failed 😭', 'blue');
-        }
-    },
 
     async syncProfile() {
         if (!this.state.supabase) return;
@@ -120,7 +99,7 @@ const App = {
                 });
 
             if (error) console.log("Profile sync failed:", error.message);
-            else console.log("✨ Profile synced with the forest!");
+            else console.log("✨ Profile synced!");
         } catch (e) { console.log("Sync error:", e); }
     },
 
@@ -142,12 +121,12 @@ const App = {
 
     async handleGoogleSignIn() {
         if (!this.state.supabase) {
-            this.toast('Please connect to the cloud first!', 'blue');
+            this.toast('Cloud connection needed! 🚀', 'blue');
             return;
         }
 
         try {
-            App.toast('Connecting to Google...', 'blue');
+            App.toast('Opening Google login...', 'blue');
             const { error } = await this.state.supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
@@ -158,7 +137,7 @@ const App = {
             if (error) throw error;
         } catch (e) {
             console.error(e);
-            this.toast('Google connection failed', 'blue');
+            this.toast('Google login failed', 'blue');
         }
     },
 
@@ -323,11 +302,10 @@ const App = {
                 </div>
                 
                 <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
-                    <p class="text-[10px] font-medium mb-1">Backup your profile to the cloud!</p>
+                    <p class="text-[10px] font-medium mb-1">Sign in to save your doodles and find friends!</p>
                     <button onclick="App.handleGoogleSignIn()" class="bg-blue-500 text-white px-6 py-2 rounded-full font-bold shadow-md text-xs hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="log-in" class="w-3 h-3"></i> Google Account
+                        <i data-lucide="log-in" class="w-3 h-3"></i> Use Google Account
                     </button>
-                    <button onclick="App.handleSignIn()" class="bg-pink-100 text-pink-500 px-6 py-2 rounded-full font-bold shadow-sm text-[10px] hover:bg-pink-200 active:scale-95 transition-all">Enable Cloud Sync</button>
                 </div>
 
                 <!-- Hidden Technical Settings -->
@@ -360,7 +338,7 @@ const App = {
                     </div>
                     <i data-lucide="chevron-right" class="text-blue-400"></i>
                 </a>
-                <p class="text-center text-[10px] text-gray-500">Your data is stored safely in your magic forest browser.</p>
+                <p class="text-center text-[10px] text-gray-500">Your data is stored safely in the cloud.</p>
             </div>
         `
     },
