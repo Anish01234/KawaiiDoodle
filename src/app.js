@@ -264,10 +264,21 @@ const App = {
             document.body.classList.remove('bg-transparent');
         }
 
+        const viewName = this.state.view;
         setTimeout(() => {
             if (window.lucide) lucide.createIcons();
             // Populate dynamic lists
-            if (viewName === 'friends' && window.Social) Social.renderFriendList();
+            if (viewName === 'friends') {
+                if (window.Social) Social.renderFriendList();
+                // Explicitly bind search button
+                const searchBtn = document.getElementById('btn-search-friend');
+                if (searchBtn) {
+                    searchBtn.onclick = () => {
+                        App.toast('Button clicked! 🖱️', 'blue'); // Debug toast
+                        window.handleSearchFriend();
+                    };
+                }
+            }
             if (viewName === 'history') this.loadHistory();
         }, 0);
     },
@@ -437,7 +448,7 @@ const App = {
                     </h3>
                     <div class="flex gap-2">
                         <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." class="flex-1 bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none">
-                        <button onclick="window.handleSearchFriend()" class="bg-pink-400 text-white p-2 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                        <button id="btn-search-friend" class="bg-pink-400 text-white p-2 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
                             <i data-lucide="user-plus"></i>
                         </button>
                     </div>
@@ -557,8 +568,23 @@ window.addEventListener('touchstart', (e) => {
 });
 
 window.handleSearchFriend = () => {
+    App.toast('Starting search logic... 🧠', 'pink'); // Debug toast
     const input = document.getElementById('friend-id-input');
-    if (window.Social) Social.searchFriend(input.value);
+    if (!input) {
+        App.toast('Input element missing! 😱', 'blue');
+        return;
+    }
+    const val = input.value.trim();
+    if (!val) {
+        App.toast('Type an ID first! ✍️', 'blue');
+        return;
+    }
+
+    if (window.Social) {
+        Social.searchFriend(val);
+    } else {
+        App.toast('Social system offline! 🚫', 'blue');
+    }
     input.value = '';
 };
 
