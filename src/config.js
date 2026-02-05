@@ -6,6 +6,6 @@
  */
 
 window.CONFIG = {
-    SUPABASE_URL: '', // Paste your Supabase URL here
-    SUPABASE_KEY: '', // Paste your Supabase Anon Key here
+    SUPABASE_URL: 'https://sonwqwsgacjzhbiplkyj.supabase.co',
+    SUPABASE_KEY: 'sb_publishable_0C12qQ2WKJQKk2omixn2ag_uKhJUY6T',
 };
