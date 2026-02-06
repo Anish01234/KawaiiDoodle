@@ -8,105 +8,207 @@ window.initCanvas = function () {
     canvas.height = rect.height;
 
     const ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
-    let color = '#FF6B6B';
-    let size = 5;
-    let mode = 'pen'; // 'pen' or 'stamp'
-    let stampValue = '💖';
 
-    ctx.strokeStyle = color;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.lineWidth = size;
+    // State
+    const state = {
+        isDrawing: false,
+        lastX: 0,
+        lastY: 0,
+        color: '#FF6B6B',
+        size: 5,
+        mode: 'pen', // 'pen' or 'stamp'
+        stampValue: '💖',
+        undoStack: [],
+        redoStack: []
+    };
 
-    function getCoords(e) {
-        const rect = canvas.getBoundingClientRect();
-        let x, y;
+    // Constants
+    const PALETTE = [
+        '#FF6B6B', '#FFD1DC', '#FF9AA2', '#FFB7B2',
+        '#BDE0FE', '#A0C4FF', '#9BF6FF', '#CAFFBF', '#FDFFB6',
+        '#FFC6FF', '#BDB2FF', '#FFFFFC', '#D0D0D0', '#808080', '#000000'
+    ];
 
-        if (e.touches && e.touches[0]) {
-            x = e.touches[0].clientX - rect.left;
-            y = e.touches[0].clientY - rect.top;
-        } else {
-            x = e.clientX - rect.left;
-            y = e.clientY - rect.top;
+    // --- Init Methods ---
+
+    function initPalette() {
+        const container = document.getElementById('palette-container');
+        if (!container) return;
+
+        container.innerHTML = PALETTE.map(c => `
+            <button class="color-btn w-8 h-8 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-pink-300" 
+                style="background-color: ${c}" 
+                data-color="${c}"
+                aria-label="Color ${c}">
+            </button>
+        `).join('');
+
+        // Delegate listeners
+        container.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => setColor(btn.dataset.color));
+        });
+
+        // Custom Picker
+        const picker = document.getElementById('custom-color-picker');
+        if (picker) {
+            picker.addEventListener('input', (e) => setColor(e.target.value));
+            picker.addEventListener('change', (e) => setColor(e.target.value)); // For final selection
         }
+    }
 
-        // Scale coordinates to internal canvas resolution
-        return {
-            x: x * (canvas.width / rect.width),
-            y: y * (canvas.height / rect.height)
+    function initHistory() {
+        // Save initial blank state
+        saveState();
+        updateUndoUI();
+
+        document.getElementById('btn-undo').addEventListener('click', undo);
+        document.getElementById('btn-redo').addEventListener('click', redo);
+    }
+
+    // --- Logic ---
+
+    function setColor(newColor) {
+        state.color = newColor;
+        state.mode = 'pen';
+        ctx.strokeStyle = state.color;
+        // Visual feedback? maybe border on selected color
+    }
+
+    function saveState() {
+        // Limit stack size to proper amount (e.g., 20)
+        if (state.undoStack.length > 20) state.undoStack.shift();
+
+        state.undoStack.push(canvas.toDataURL());
+        state.redoStack = []; // Clear redo on new action
+        updateUndoUI();
+    }
+
+    function undo() {
+        if (state.undoStack.length <= 1) return; // Keep initial buffer
+
+        const current = state.undoStack.pop();
+        state.redoStack.push(current);
+
+        const prev = state.undoStack[state.undoStack.length - 1];
+        restoreState(prev);
+        updateUndoUI();
+    }
+
+    function redo() {
+        if (state.redoStack.length === 0) return;
+
+        const next = state.redoStack.pop();
+        state.undoStack.push(next);
+        restoreState(next);
+        updateUndoUI();
+    }
+
+    function restoreState(dataUrl) {
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
         };
     }
 
-    function draw(e) {
-        if (!isDrawing || mode === 'stamp') return;
-        const coords = getCoords(e);
+    function updateUndoUI() {
+        const undoBtn = document.getElementById('btn-undo');
+        const redoBtn = document.getElementById('btn-redo');
+        if (undoBtn) undoBtn.disabled = state.undoStack.length <= 1;
+        if (redoBtn) redoBtn.disabled = state.redoStack.length === 0;
+    }
 
+    // --- Drawing Core ---
+
+    ctx.strokeStyle = state.color;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = state.size;
+
+    function getCoords(e) {
+        // Use client coords relative to rect directly if possible, or assume 1:1 if sized by CSS
+        const r = canvas.getBoundingClientRect();
+        let x, y;
+
+        if (e.touches && e.touches[0]) {
+            x = e.touches[0].clientX - r.left;
+            y = e.touches[0].clientY - r.top;
+        } else {
+            x = e.clientX - r.left;
+            y = e.clientY - r.top;
+        }
+
+        // Correct for Resolution vs Display size match
+        return {
+            x: x * (canvas.width / r.width),
+            y: y * (canvas.height / r.height)
+        };
+    }
+
+    function startDraw(e) {
+        if (e.type === 'touchstart') e.preventDefault(); // Prevent scroll
+
+        const coords = getCoords(e);
+        if (state.mode === 'stamp') {
+            saveState(); // Save BEFORE stamping
+            placeStamp(coords.x, coords.y);
+            return;
+        }
+
+        state.isDrawing = true;
+        [state.lastX, state.lastY] = [coords.x, coords.y];
+
+        // Save state BEFORE starting a new stroke? 
+        // No, typically save AFTER stroke completes
+    }
+
+    function draw(e) {
+        if (!state.isDrawing || state.mode === 'stamp') return;
+        if (e.type === 'touchmove') e.preventDefault();
+
+        const coords = getCoords(e);
         ctx.beginPath();
-        ctx.moveTo(lastX, lastY);
+        ctx.moveTo(state.lastX, state.lastY);
         ctx.lineTo(coords.x, coords.y);
         ctx.stroke();
-        [lastX, lastY] = [coords.x, coords.y];
+        [state.lastX, state.lastY] = [coords.x, coords.y];
     }
 
-    canvas.addEventListener('mousedown', e => {
-        const coords = getCoords(e);
-        if (mode === 'stamp') {
-            placeStamp(coords.x, coords.y);
-            return;
+    function endDraw(e) {
+        if (state.isDrawing) {
+            state.isDrawing = false;
+            saveState(); // Save AFTER stroke
         }
-        isDrawing = true;
-        [lastX, lastY] = [coords.x, coords.y];
-    });
+    }
 
+    // Listeners
+    canvas.addEventListener('mousedown', startDraw);
     canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', () => isDrawing = false);
-    canvas.addEventListener('mouseleave', () => isDrawing = false);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mouseleave', endDraw);
 
-    // Touch Support
-    canvas.addEventListener('touchstart', e => {
-        e.preventDefault();
-        const coords = getCoords(e);
-        if (mode === 'stamp') {
-            placeStamp(coords.x, coords.y);
-            return;
-        }
-        isDrawing = true;
-        [lastX, lastY] = [coords.x, coords.y];
-    }, { passive: false });
-
-    canvas.addEventListener('touchmove', e => {
-        e.preventDefault();
-        draw(e);
-    }, { passive: false });
-
-    canvas.addEventListener('touchend', () => isDrawing = false);
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', endDraw);
 
     function placeStamp(x, y) {
-        ctx.font = `${size * 4}px serif`;
+        ctx.font = `${state.size * 4}px serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(stampValue, x, y);
+        ctx.fillText(state.stampValue, x, y);
+        state.isDrawing = false; // Just in case
+        saveState(); // Double ensure state is saved? No, done in startDraw for click
     }
 
-    // Color Pickers
-    document.querySelectorAll('.color-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            color = btn.dataset.color;
-            ctx.strokeStyle = color;
-            mode = 'pen';
-            App.toast(`Magic color: ${btn.title || 'selected'}! ✨`, 'pink');
-        });
-    });
+    // --- Tool Connections ---
 
     // Stamp Selection
     document.querySelectorAll('.stamp-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            mode = 'stamp';
-            stampValue = btn.dataset.stamp;
-            App.toast(`Magic stamp: ${stampValue}! 🍭`, 'pink');
+            state.mode = 'stamp';
+            state.stampValue = btn.dataset.stamp;
+            App.toast(`Magic stamp: ${state.stampValue}! 🍭`, 'pink');
         });
     });
 
@@ -114,13 +216,15 @@ window.initCanvas = function () {
     const sizeSlider = document.getElementById('brush-size');
     if (sizeSlider) {
         sizeSlider.addEventListener('input', e => {
-            size = e.target.value;
-            ctx.lineWidth = size;
+            state.size = e.target.value;
+            ctx.lineWidth = state.size;
         });
     }
 
     document.getElementById('clear-canvas').addEventListener('click', () => {
+        saveState(); // Save before clearing
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        saveState(); // Save blank state
         App.toast('Canvas cleared! 🧊', 'blue');
     });
 
@@ -160,11 +264,9 @@ window.initCanvas = function () {
                 if (error) throw error;
                 App.toast('Doodle sent with magic! 💖', 'pink');
 
-                // Clear recipient so it asks again next time (unless explicitly locked? No, safer to ask)
                 App.state.activeRecipient = null;
-
                 App.setView('home');
-                App.loadHistory(); // Refresh history
+                App.loadHistory();
             } catch (e) {
                 console.error(e);
                 App.toast(`Send failed: ${e.message || 'Check database'} 😭`, 'blue');
@@ -181,4 +283,8 @@ window.initCanvas = function () {
     });
 
     if (window.Social) Social.renderRecipientBubbles();
+
+    // Boot up
+    initPalette();
+    initHistory();
 };
