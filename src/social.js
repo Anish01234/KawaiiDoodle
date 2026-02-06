@@ -247,4 +247,4 @@ const Social = {
     }
 };
 
-Social.init();
+window.Social = Social;
