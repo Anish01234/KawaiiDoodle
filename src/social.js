@@ -103,16 +103,30 @@ const Social = {
         const sb = App.state.supabase;
         if (!sb) return;
 
+        // Optimistic UI Update: Hide button immediately ⚡
+        const localFriend = this.friends.find(f => f.relId === requestId);
+        if (localFriend) {
+            localFriend.status = 'accepted';
+            this.renderFriendList();
+        }
+
         try {
             const { error } = await sb
                 .from('friends')
                 .update({ status: 'accepted' })
                 .eq('id', requestId);
 
-            if (error) throw error;
+            if (error) {
+                // Revert if failed
+                if (localFriend) {
+                    localFriend.status = 'pending';
+                    this.renderFriendList();
+                }
+                throw error;
+            }
 
             App.toast(`Now friends with ${requesterProfile.username}! 🎉`, 'pink');
-            this.loadFriends();
+            await this.loadFriends(); // Sync with source of truth
         } catch (e) {
             console.error(e);
             App.toast('Failed to accept 😭', 'blue');
