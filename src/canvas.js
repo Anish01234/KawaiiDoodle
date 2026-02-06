@@ -2,12 +2,20 @@ window.initCanvas = function () {
     const canvas = document.getElementById('drawing-canvas');
     if (!canvas) return;
 
-    // Set canvas resolution
+    // Set canvas resolution (High DPI Support) 🕵️‍♂️✨
     const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    const dpr = window.devicePixelRatio || 1;
+
+    // Actual coordinate size (scaled)
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    // CSS display size (visual)
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
 
     const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr); // Scale context to match visual coords for all drawing ops
 
     // State
     const state = {
@@ -107,8 +115,10 @@ window.initCanvas = function () {
         const img = new Image();
         img.src = dataUrl;
         img.onload = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
+            // Must clear full logical size
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            // Draw image to fill visual size
+            ctx.drawImage(img, 0, 0, canvas.width / dpr, canvas.height / dpr);
         };
     }
 
@@ -127,7 +137,7 @@ window.initCanvas = function () {
     ctx.lineWidth = state.size;
 
     function getCoords(e) {
-        // Use client coords relative to rect directly if possible, or assume 1:1 if sized by CSS
+        // Use client coords relative to rect directly
         const r = canvas.getBoundingClientRect();
         let x, y;
 
@@ -139,11 +149,8 @@ window.initCanvas = function () {
             y = e.clientY - r.top;
         }
 
-        // Correct for Resolution vs Display size match
-        return {
-            x: x * (canvas.width / r.width),
-            y: y * (canvas.height / r.height)
-        };
+        // No manual scaling needed because ctx.scale(dpr, dpr) handles it!
+        return { x, y };
     }
 
     function startDraw(e) {
@@ -223,7 +230,7 @@ window.initCanvas = function () {
 
     document.getElementById('clear-canvas').addEventListener('click', () => {
         saveState(); // Save before clearing
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
         saveState(); // Save blank state
         App.toast('Canvas cleared! 🧊', 'blue');
     });
