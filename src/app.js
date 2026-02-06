@@ -629,7 +629,8 @@ const App = {
         const list = document.getElementById('modal-friend-list');
         if (!modal || !list) return;
 
-        if (window.Social && !Social.friends.length) {
+        if (window.Social) {
+            // ALWAYS fetch fresh friends to check for 'accepted' updates
             await Social.loadFriends();
         }
 
