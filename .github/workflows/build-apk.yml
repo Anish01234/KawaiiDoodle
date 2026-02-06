@@ -50,10 +50,29 @@ jobs:
       - name: Patch Android Project (Deep Links & Fullscreen)
         run: python3 scripts/patch-android.py
 
-      - name: Build APK
+      - name: Build APK with Signing Config
         run: |
           cd android
+          # Create a keystore
+          keytool -genkey -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"
+          
+          # Print SHA-1 Fingerprint
+          echo "::group::🔑 SHA-1 FINGERPRINT FOR GOOGLE CLOUD"
+          keytool -list -v -keystore my-release-key.keystore -alias my-key-alias -storepass password | grep "SHA1:"
+          echo "::endgroup::"
+
+          
+          # Build APK (Default Debug Signing)
           ./gradlew assembleDebug
+
+          # Re-sign with our consistent keystore using jarsigner
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass password android/app/build/outputs/apk/debug/app-debug.apk my-key-alias
+
+          # Verify Signature and Print SHA-1 Again to be sure
+          echo "::group::🔍 VERIFYING APK SIGNATURE"
+          keytool -printcert -jarfile android/app/build/outputs/apk/debug/app-debug.apk
+          echo "::endgroup::"
+
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4

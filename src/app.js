@@ -139,6 +139,14 @@ const App = {
 
                 this.state.session = session;
 
+                // Resume Listener for Fullscreen Restoration
+                if (window.Capacitor && window.Capacitor.Plugins.App) {
+                    window.Capacitor.Plugins.App.addListener('resume', () => {
+                        console.log("Create Resume: Restoring Fullscreen...");
+                        this.enableFullscreenMode();
+                    });
+                }
+
                 if (session) {
                     // If logged in, fetch profile
                     const { data: profile } = await this.state.supabase
@@ -395,15 +403,9 @@ const App = {
                 // Restore fullscreen even on error
                 this.enableFullscreenMode();
 
-                let errorMsg = 'Native Login Failed';
-                if (e.message && e.message.includes('12501')) {
-                    errorMsg = 'Login cancelled';
-                } else if (e.message && e.message.includes('10')) {
-                    errorMsg = 'Please configure Web Client ID in app settings';
-                } else if (e.message) {
-                    errorMsg = `Error: ${e.message}`;
-                }
-                this.toast(errorMsg, 'blue');
+                // Show raw error for debugging
+                const rawError = JSON.stringify(e, Object.getOwnPropertyNames(e));
+                this.toast(`Login Error: ${e.message || e.code || rawError}`, 'blue');
             }
             return;
         }
