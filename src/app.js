@@ -444,11 +444,11 @@ const App = {
                     <p class="text-[10px] text-white/70">ID: ${App.state.user.kawaiiId}</p>
                 </div>
                 <div class="flex gap-4">
-                    <button onclick="App.setView('draw')" class="btn-bubbly btn-primary">
-                        Doodle! 🎨
+                    <button onclick="App.setView('draw')" class="btn-bubbly btn-primary hover:scale-105">
+                        <i data-lucide="palette"></i> Doodle! 🎨
                     </button>
-                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500">
-                        History 📜
+                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105">
+                        <i data-lucide="history"></i> History 📜
                     </button>
                 </div>
             </div>
