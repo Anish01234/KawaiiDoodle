@@ -64,13 +64,7 @@ const App = {
 
             // 00. Truly Fullscreen Mode for Android
             if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-                setTimeout(() => {
-                    try {
-                        const { StatusBar } = window.Capacitor.Plugins;
-                        if (StatusBar) StatusBar.hide();
-                        if (window.NavigationBar) window.NavigationBar.hide();
-                    } catch (err) { console.log("Fullscreen error:", err); }
-                }, 1000); // 1s delay to let everything settle
+                this.enableFullscreenMode();
             }
 
             // 0. Handle Bridge Redirect for deep linking
@@ -192,6 +186,17 @@ const App = {
             this.renderView();
             this.finalizeInit();
         }
+    },
+
+    enableFullscreenMode() {
+        setTimeout(() => {
+            try {
+                const { StatusBar } = window.Capacitor.Plugins;
+                if (StatusBar) StatusBar.hide();
+                if (window.NavigationBar) window.NavigationBar.hide();
+                console.log("✅ Fullscreen mode enabled");
+            } catch (err) { console.log("Fullscreen error:", err); }
+        }, 500);
     },
 
     finalizeInit() {
@@ -359,10 +364,20 @@ const App = {
                 const { GoogleAuth } = window.Capacitor.Plugins;
                 if (!GoogleAuth) throw new Error("GoogleAuth plugin not found");
 
+                // Initialize GoogleAuth first
+                try {
+                    await GoogleAuth.initialize();
+                } catch (initError) {
+                    console.log("GoogleAuth already initialized or init not needed:", initError);
+                }
+
                 const user = await GoogleAuth.signIn();
                 this.logBoot("✅ Native Google Auth Success");
 
-                if (user && user.authentication.idToken) {
+                // Restore fullscreen after account picker closes
+                this.enableFullscreenMode();
+
+                if (user && user.authentication && user.authentication.idToken) {
                     this.toast('Syncing with Cloud... ✨', 'pink');
                     const { data, error } = await this.state.supabase.auth.signInWithIdToken({
                         provider: 'google',
@@ -372,12 +387,23 @@ const App = {
                     if (error) throw error;
                     this.toast('Login Successful! 🎉', 'pink');
                     window.location.reload();
+                } else {
+                    throw new Error("No ID token received from Google");
                 }
             } catch (e) {
                 console.error("Native Google Login failed:", e);
-                this.toast(`Native Login Failed: ${e.message || 'Check App Settings'}`, 'blue');
-                // Fallback to browser if native fails? 
-                // Or just show error if user strictly wants "no browser"
+                // Restore fullscreen even on error
+                this.enableFullscreenMode();
+
+                let errorMsg = 'Native Login Failed';
+                if (e.message && e.message.includes('12501')) {
+                    errorMsg = 'Login cancelled';
+                } else if (e.message && e.message.includes('10')) {
+                    errorMsg = 'Please configure Web Client ID in app settings';
+                } else if (e.message) {
+                    errorMsg = `Error: ${e.message}`;
+                }
+                this.toast(errorMsg, 'blue');
             }
             return;
         }
