@@ -1,7 +1,7 @@
 {
     "appId": "io.kawaii.doodle",
     "appName": "Kawaii Doodle",
-    "webDir": ".",
+    "webDir": "www",
     "server": {
         "androidScheme": "https"
     },
