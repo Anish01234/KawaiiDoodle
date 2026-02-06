@@ -35,6 +35,7 @@ jobs:
       - name: Initialize Android Platform
         run: |
           npx cap add android
+          npx cap sync
 
       - name: Build APK (Debug)
         working-directory: android
