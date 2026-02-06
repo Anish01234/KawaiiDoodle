@@ -65,27 +65,31 @@ jobs:
           # Build APK (Default Debug Signing)
           ./gradlew assembleDebug
 
+          # Find tools
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -r | head -n 1)
+          ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | sort -r | head -n 1)
+          echo "Found apksigner at: $APKSIGNER"
+          echo "Found zipalign at: $ZIPALIGN"
           
-          # Build APK (Default Debug Signing)
-          ./gradlew assembleDebug
+          # Align the APK (Important for apksigner)
+          "$ZIPALIGN" -v -p 4 app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-debug-aligned.apk
 
-          # Remove existing debug signature (META-INF) so we can re-sign cleanly
-          zip -d app/build/outputs/apk/debug/app-debug.apk "META-INF/*"
+          # Sign using apksigner (Adds v2, v3 signatures automatically)
+          "$APKSIGNER" sign --ks my-release-key.keystore --ks-pass pass:password --key-pass pass:password --out app/build/outputs/apk/debug/app-debug-signed.apk app/build/outputs/apk/debug/app-debug-aligned.apk
 
-          # Re-sign with our consistent keystore using jarsigner (Use SHA256 to avoid security warnings)
-          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore my-release-key.keystore -storepass password app/build/outputs/apk/debug/app-debug.apk my-key-alias
-
-          # Verify Signature and Print SHA-1 Again to be sure
+          # Verify Signature and Print SHA-1
           echo "::group::🔍 VERIFYING APK SIGNATURE"
-          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/app-debug-signed.apk
           echo "::endgroup::"
-
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug-signed.apk
+
+
+
 
       - name: Create Release
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
@@ -96,6 +100,6 @@ jobs:
           name: Release v${{ github.run_number }}
           draft: false
           prerelease: false
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+          files: android/app/build/outputs/apk/debug/app-debug-signed.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
