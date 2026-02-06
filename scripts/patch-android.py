@@ -16,10 +16,11 @@ def patch_manifest():
                 <data android:scheme="io.kawaii.doodle" />
             </intent-filter>
         """
+        # Insert before the closing activity tag
         content = content.replace('</activity>', intent_filter + '\n        </activity>')
         with open(path, 'w') as f:
             f.write(content)
-        print("✅ Patched AndroidManifest.xml")
+        print("✅ Patched AndroidManifest.xml (Deep Links)")
     else:
         print("ℹ️ AndroidManifest.xml already patched")
 
@@ -31,19 +32,20 @@ def patch_styles():
     with open(path, 'r') as f:
         content = f.read()
     
-    # Update parent theme
-    content = content.replace('AppTheme.NoActionBar', 'Theme.AppCompat.Light.NoActionBar.FullScreen')
+    # ⚠️ DO NOT rename the styles, only change parents if needed or add items
+    # In Capacitor 6, we want to add windowFullscreen to the styles
     
-    # Add fullscreen items
+    # Add fullscreen items to AppTheme.NoActionBarLaunch and AppTheme.NoActionBar
     if 'android:windowFullscreen' not in content:
-        fullscreen_items = """
-        <item name="android:windowFullscreen">true</item>
-        <item name="android:windowContentOverlay">@null</item>
-        """
-        content = content.replace('</style>', fullscreen_items + '\n    </style>')
+        # We append to the styles
+        fullscreen_items = '        <item name="android:windowFullscreen">true</item>\n        <item name="android:windowContentOverlay">@null</item>\n'
+        
+        # Patch both themes if they exist
+        content = content.replace('</style>', fullscreen_items + '    </style>')
+        
         with open(path, 'w') as f:
             f.write(content)
-        print("✅ Patched styles.xml")
+        print("✅ Patched styles.xml (Fullscreen)")
     else:
         print("ℹ️ styles.xml already patched")
 
