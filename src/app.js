@@ -58,6 +58,15 @@ const App = {
                 return;
             }
 
+            // 00. Truly Fullscreen Mode for Android
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                try {
+                    const { StatusBar } = window.Capacitor.Plugins;
+                    if (StatusBar) StatusBar.hide();
+                    if (window.navigationbar) window.navigationbar.hide();
+                } catch (err) { console.log("Fullscreen error:", err); }
+            }
+
             // 0. Handle Bridge Redirect for deep linking
             // If we are on the web version and have ?redirect_to_app=true, jump to native app
             if (urlParams.get('redirect_to_app') === 'true') {

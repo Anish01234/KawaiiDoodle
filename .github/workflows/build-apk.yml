@@ -57,6 +57,11 @@ jobs:
                           <data android:scheme="io.kawaii.doodle" />\
                       </intent-filter>' android/app/src/main/AndroidManifest.xml
 
+      - name: Patch Styles for Fullscreen
+        run: |
+          sed -i 's/parent="AppTheme.NoActionBar"/parent="Theme.AppCompat.Light.NoActionBar.FullScreen"/' android/app/src/main/res/values/styles.xml || true
+          sed -i '/<\/style>/i \        <item name="android:windowFullscreen">true</item>\n        <item name="android:windowContentOverlay">@null</item>' android/app/src/main/res/values/styles.xml || true
+
       - name: Build APK
         run: |
           cd android
