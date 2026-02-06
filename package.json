@@ -12,7 +12,7 @@
         "@capacitor/app": "^6.0.0",
         "@capacitor/core": "^6.0.0",
         "@capacitor/status-bar": "^6.0.0",
-        "@codetrix-studio/capacitor-google-auth": "^3.4.0",
+        "@codetrix-studio/capacitor-google-auth": "^3.3.6",
         "cordova-plugin-navigationbar": "^1.0.4",
         "cordova-plugin-wallpaper": "^0.1.0"
     },
