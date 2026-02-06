@@ -66,11 +66,12 @@ jobs:
           ./gradlew assembleDebug
 
           # Re-sign with our consistent keystore using jarsigner
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass password android/app/build/outputs/apk/debug/app-debug.apk my-key-alias
+          # We are in 'android/' directory, so path is app/build/...
+          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass password app/build/outputs/apk/debug/app-debug.apk my-key-alias
 
           # Verify Signature and Print SHA-1 Again to be sure
           echo "::group::🔍 VERIFYING APK SIGNATURE"
-          keytool -printcert -jarfile android/app/build/outputs/apk/debug/app-debug.apk
+          keytool -printcert -jarfile app/build/outputs/apk/debug/app-debug.apk
           echo "::endgroup::"
 
 
