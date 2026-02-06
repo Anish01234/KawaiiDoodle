@@ -20,6 +20,22 @@ const Social = {
             return;
         }
 
+        // Check local state first to prevent conflicts/confusion
+        const existing = this.friends.find(f => f.id.toLowerCase() === id.toLowerCase());
+        if (existing) {
+            if (existing.status === 'accepted') {
+                App.toast(`You are already friends with ${existing.username}! 👯‍♀️`, 'pink');
+            } else if (existing.isRequester) {
+                App.toast('You sent a request! Wait for them... 💌', 'blue');
+            } else {
+                App.toast(`They added YOU! Click the checkmark below! 👇`, 'pink');
+                // Highlight the row?
+                const row = document.getElementById(`friend-row-${existing.id}`);
+                if (row) row.classList.add('animate-bounce');
+            }
+            return;
+        }
+
         App.toast(`Searching for ID: ${id}...`, 'blue');
 
         const sb = App.state.supabase;
@@ -185,7 +201,7 @@ const Social = {
         list.innerHTML = this.friends.map(f => {
             const isActive = App.state.activeRecipient === f.id;
             return `
-                <div class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 ${isActive ? 'border-pink-400 bg-pink-50' : 'border-transparent'} animate-float" style="animation-delay: ${Math.random()}s">
+                <div id="friend-row-${f.id}" class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 ${isActive ? 'border-pink-400 bg-pink-50' : 'border-transparent'} animate-float" style="animation-delay: ${Math.random()}s">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 ${isActive ? 'bg-pink-400' : 'bg-pink-100'} rounded-full flex items-center justify-center border-2 border-white transition-colors">
                             <i data-lucide="user" class="w-5 h-5 ${isActive ? 'text-white' : 'text-pink-400'}"></i>

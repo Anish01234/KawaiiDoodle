@@ -332,7 +332,10 @@ const App = {
             if (window.lucide) lucide.createIcons();
             // Populate dynamic lists
             if (viewName === 'friends') {
-                if (window.Social) Social.renderFriendList();
+                if (window.Social) {
+                    Social.loadFriends(); // Fetch fresh data
+                    Social.renderFriendList();
+                }
                 // Explicitly bind search button
                 const searchBtn = document.getElementById('btn-search-friend');
                 if (searchBtn) {
