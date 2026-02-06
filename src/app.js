@@ -64,20 +64,37 @@ const App = {
 
             // 00. Truly Fullscreen Mode for Android
             if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-                try {
-                    const { StatusBar } = window.Capacitor.Plugins;
-                    if (StatusBar) StatusBar.hide();
-                    if (window.navigationbar) window.navigationbar.hide();
-                } catch (err) { console.log("Fullscreen error:", err); }
+                setTimeout(() => {
+                    try {
+                        const { StatusBar } = window.Capacitor.Plugins;
+                        if (StatusBar) StatusBar.hide();
+                        if (window.NavigationBar) window.NavigationBar.hide();
+                    } catch (err) { console.log("Fullscreen error:", err); }
+                }, 1000); // 1s delay to let everything settle
             }
 
             // 0. Handle Bridge Redirect for deep linking
             // If we are on the web version and have ?redirect_to_app=true, jump to native app
             if (urlParams.get('redirect_to_app') === 'true') {
                 const nativeUrl = 'io.kawaii.doodle://' + window.location.hash;
-                console.log("🌉 Bridge Redirect: Jumping to " + nativeUrl);
+                this.logBoot("🌉 Bridge Redirect: Attempting jump to native app...");
+                // Force a manual click if auto-redirect is blocked, but let's try auto first
                 window.location.href = nativeUrl;
-                return; // Stop execution, we are leaving
+
+                // Fallback UI if redirect doesn't happen automatically
+                setTimeout(() => {
+                    const content = document.getElementById('content');
+                    if (content) {
+                        content.innerHTML = `
+                            <div class="p-8 text-center bg-white rounded-bubbly m-4 shadow-xl">
+                                <h2 class="text-xl font-bold mb-4">Redirecting back... 🚀</h2>
+                                <p class="mb-6">If the app didn't open automatically, tap the button below:</p>
+                                <a href="${nativeUrl}" class="btn-primary btn-bubbly inline-block bg-pink-400 text-white border-0 py-4 px-8">Open App 📱</a>
+                            </div>
+                        `;
+                    }
+                }, 2000);
+                return;
             }
 
             // 1. Initialize Capacitor App Plugin for Deep Links
