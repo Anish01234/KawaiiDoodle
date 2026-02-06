@@ -483,12 +483,11 @@ const App = {
                             <!-- Injected by initCanvas -->
                          </div>
                          <div class="w-[2px] h-6 bg-gray-200 mx-1"></div>
-                         <label class="relative cursor-pointer hover:scale-110 transition-transform">
-                            <input id="custom-color-picker" type="color" class="opacity-0 absolute w-full h-full cursor-pointer" />
+                         <button id="btn-custom-color" class="relative hover:scale-110 transition-transform">
                             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 border-2 border-white shadow-sm flex items-center justify-center">
                                 <i data-lucide="plus" class="w-4 h-4 text-white"></i>
                             </div>
-                         </label>
+                         </button>
                     </div>
 
                     <div class="flex justify-between items-center gap-2">
