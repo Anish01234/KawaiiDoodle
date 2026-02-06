@@ -473,19 +473,37 @@ const App = {
                     <div id="recipient-selection" class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-pink-100 mb-1 no-scrollbar">
                         <span class="text-[10px] font-bold text-pink-400 whitespace-nowrap">SEND TO:</span>
                         <div id="friend-bubbles" class="flex gap-2">
-                           <!-- Injected by initCanvas -->
                            <p class="text-[10px] text-gray-400">Loading friends...</p>
                         </div>
                     </div>
 
-                    <div class="flex justify-between items-center gap-4">
-                        <div class="flex gap-2">
-                            <button class="color-btn w-6 h-6 rounded-full bg-pink-400 border-2 border-white" data-color="#FFD1DC" title="Soft Pink"></button>
-                            <button class="color-btn w-6 h-6 rounded-full bg-blue-400 border-2 border-white" data-color="#BDE0FE" title="Sky Blue"></button>
-                            <button class="color-btn w-6 h-6 rounded-full bg-yellow-400 border-2 border-white" data-color="#FAFAD2" title="Lemon"></button>
-                            <button class="color-btn w-6 h-6 rounded-full bg-green-400 border-2 border-white" data-color="#C1F0C1" title="Mint"></button>
+                    <!-- Enhanced Color Palette -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                         <div id="palette-container" class="flex gap-2">
+                            <!-- Injected by initCanvas -->
+                         </div>
+                         <div class="w-[2px] h-6 bg-gray-200 mx-1"></div>
+                         <label class="relative cursor-pointer hover:scale-110 transition-transform">
+                            <input id="custom-color-picker" type="color" class="opacity-0 absolute w-full h-full cursor-pointer" />
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 border-2 border-white shadow-sm flex items-center justify-center">
+                                <i data-lucide="plus" class="w-4 h-4 text-white"></i>
+                            </div>
+                         </label>
+                    </div>
+
+                    <div class="flex justify-between items-center gap-2">
+                        <!-- Undo/Redo -->
+                        <div class="flex gap-1 bg-gray-100 p-1 rounded-full">
+                            <button id="btn-undo" class="w-8 h-8 rounded-full bg-white text-gray-400 shadow-sm flex items-center justify-center hover:text-pink-500 disabled:opacity-50">
+                                <i data-lucide="undo-2" class="w-4 h-4"></i>
+                            </button>
+                            <button id="btn-redo" class="w-8 h-8 rounded-full bg-white text-gray-400 shadow-sm flex items-center justify-center hover:text-pink-500 disabled:opacity-50">
+                                <i data-lucide="redo-2" class="w-4 h-4"></i>
+                            </button>
                         </div>
-                        <div class="flex gap-2">
+
+                        <!-- Stamps -->
+                        <div class="flex gap-2 bg-pink-50 p-1 rounded-full px-3">
                             <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="💖">💖</button>
                             <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="🍭">🍭</button>
                             <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="⭐">⭐</button>
@@ -493,14 +511,14 @@ const App = {
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 border-t border-pink-100 pt-3">
                         <i data-lucide="brush" class="w-4 h-4 text-gray-400"></i>
-                        <input id="brush-size" type="range" min="2" max="30" value="5" class="flex-1 accent-pink-400">
-                        <button id="clear-canvas" class="p-2 hover:bg-red-50 text-red-400 rounded-full transition-colors">
+                        <input id="brush-size" type="range" min="2" max="40" value="5" class="flex-1 accent-pink-400">
+                        <button id="clear-canvas" class="p-2 hover:bg-red-50 text-red-400 rounded-full transition-colors" title="Clear All">
                             <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
-                        <button id="send-doodle" class="bg-pink-500 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-pink-600 active:scale-95 transition-all">
-                            Send! 🚀
+                        <button id="send-doodle" class="bg-pink-500 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-pink-600 active:scale-95 transition-all flex items-center gap-2">
+                            <span>Send</span> <i data-lucide="send" class="w-4 h-4"></i>
                         </button>
                     </div>
                 </div>
