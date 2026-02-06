@@ -44,6 +44,22 @@
     </style>
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
+    <!-- Failsafe Error Handler -->
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            console.error("Global Error Caught:", msg, url, line);
+            let container = document.getElementById('loading');
+            if (!container) { alert("BSOD: " + msg); return; }
+            container.innerHTML = `
+                <div class="text-center p-4 bg-red-50 rounded-bubbly border-2 border-red-200">
+                    <p class="text-red-500 font-bold mb-2">Oh no! Something broke! 😭</p>
+                    <p class="text-xs text-red-400 font-mono mb-4 text-left p-2 bg-white rounded">
+                        ${msg}<br><span class="opacity-50">${url ? url.split('/').pop() : 'unknown'}:${line}</span>
+                    </p>
+                    <button onclick="localStorage.clear();location.reload()" class="bg-red-400 text-white px-6 py-2 rounded-full font-bold">Reset 🚑</button>
+                </div>`;
+        };
+    </script>
 </head>
 
 <body class="bg-kawaii-pink min-h-screen font-['Quicksand'] text-gray-700 overflow-hidden">
@@ -109,6 +125,29 @@
     <script>
         // Initialize Lucide Icons
         lucide.createIcons();
+    </script>
+    <!-- Diagnostic Script -->
+    <script>
+        (function () {
+            const log = document.getElementById('boot-log');
+            if (log) {
+                log.innerHTML += `> Diagnostics running...<br>`;
+                log.innerHTML += `> App: ${window.App ? 'YES' : 'NO'}<br>`;
+                log.innerHTML += `> Social: ${window.Social ? 'YES' : 'NO'}<br>`;
+                log.innerHTML += `> Canvas: ${window.initCanvas ? 'YES' : 'NO'}<br>`;
+
+                if (!window.App) {
+                    alert("CRITICAL: App.js failed to load!");
+                } else {
+                    setTimeout(() => {
+                        if (document.getElementById('loading')) {
+                            log.innerHTML += `> Force-starting App...<br>`;
+                            if (App.init) App.init();
+                        }
+                    }, 2000);
+                }
+            }
+        })();
     </script>
 </body>
 
