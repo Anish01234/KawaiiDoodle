@@ -65,9 +65,15 @@ jobs:
           # Build APK (Default Debug Signing)
           ./gradlew assembleDebug
 
-          # Re-sign with our consistent keystore using jarsigner
-          # We are in 'android/' directory, so path is app/build/...
-          jarsigner -verbose -sigalg SHA1withRSA -digestalg SHA1 -keystore my-release-key.keystore -storepass password app/build/outputs/apk/debug/app-debug.apk my-key-alias
+          
+          # Build APK (Default Debug Signing)
+          ./gradlew assembleDebug
+
+          # Remove existing debug signature (META-INF) so we can re-sign cleanly
+          zip -d app/build/outputs/apk/debug/app-debug.apk "META-INF/*"
+
+          # Re-sign with our consistent keystore using jarsigner (Use SHA256 to avoid security warnings)
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore my-release-key.keystore -storepass password app/build/outputs/apk/debug/app-debug.apk my-key-alias
 
           # Verify Signature and Print SHA-1 Again to be sure
           echo "::group::🔍 VERIFYING APK SIGNATURE"
