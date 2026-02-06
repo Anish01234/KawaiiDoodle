@@ -5,9 +5,5 @@
     "server": {
         "androidScheme": "https"
     },
-    "plugins": {
-        "Wallpaper": {
-            "sync": true
-        }
-    }
+    "plugins": {}
 }
