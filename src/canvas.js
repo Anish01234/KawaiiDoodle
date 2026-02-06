@@ -59,9 +59,149 @@ window.initCanvas = function () {
         // Custom Picker
         const picker = document.getElementById('custom-color-picker');
         if (picker) {
-            picker.addEventListener('input', (e) => setColor(e.target.value));
             picker.addEventListener('change', (e) => setColor(e.target.value)); // For final selection
         }
+
+        initColorPicker();
+    }
+
+    function initColorPicker() {
+        // --- Custom Color Picker Logic ---
+        const btn = document.getElementById('btn-custom-color');
+        const modal = document.getElementById('color-picker-modal');
+        const closeBtn = document.getElementById('close-picker');
+        const selectBtn = document.getElementById('select-custom-color');
+
+        const spectrumCanvas = document.getElementById('picker-spectrum');
+        const hueCanvas = document.getElementById('picker-hue');
+        const preview = document.getElementById('preview-color');
+
+        if (!btn || !modal || !spectrumCanvas || !hueCanvas) return;
+
+        let hue = 0; // 0-360
+        let sat = 100; // 0-100
+        let val = 100; // 0-100
+
+        // Helper: HsvToRgb
+        const hsvToRgb = (h, s, v) => {
+            s /= 100; v /= 100;
+            let c = v * s;
+            let x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            let m = v - c;
+            let r = 0, g = 0, b = 0;
+
+            if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+            else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+            else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+            else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+            else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+            else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+
+            return `rgb(${Math.round((r + m) * 255)}, ${Math.round((g + m) * 255)}, ${Math.round((b + m) * 255)})`;
+        };
+
+        const renderHue = () => {
+            const ctx = hueCanvas.getContext('2d');
+            hueCanvas.width = hueCanvas.offsetWidth;
+            hueCanvas.height = hueCanvas.offsetHeight;
+
+            const grad = ctx.createLinearGradient(0, 0, hueCanvas.width, 0);
+            for (let i = 0; i <= 360; i += 60) {
+                grad.addColorStop(i / 360, `hsl(${i}, 100%, 50%)`);
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, hueCanvas.width, hueCanvas.height);
+        };
+
+        const renderSpectrum = () => {
+            const ctx = spectrumCanvas.getContext('2d');
+            spectrumCanvas.width = spectrumCanvas.offsetWidth;
+            spectrumCanvas.height = spectrumCanvas.offsetHeight;
+
+            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+
+            const whiteGrad = ctx.createLinearGradient(0, 0, spectrumCanvas.width, 0);
+            whiteGrad.addColorStop(0, 'rgba(255,255,255,1)');
+            whiteGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = whiteGrad;
+            ctx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+
+            const blackGrad = ctx.createLinearGradient(0, 0, 0, spectrumCanvas.height);
+            blackGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            blackGrad.addColorStop(1, 'rgba(0,0,0,1)');
+            ctx.fillStyle = blackGrad;
+            ctx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+        };
+
+        const updateColor = () => {
+            const color = hsvToRgb(hue, sat, val);
+            preview.style.backgroundColor = color;
+            return color;
+        };
+
+        // Open/Close
+        btn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            renderHue();
+            renderSpectrum();
+            updateColor();
+        });
+
+        closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+        selectBtn.addEventListener('click', () => {
+            setColor(updateColor());
+            App.toast('Custom color mixed! 🎨', 'pink');
+            modal.classList.add('hidden');
+        });
+
+        // Hue Interaction
+        let isDragHue = false;
+        const updateHue = (e) => {
+            const rect = hueCanvas.getBoundingClientRect();
+            let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            x = Math.max(0, Math.min(x, rect.width));
+            hue = (x / rect.width) * 360;
+
+            document.getElementById('hue-cursor').style.left = `${x}px`;
+            renderSpectrum(); // Re-render spectrum with new hue
+            updateColor();
+        };
+
+        hueCanvas.addEventListener('mousedown', e => { isDragHue = true; updateHue(e); });
+        window.addEventListener('mousemove', e => { if (isDragHue) updateHue(e); });
+        window.addEventListener('mouseup', () => isDragHue = false);
+
+        hueCanvas.addEventListener('touchstart', e => { isDragHue = true; updateHue(e); }, { passive: false });
+        window.addEventListener('touchmove', e => { if (isDragHue) updateHue(e); }, { passive: false });
+        window.addEventListener('touchend', () => isDragHue = false);
+
+        // Spectrum Interaction
+        let isDragSpec = false;
+        const updateSpec = (e) => {
+            const rect = spectrumCanvas.getBoundingClientRect();
+            let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+            x = Math.max(0, Math.min(x, rect.width));
+            y = Math.max(0, Math.min(y, rect.height));
+
+            sat = (x / rect.width) * 100;
+            val = 100 - (y / rect.height) * 100;
+
+            document.getElementById('spectrum-cursor').style.left = `${x}px`;
+            document.getElementById('spectrum-cursor').style.top = `${y}px`;
+            updateColor();
+        };
+
+        spectrumCanvas.addEventListener('mousedown', e => { isDragSpec = true; updateSpec(e); });
+        window.addEventListener('mousemove', e => { if (isDragSpec) updateSpec(e); });
+        window.addEventListener('mouseup', () => isDragSpec = false);
+
+        spectrumCanvas.addEventListener('touchstart', e => { isDragSpec = true; updateSpec(e); }, { passive: false });
+        window.addEventListener('touchmove', e => { if (isDragSpec) updateSpec(e); }, { passive: false });
+        window.addEventListener('touchend', () => isDragSpec = false);
     }
 
     function initHistory() {
