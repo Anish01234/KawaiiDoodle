@@ -622,6 +622,58 @@ const App = {
         s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', 'white'][Math.floor(Math.random() * 4)];
         document.body.appendChild(s);
         setTimeout(() => s.remove(), 800);
+    },
+
+    openFriendPicker(callback) {
+        const modal = document.getElementById('recipient-modal');
+        const list = document.getElementById('modal-friend-list');
+        if (!modal || !list) return;
+
+        if (!window.Social || !Social.friends.length) {
+            this.toast('Add some friends first! 👯‍♀️', 'blue');
+            this.setView('friends');
+            return;
+        }
+
+        // Render simple list
+        list.innerHTML = Social.friends
+            .filter(f => f.status === 'accepted' || f.id === 'kawaii-6789')
+            .map(f => `
+            <button onclick="App.handlePickerSelect('${f.id}', '${f.username}')" 
+                class="flex items-center gap-4 w-full p-3 rounded-2xl border-2 border-transparent hover:border-pink-300 hover:bg-pink-50 transition-all text-left">
+                <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center text-pink-500">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="font-bold text-gray-700">${f.username}</p>
+                    <p class="text-[10px] text-pink-400">${f.id}</p>
+                </div>
+                <i data-lucide="send" class="text-pink-300 w-5 h-5"></i>
+            </button>
+        `).join('');
+
+        if (list.innerHTML === '') {
+            list.innerHTML = `<p class="text-center text-gray-400 italic py-4">No friends found... 🥺</p>`;
+        }
+
+        if (window.lucide) lucide.createIcons();
+
+        // Store callback
+        this.pickerCallback = callback;
+        modal.classList.remove('hidden');
+    },
+
+    handlePickerSelect(id, username) {
+        document.getElementById('recipient-modal').classList.add('hidden');
+        this.state.activeRecipient = id;
+        this.toast(`Selected ${username}! 🎯`, 'pink');
+        // Update UI if needed
+        if (window.Social) Social.renderRecipientBubbles();
+
+        if (this.pickerCallback) {
+            this.pickerCallback(id);
+            this.pickerCallback = null;
+        }
     }
 };
 

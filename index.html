@@ -115,6 +115,22 @@
         <!-- Toast Notification Area -->
         <div id="toasts" class="fixed top-20 left-1/2 -translate-x-1/2 z-[100] pointer-events-none"></div>
 
+        <!-- Recipient Picker Modal -->
+        <div id="recipient-modal"
+            class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center backdrop-blur-sm p-4">
+            <div
+                class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform transition-all scale-100 animate-float">
+                <h3 class="text-xl font-black text-center text-pink-500 mb-4">Send to whom? 💌</h3>
+                <div id="modal-friend-list" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto no-scrollbar">
+                    <!-- Dynamic List -->
+                </div>
+                <button onclick="document.getElementById('recipient-modal').classList.add('hidden')"
+                    class="w-full mt-4 py-3 bg-gray-100 rounded-full font-bold text-gray-500 hover:bg-gray-200 transition-colors">
+                    Cancel
+                </button>
+            </div>
+        </div>
+
     </div>
 
     <!-- Scripts -->

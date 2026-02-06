@@ -125,49 +125,54 @@ window.initCanvas = function () {
     });
 
     document.getElementById('send-doodle').addEventListener('click', async () => {
-        const data = canvas.toDataURL('image/png');
+        const snapshot = canvas.toDataURL('image/png');
 
-        if (!App.state.activeRecipient) {
-            App.toast('Select a friend first! 👆', 'blue');
-            return;
-        }
+        const sendLogic = async (targetId) => {
+            const sb = App.state.supabase;
+            if (!sb) {
+                App.state.lastDoodle = snapshot;
+                App.toast('Local doodle saved! 🎨', 'pink');
+                App.setView('home');
+                return;
+            }
 
-        const sb = App.state.supabase;
-        if (!sb) {
-            App.state.lastDoodle = data;
-            App.toast('Local doodle saved! 🎨', 'pink');
-            App.setView('home');
-            return;
-        }
+            try {
+                App.toast('Sending magic... 🚀', 'pink');
+                const user = (await sb.auth.getUser()).data.user;
 
-        try {
-            App.toast('Sending magic... 🚀', 'pink');
-            const user = (await sb.auth.getUser()).data.user;
+                // Find destination UUID from kawaii_id
+                const { data: target, error: targetError } = await sb
+                    .from('profiles')
+                    .select('id')
+                    .eq('kawaii_id', targetId)
+                    .single();
 
-            // Find destination UUID from kawaii_id
-            const { data: target, error: targetError } = await sb
-                .from('profiles')
-                .select('id')
-                .eq('kawaii_id', App.state.activeRecipient)
-                .single();
+                if (targetError || !target) throw new Error("Could not find friend in cloud!");
 
-            if (targetError || !target) throw new Error("Could not find friend in cloud!");
+                const { error } = await sb
+                    .from('doodles')
+                    .insert({
+                        sender_id: user.id,
+                        receiver_id: target.id,
+                        image_data: snapshot
+                    });
 
-            const { error } = await sb
-                .from('doodles')
-                .insert({
-                    sender_id: user.id,
-                    receiver_id: target.id,
-                    image_data: data
-                });
+                if (error) throw error;
+                App.toast('Doodle sent with magic! 💖', 'pink');
+                App.setView('home');
+                App.loadHistory(); // Refresh history
+            } catch (e) {
+                console.error(e);
+                App.toast(`Send failed: ${e.message || 'Check database'} 😭`, 'blue');
+            }
+        };
 
-            if (error) throw error;
-            App.toast('Doodle sent with magic! 💖', 'pink');
-            App.setView('home');
-            App.loadHistory(); // Refresh history
-        } catch (e) {
-            console.error(e);
-            App.toast(`Send failed: ${e.message || 'Check database'} 😭`, 'blue');
+        if (App.state.activeRecipient) {
+            sendLogic(App.state.activeRecipient);
+        } else {
+            App.openFriendPicker((selectedId) => {
+                sendLogic(selectedId);
+            });
         }
     });
 
