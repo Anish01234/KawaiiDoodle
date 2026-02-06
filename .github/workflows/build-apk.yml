@@ -36,7 +36,7 @@ jobs:
           java-version: '17'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Initialize Capacitor Android
         run: |
