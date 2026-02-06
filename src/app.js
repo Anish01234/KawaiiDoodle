@@ -58,6 +58,37 @@ const App = {
                 return;
             }
 
+            // 0. Handle Bridge Redirect for deep linking
+            // If we are on the web version and have ?redirect_to_app=true, jump to native app
+            if (urlParams.get('redirect_to_app') === 'true') {
+                const nativeUrl = 'io.kawaii.doodle://' + window.location.hash;
+                console.log("🌉 Bridge Redirect: Jumping to " + nativeUrl);
+                window.location.href = nativeUrl;
+                return; // Stop execution, we are leaving
+            }
+
+            // 1. Initialize Capacitor App Plugin for Deep Links
+            if (window.Capacitor && window.Capacitor.Plugins.App) {
+                const { App: CapApp } = window.Capacitor.Plugins;
+
+                CapApp.addListener('appUrlOpen', async (data) => {
+                    console.log('🔗 Deep Link Received:', data.url);
+                    // Handle Supabase OAuth redirection
+                    const url = new URL(data.url);
+                    const hash = url.hash;
+                    if (hash && hash.includes('access_token')) {
+                        console.log('🔑 OAuth fragment found in deep link, syncing session...');
+                        const { data: authData, error } = await this.state.supabase.auth.setSession({
+                            access_token: hash.split('access_token=')[1].split('&')[0],
+                            refresh_token: hash.split('refresh_token=')[1].split('&')[0]
+                        });
+                        if (error) console.error("Session sync error:", error);
+                        else window.location.reload();
+                    }
+                });
+            }
+
+            // 2. Initialize Supabase
             this.initSupabase();
 
             // Check for session
@@ -297,7 +328,7 @@ const App = {
             const { error } = await this.state.supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: window.location.href.split('#')[0].split('?')[0]
+                    redirectTo: window.location.origin + window.location.pathname + '?redirect_to_app=true'
                 }
             });
 

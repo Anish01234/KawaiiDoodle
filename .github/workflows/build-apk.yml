@@ -47,6 +47,16 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
+      - name: Patch Android Manifest for Deep Links
+        run: |
+          sed -i '/<\/activity>/i \
+                      <intent-filter>\
+                          <action android:name="android.intent.action.VIEW" />\
+                          <category android:name="android.intent.category.DEFAULT" />\
+                          <category android:name="android.intent.category.BROWSABLE" />\
+                          <data android:scheme="io.kawaii.doodle" />\
+                      </intent-filter>' android/app/src/main/AndroidManifest.xml
+
       - name: Build APK
         run: |
           cd android
