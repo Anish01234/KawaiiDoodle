@@ -46,6 +46,10 @@ const App = {
 
     async init() {
         this.logBoot("✨ Kawaii App Initializing...");
+        this.logBoot(`Capacitor: ${window.Capacitor ? 'LOADED' : 'MISSING'}`);
+        if (window.Capacitor) {
+            this.logBoot(`Platform: ${window.Capacitor.getPlatform()}`);
+        }
         try {
             // Check for Force Offline
             const urlParams = new URLSearchParams(window.location.search);

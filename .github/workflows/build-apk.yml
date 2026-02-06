@@ -47,20 +47,8 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Patch Android Manifest for Deep Links
-        run: |
-          sed -i '/<\/activity>/i \
-                      <intent-filter>\
-                          <action android:name="android.intent.action.VIEW" />\
-                          <category android:name="android.intent.category.DEFAULT" />\
-                          <category android:name="android.intent.category.BROWSABLE" />\
-                          <data android:scheme="io.kawaii.doodle" />\
-                      </intent-filter>' android/app/src/main/AndroidManifest.xml
-
-      - name: Patch Styles for Fullscreen
-        run: |
-          sed -i 's/parent="AppTheme.NoActionBar"/parent="Theme.AppCompat.Light.NoActionBar.FullScreen"/' android/app/src/main/res/values/styles.xml || true
-          sed -i '/<\/style>/i \        <item name="android:windowFullscreen">true</item>\n        <item name="android:windowContentOverlay">@null</item>' android/app/src/main/res/values/styles.xml || true
+      - name: Patch Android Project (Deep Links & Fullscreen)
+        run: python3 scripts/patch-android.py
 
       - name: Build APK
         run: |
