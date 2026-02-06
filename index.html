@@ -110,34 +110,6 @@
         // Initialize Lucide Icons
         lucide.createIcons();
     </script>
-    <!-- Failsafe Error Handler (Moved to HEAD to catch everything) -->
-    <script>
-        window.onerror = function (msg, url, line, col, error) {
-            console.error("Global Error Caught:", msg, url, line);
-
-            // Try to find loading div, or create a fallback container
-            let container = document.getElementById('loading');
-            if (!container) {
-                // If body exists, append; otherwise wait? 
-                // Actually scripts run after parsing, so body might be partial. 
-                // Safe bet: just log to console or try to hijack document if critical.
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="text-center p-4 bg-red-50 rounded-bubbly border-2 border-red-200">
-                    <p class="text-red-500 font-bold mb-2">Oh no! Something broke! 😭</p>
-                    <p class="text-xs text-red-400 font-mono mb-4 text-left p-2 bg-white rounded">
-                        ${msg}<br>
-                        <span class="text-[8px] opacity-70">${url.split('/').pop()}:${line}</span>
-                    </p>
-                    <button onclick="localStorage.clear(); navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())); location.reload()" class="bg-red-400 text-white px-6 py-2 rounded-full font-bold shadow-sm hover:bg-red-500 transition-all">
-                        Emergency Reset 🚑
-                    </button>
-                </div>
-            `;
-        };
-    </script>
-    </head>
+</body>
 
 </html>
