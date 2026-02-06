@@ -327,7 +327,7 @@ const App = {
             document.body.classList.remove('bg-transparent');
         }
 
-        const viewName = this.state.view;
+        const currentView = this.state.view;
         setTimeout(() => {
             if (window.lucide) lucide.createIcons();
             // Populate dynamic lists
