@@ -21,6 +21,15 @@ const App = {
         magicClickCount: 0
     },
 
+    logBoot(msg) {
+        console.log(msg);
+        const log = document.getElementById('boot-log');
+        if (log) {
+            log.innerHTML += `> ${msg}<br>`;
+            log.scrollTop = log.scrollHeight;
+        }
+    },
+
     handleMagicSequence() {
         this.state.magicClickCount++;
         if (this.state.magicClickCount >= 5) {
@@ -36,12 +45,12 @@ const App = {
     },
 
     async init() {
-        console.log("✨ Kawaii App Initializing...");
+        this.logBoot("✨ Kawaii App Initializing...");
         try {
             // Check for Force Offline
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('offline') === 'true') {
-                console.log("✈️ Force Offline Mode Active");
+                this.logBoot("✈️ Force Offline Mode Active");
                 this.toast('Offline Mode Active ✈️', 'blue');
                 this.state.view = 'landing';
                 this.renderView();
@@ -53,6 +62,7 @@ const App = {
 
             // Check for session
             if (this.state.supabase) {
+                this.logBoot("☁️ Checking session...");
                 // Timeout wrapper for getSession (3s)
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Session timeout')), 3000));
 
@@ -173,13 +183,17 @@ const App = {
     },
 
     initSupabase() {
+        this.logBoot("🔌 Connecting to Cloud...");
         if (this.state.config.url && this.state.config.key && window.supabase) {
             try {
                 this.state.supabase = supabase.createClient(this.state.config.url, this.state.config.key);
-                console.log("⚡ Cloud Sync Connected to:", this.state.config.url);
+                this.logBoot("✅ Cloud Connected");
             } catch (e) {
+                this.logBoot("❌ Cloud Connection Failed: " + e.message);
                 console.error("Cloud Sync init failed:", e);
             }
+        } else {
+            this.logBoot("⚠️ Supabase Config Missing or SDK not loaded");
         }
     },
 
