@@ -159,6 +159,10 @@ window.initCanvas = function () {
 
                 if (error) throw error;
                 App.toast('Doodle sent with magic! 💖', 'pink');
+
+                // Clear recipient so it asks again next time (unless explicitly locked? No, safer to ask)
+                App.state.activeRecipient = null;
+
                 App.setView('home');
                 App.loadHistory(); // Refresh history
             } catch (e) {

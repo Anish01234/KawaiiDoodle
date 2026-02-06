@@ -155,9 +155,24 @@ const Social = {
             if (error) throw error;
 
             // Fetch profiles for those friends manually to be safe
-            const friendsList = [];
+            // Deduplicate friends: If A->B and B->A both exist, merge them.
+            const friendMap = new Map();
+
             for (const rel of data) {
                 const otherId = rel.user_id === user.id ? rel.friend_id : rel.user_id;
+
+                // If we already processed this friend...
+                if (friendMap.has(otherId)) {
+                    const existing = friendMap.get(otherId);
+                    // If this new row is ACCEPTED, upgrade the existing one
+                    if (rel.status === 'accepted') {
+                        existing.status = 'accepted';
+                        existing.relId = rel.id; // Point to the accepted row
+                        existing.isRequester = rel.user_id === user.id;
+                    }
+                    continue; // Skip re-fetching profile
+                }
+
                 const { data: profile } = await sb
                     .from('profiles')
                     .select('kawaii_id, username')
@@ -165,7 +180,7 @@ const Social = {
                     .single();
 
                 if (profile) {
-                    friendsList.push({
+                    friendMap.set(otherId, {
                         id: profile.kawaii_id,
                         username: profile.username,
                         status: rel.status,
@@ -175,7 +190,7 @@ const Social = {
                 }
             }
 
-            this.friends = friendsList;
+            this.friends = Array.from(friendMap.values());
             this.renderFriendList();
         } catch (e) { console.error("Load friends failed:", e); }
     },
