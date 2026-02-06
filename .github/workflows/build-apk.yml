@@ -1,0 +1,48 @@
+name: Build Android APK
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Initialize Android Platform
+        run: |
+          npx cap add android
+
+      - name: Build APK (Debug)
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK to GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+            name: kawaii-doodle.apk
+            path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: android/app/build/outputs/apk/debug/app-debug.apk

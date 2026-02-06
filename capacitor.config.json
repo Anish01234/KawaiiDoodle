@@ -1,0 +1,13 @@
+{
+    "appId": "io.kawaii.doodle",
+    "appName": "Kawaii Doodle",
+    "webDir": ".",
+    "server": {
+        "androidScheme": "https"
+    },
+    "plugins": {
+        "Wallpaper": {
+            "sync": true
+        }
+    }
+}

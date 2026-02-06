@@ -1,0 +1,18 @@
+{
+    "name": "kawaii-doodle-app",
+    "version": "1.0.0",
+    "description": "Premium Kawaii Drawing App",
+    "private": true,
+    "scripts": {
+        "build": "echo 'No bundler needed'",
+        "test": "echo 'No tests yet'"
+    },
+    "dependencies": {
+        "@capacitor/android": "^6.0.0",
+        "@capacitor/core": "^6.0.0",
+        "capacitor-wallpaper": "^1.0.1"
+    },
+    "devDependencies": {
+        "@capacitor/cli": "^6.0.0"
+    }
+}
