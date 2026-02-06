@@ -257,6 +257,28 @@ const App = {
                 console.log('🌈 New Magic Received!', payload);
                 this.state.lastDoodle = payload.new.image_data;
                 this.toast('New doodle from a friend! 💖', 'pink');
+
+                // Native Wallpaper Logic
+                if (window.plugins && window.plugins.wputils) {
+                    this.toast('Setting lock screen... 📱', 'blue');
+
+                    // The plugin expects a URL, but we have base64 data.
+                    // We might need to save it to a temp file first, OR check if the plugin supports base64.
+                    // Most cordova wallpaper plugins support base64 if prefixed correctly or local file path.
+                    // WPUtils documentation usually takes a URL or path. 
+                    // Let's try passing the data URI directly first as some implementations support it.
+                    // If not, we might need a workaround, but for now we try the direct approach.
+
+                    window.plugins.wputils.setImageAsLockScreen(
+                        payload.new.image_data,
+                        () => this.toast('Lock screen updated! ✨', 'pink'),
+                        (err) => {
+                            console.error("Wallpaper error:", err);
+                            this.toast('Failed to set wallpaper 🥺', 'blue');
+                        }
+                    );
+                }
+
                 if (this.state.view === 'home' || this.state.view === 'widget') this.renderView();
             })
             .subscribe();

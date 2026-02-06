@@ -1,27 +1,27 @@
 name: Build Android APK
+
 on:
   push:
     branches:
+      - main
       - master
-    tags:
-      - 'v*' # Trigger on version tags
-  workflow_dispatch:
-
-permissions:
-  contents: write # Required for releases
+  pull_request:
+    branches:
+      - main
+      - master
 
 jobs:
   build:
-    name: Build APK
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Source
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '18'
 
       - name: Setup Java
         uses: actions/setup-java@v3
@@ -32,28 +32,31 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Initialize Android Platform
+      - name: Initialize Capacitor Android
         run: |
-          npx cap add android
-          npx cap sync
+          npx cap add android || true
+          npx cap sync android
 
-      - name: Build APK (Debug)
-        working-directory: android
+      - name: Build APK
         run: |
-          chmod +x gradlew
+          cd android
           ./gradlew assembleDebug
 
-      - name: Rename APK
-        run: mv android/app/build/outputs/apk/debug/app-debug.apk KawaiiDoodle.apk
-
-      - name: Upload APK to GitHub Artifacts
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-            name: KawaiiDoodle.apk
-            path: KawaiiDoodle.apk
+          name: app-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Create Release
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        id: create_release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: KawaiiDoodle.apk
+          tag_name: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          draft: false
+          prerelease: false
+          files: android/app/build/outputs/apk/debug/app-debug.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
