@@ -577,6 +577,13 @@ const App = {
                     </button>
                 </div>
                 
+                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs flex flex-col gap-2">
+                     <button onclick="navigator.serviceWorker.getRegistrations().then(regs => { for(let reg of regs) reg.unregister(); location.reload(); });" class="bg-yellow-100 text-yellow-600 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-yellow-200 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Force Update App
+                    </button>
+                    <p class="text-[8px] text-gray-400 text-center">Use this if magic seems stuck!</p>
+                </div>
+
                 <p class="text-center text-[10px] text-green-500 font-bold ${App.state.supabase ? 'opacity-100' : 'opacity-0'}">✓ Multi-device sync active</p>
                 
                 <a href="?view=widget" target="_blank" class="w-full bg-blue-100/50 p-4 rounded-bubbly flex items-center justify-between hover:bg-blue-200/50 transition-colors">

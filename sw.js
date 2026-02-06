@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kawaii-doodle-v2'; // Bumped version
+const CACHE_NAME = 'kawaii-doodle-v3'; // Bumped version for aggressive update
 const ASSETS_TO_CACHE = [
     'https://cdn.tailwindcss.com',
     'https://unpkg.com/lucide@latest',
