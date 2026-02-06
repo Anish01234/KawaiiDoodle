@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Force HTTPS for Git
+        run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+
       - name: Checkout code
         uses: actions/checkout@v3
 
