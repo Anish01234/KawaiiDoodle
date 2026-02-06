@@ -411,26 +411,23 @@ window.initCanvas = function () {
                 if (error) throw error;
                 App.toast('Doodle sent with magic! 💖', 'pink');
 
-                // --- NATIVE WALLPAPER LOGIC ---
-                // If running as APK, set lock screen automatically! 📱✨
+                // --- NATIVE WALLPAPER LOGIC (Cordova) ---
                 if (window.Capacitor && window.Capacitor.isNativePlatform()) {
                     try {
                         App.toast('Setting Wallpaper... 🖼️', 'blue');
-                        // Assume plugin is loaded via script tag or bundler in native build
-                        if (window.Wallpaper) {
-                            await window.Wallpaper.setBase64({
-                                base64: snapshot,
-                                mode: 'LOCK_SCREEN'
-                            });
+                        // Cordova plugin exposes 'wallpaper' (lowercase) globally
+                        if (window.wallpaper) {
+                            window.wallpaper.setImageBase64(snapshot);
                             App.toast('Lock Screen Updated! 🔓✨', 'pink');
                         } else {
-                            console.warn("Wallpaper plugin not found");
+                            console.warn("Cordova Wallpaper plugin not found");
+                            App.toast('Wallpaper plugin missing ⚠️', 'blue');
                         }
                     } catch (err) {
                         console.error("Wallpaper set failed", err);
                     }
                 }
-                // -----------------------------
+                // ----------------------------------------
 
                 App.state.activeRecipient = null;
                 App.setView('home');
