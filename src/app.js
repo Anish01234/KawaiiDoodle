@@ -38,11 +38,38 @@ const App = {
     async init() {
         console.log("✨ Kawaii App Initializing...");
         try {
+            // Check for Force Offline
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('offline') === 'true') {
+                console.log("✈️ Force Offline Mode Active");
+                this.toast('Offline Mode Active ✈️', 'blue');
+                this.state.view = 'landing';
+                this.renderView();
+                this.finalizeInit();
+                return;
+            }
+
             this.initSupabase();
 
             // Check for session
             if (this.state.supabase) {
-                const { data: { session }, error } = await this.state.supabase.auth.getSession();
+                // Timeout wrapper for getSession (3s)
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Session timeout')), 3000));
+
+                let sessionData = { data: { session: null }, error: null };
+
+                try {
+                    sessionData = await Promise.race([
+                        this.state.supabase.auth.getSession(),
+                        timeout
+                    ]);
+                } catch (e) {
+                    console.warn("Session check failed or timed out:", e);
+                    // Fallback to null session
+                }
+
+                const { data: { session }, error } = sessionData;
+
                 if (error) throw error;
 
                 this.state.session = session;

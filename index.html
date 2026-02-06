@@ -133,6 +133,10 @@
                         <button onclick="window.location.reload()" class="bg-pink-400 text-white px-6 py-2 rounded-full font-bold shadow-sm hover:bg-pink-500 transition-all">
                             Try Again 🔄
                         </button>
+                        <br class="mb-2">
+                        <button onclick="window.location.href='?offline=true'" class="bg-gray-400 text-white px-4 py-1 rounded-full text-xs font-bold hover:bg-gray-500 transition-all">
+                            Force Offline Mode ✈️
+                        </button>
                         <br><br>
                         <button onclick="localStorage.clear(); navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())); location.reload()" class="text-xs text-gray-300 underline">
                             Hard Reset (Clear Cache)
