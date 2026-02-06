@@ -349,10 +349,40 @@ const App = {
     async handleGoogleSignIn() {
         if (!this.state.supabase) {
             this.toast('Login is currently unavailable! 🥺', 'blue');
-            console.error("Owner: Please set your SUPABASE_URL and KEY in src/config.js to enable login.");
             return;
         }
 
+        // Native Google Sign-In (No Browser)
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                this.toast('Opening native Google login... 📱', 'blue');
+                const { GoogleAuth } = window.Capacitor.Plugins;
+                if (!GoogleAuth) throw new Error("GoogleAuth plugin not found");
+
+                const user = await GoogleAuth.signIn();
+                this.logBoot("✅ Native Google Auth Success");
+
+                if (user && user.authentication.idToken) {
+                    this.toast('Syncing with Cloud... ✨', 'pink');
+                    const { data, error } = await this.state.supabase.auth.signInWithIdToken({
+                        provider: 'google',
+                        token: user.authentication.idToken
+                    });
+
+                    if (error) throw error;
+                    this.toast('Login Successful! 🎉', 'pink');
+                    window.location.reload();
+                }
+            } catch (e) {
+                console.error("Native Google Login failed:", e);
+                this.toast(`Native Login Failed: ${e.message || 'Check App Settings'}`, 'blue');
+                // Fallback to browser if native fails? 
+                // Or just show error if user strictly wants "no browser"
+            }
+            return;
+        }
+
+        // Web Fallback (Browser)
         try {
             App.toast('Opening Google login...', 'blue');
             const { error } = await this.state.supabase.auth.signInWithOAuth({
