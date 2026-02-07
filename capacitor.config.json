@@ -11,7 +11,7 @@
                 "profile",
                 "email"
             ],
-            "serverClientId": "REPLACE_WITH_YOUR_WEB_CLIENT_ID",
+            "serverClientId": "122450948192-kpqrglufceoa8d1554n9nq2ca0chk6iu.apps.googleusercontent.com",
             "forceCodeForRefreshToken": true
         }
     }
