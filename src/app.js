@@ -142,8 +142,9 @@ const App = {
                 // Resume Listener for Fullscreen Restoration
                 if (window.Capacitor && window.Capacitor.Plugins.App) {
                     window.Capacitor.Plugins.App.addListener('resume', () => {
-                        console.log("Create Resume: Restoring Fullscreen...");
+                        console.log("Create Resume: Restoring Fullscreen & Syncing...");
                         this.enableFullscreenMode();
+                        this.loadHistory(); // Check for new doodles while away
                     });
                 }
 
@@ -295,10 +296,47 @@ const App = {
 
             if (error) throw error;
             this.state.history = data;
-            if (data.length > 0) this.state.lastDoodle = data[0].image_data;
+            if (data.length > 0) {
+                this.state.lastDoodle = data[0].image_data;
+                // Auto-set wallpaper if it's for me and new!
+                this.setSmartWallpaper(data[0]);
+            }
             if (this.state.view === 'home' || this.state.view === 'history') this.renderView();
         } catch (e) {
             console.error("History load failed:", e);
+        }
+    },
+
+    async setSmartWallpaper(doodle) {
+        if (!doodle || !doodle.image_data) return;
+
+        // Only set wallpaper if *I* am the receiver
+        if (doodle.receiver_id !== this.state.session.user.id) return;
+
+        // Check if we already set this one to avoid spamming toast/plugin calls
+        const lastSetId = localStorage.getItem('last-wallpaper-id');
+        if (doodle.id === lastSetId) {
+            console.log("Wallpaper already set for doodle:", doodle.id);
+            return;
+        }
+
+        if (window.plugins && window.plugins.wallpaper) {
+            console.log("🖼️ Setting Smart Wallpaper for:", doodle.id);
+            this.toast('Updating lock screen... 📱', 'blue');
+
+            window.plugins.wallpaper.setImageBase64(
+                doodle.image_data,
+                () => {
+                    console.log("Wallpaper set successfully!");
+                    this.toast('Lock screen updated! ✨', 'pink');
+                    localStorage.setItem('last-wallpaper-id', doodle.id);
+                },
+                (err) => {
+                    console.error("Wallpaper error:", err);
+                    this.toast('Failed to set wallpaper 🥺', 'blue');
+                },
+                'lock'
+            );
         }
     },
 
@@ -332,25 +370,8 @@ const App = {
                 this.state.lastDoodle = payload.new.image_data;
                 this.toast('New doodle from a friend! 💖', 'pink');
 
-                // Native Wallpaper Logic
-                if (window.plugins && window.plugins.wallpaper) {
-                    this.toast('Setting lock screen... 📱', 'blue');
-
-                    // cordova-plugin-wallpaper API: setImageBase64(base64, success, error, type)
-                    // type 'lock' sets the lock screen
-                    window.plugins.wallpaper.setImageBase64(
-                        payload.new.image_data,
-                        () => {
-                            console.log("Wallpaper set successfully!");
-                            this.toast('Lock screen updated! ✨', 'pink');
-                        },
-                        (err) => {
-                            console.error("Wallpaper error:", err);
-                            this.toast('Failed to set wallpaper 🥺', 'blue');
-                        },
-                        'lock'
-                    );
-                }
+                // Auto-set wallpaper via smart logic
+                this.setSmartWallpaper(payload.new);
 
                 if (this.state.view === 'home' || this.state.view === 'widget') this.renderView();
             })

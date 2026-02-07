@@ -1,0 +1,455 @@
+window.initCanvas = function () {
+    const canvas = document.getElementById('drawing-canvas');
+    if (!canvas) return;
+
+    // Set canvas resolution (High DPI Support) 🕵️‍♂️✨
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+
+    // Actual coordinate size (scaled)
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    // CSS display size (visual)
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr); // Scale context to match visual coords for all drawing ops
+
+    // State
+    const state = {
+        isDrawing: false,
+        lastX: 0,
+        lastY: 0,
+        color: '#FF6B6B',
+        size: 5,
+        mode: 'pen', // 'pen' or 'stamp'
+        stampValue: '💖',
+        undoStack: [],
+        redoStack: []
+    };
+
+    // Constants
+    const PALETTE = [
+        '#FF6B6B', '#FFD1DC', '#FF9AA2', '#FFB7B2',
+        '#BDE0FE', '#A0C4FF', '#9BF6FF', '#CAFFBF', '#FDFFB6',
+        '#FFC6FF', '#BDB2FF', '#FFFFFC', '#D0D0D0', '#808080', '#000000'
+    ];
+
+    // --- Init Methods ---
+
+    function initPalette() {
+        const container = document.getElementById('palette-container');
+        if (!container) return;
+
+        container.innerHTML = PALETTE.map(c => `
+            <button class="color-btn w-8 h-8 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-pink-300" 
+                style="background-color: ${c}" 
+                data-color="${c}"
+                aria-label="Color ${c}">
+            </button>
+        `).join('');
+
+        // Delegate listeners
+        container.querySelectorAll('.color-btn').forEach(btn => {
+            btn.addEventListener('click', () => setColor(btn.dataset.color));
+        });
+
+        // Custom Picker
+        const picker = document.getElementById('custom-color-picker');
+        if (picker) {
+            picker.addEventListener('change', (e) => setColor(e.target.value)); // For final selection
+        }
+
+        initColorPicker();
+    }
+
+    function initColorPicker() {
+        // --- Custom Color Picker Logic ---
+        const btn = document.getElementById('btn-custom-color');
+        const modal = document.getElementById('color-picker-modal');
+        const closeBtn = document.getElementById('close-picker');
+        const selectBtn = document.getElementById('select-custom-color');
+
+        const spectrumCanvas = document.getElementById('picker-spectrum');
+        const hueCanvas = document.getElementById('picker-hue');
+        const preview = document.getElementById('preview-color');
+
+        if (!btn || !modal || !spectrumCanvas || !hueCanvas) return;
+
+        let hue = 0; // 0-360
+        let sat = 100; // 0-100
+        let val = 100; // 0-100
+
+        // Helper: HsvToRgb
+        const hsvToRgb = (h, s, v) => {
+            s /= 100; v /= 100;
+            let c = v * s;
+            let x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            let m = v - c;
+            let r = 0, g = 0, b = 0;
+
+            if (0 <= h && h < 60) { r = c; g = x; b = 0; }
+            else if (60 <= h && h < 120) { r = x; g = c; b = 0; }
+            else if (120 <= h && h < 180) { r = 0; g = c; b = x; }
+            else if (180 <= h && h < 240) { r = 0; g = x; b = c; }
+            else if (240 <= h && h < 300) { r = x; g = 0; b = c; }
+            else if (300 <= h && h < 360) { r = c; g = 0; b = x; }
+
+            return `rgb(${Math.round((r + m) * 255)}, ${Math.round((g + m) * 255)}, ${Math.round((b + m) * 255)})`;
+        };
+
+        const renderHue = () => {
+            const ctx = hueCanvas.getContext('2d');
+            hueCanvas.width = hueCanvas.offsetWidth;
+            hueCanvas.height = hueCanvas.offsetHeight;
+
+            const grad = ctx.createLinearGradient(0, 0, hueCanvas.width, 0);
+            for (let i = 0; i <= 360; i += 60) {
+                grad.addColorStop(i / 360, `hsl(${i}, 100%, 50%)`);
+            }
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, hueCanvas.width, hueCanvas.height);
+        };
+
+        const renderSpectrum = () => {
+            const ctx = spectrumCanvas.getContext('2d');
+            spectrumCanvas.width = spectrumCanvas.offsetWidth;
+            spectrumCanvas.height = spectrumCanvas.offsetHeight;
+
+            ctx.fillStyle = `hsl(${hue}, 100%, 50%)`;
+            ctx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+
+            const whiteGrad = ctx.createLinearGradient(0, 0, spectrumCanvas.width, 0);
+            whiteGrad.addColorStop(0, 'rgba(255,255,255,1)');
+            whiteGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = whiteGrad;
+            ctx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+
+            const blackGrad = ctx.createLinearGradient(0, 0, 0, spectrumCanvas.height);
+            blackGrad.addColorStop(0, 'rgba(0,0,0,0)');
+            blackGrad.addColorStop(1, 'rgba(0,0,0,1)');
+            ctx.fillStyle = blackGrad;
+            ctx.fillRect(0, 0, spectrumCanvas.width, spectrumCanvas.height);
+        };
+
+        const updateColor = () => {
+            const color = hsvToRgb(hue, sat, val);
+            preview.style.backgroundColor = color;
+            return color;
+        };
+
+        // Open/Close
+        btn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+            renderHue();
+            renderSpectrum();
+            updateColor();
+        });
+
+        closeBtn.addEventListener('click', () => modal.classList.add('hidden'));
+
+        selectBtn.addEventListener('click', () => {
+            setColor(updateColor());
+            App.toast('Custom color mixed! 🎨', 'pink');
+            modal.classList.add('hidden');
+        });
+
+        // Hue Interaction
+        let isDragHue = false;
+        const updateHue = (e) => {
+            const rect = hueCanvas.getBoundingClientRect();
+            let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            x = Math.max(0, Math.min(x, rect.width));
+            hue = (x / rect.width) * 360;
+
+            document.getElementById('hue-cursor').style.left = `${x}px`;
+            renderSpectrum(); // Re-render spectrum with new hue
+            updateColor();
+        };
+
+        hueCanvas.addEventListener('mousedown', e => { isDragHue = true; updateHue(e); });
+        window.addEventListener('mousemove', e => { if (isDragHue) updateHue(e); });
+        window.addEventListener('mouseup', () => isDragHue = false);
+
+        hueCanvas.addEventListener('touchstart', e => { isDragHue = true; updateHue(e); }, { passive: false });
+        window.addEventListener('touchmove', e => { if (isDragHue) updateHue(e); }, { passive: false });
+        window.addEventListener('touchend', () => isDragHue = false);
+
+        // Spectrum Interaction
+        let isDragSpec = false;
+        const updateSpec = (e) => {
+            const rect = spectrumCanvas.getBoundingClientRect();
+            let x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+            let y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+
+            x = Math.max(0, Math.min(x, rect.width));
+            y = Math.max(0, Math.min(y, rect.height));
+
+            sat = (x / rect.width) * 100;
+            val = 100 - (y / rect.height) * 100;
+
+            document.getElementById('spectrum-cursor').style.left = `${x}px`;
+            document.getElementById('spectrum-cursor').style.top = `${y}px`;
+            updateColor();
+        };
+
+        spectrumCanvas.addEventListener('mousedown', e => { isDragSpec = true; updateSpec(e); });
+        window.addEventListener('mousemove', e => { if (isDragSpec) updateSpec(e); });
+        window.addEventListener('mouseup', () => isDragSpec = false);
+
+        spectrumCanvas.addEventListener('touchstart', e => { isDragSpec = true; updateSpec(e); }, { passive: false });
+        window.addEventListener('touchmove', e => { if (isDragSpec) updateSpec(e); }, { passive: false });
+        window.addEventListener('touchend', () => isDragSpec = false);
+    }
+
+    function initHistory() {
+        // Save initial blank state
+        saveState();
+        updateUndoUI();
+
+        document.getElementById('btn-undo').addEventListener('click', undo);
+        document.getElementById('btn-redo').addEventListener('click', redo);
+    }
+
+    // --- Logic ---
+
+    function setColor(newColor) {
+        state.color = newColor;
+        state.mode = 'pen';
+        ctx.strokeStyle = state.color;
+        // Visual feedback? maybe border on selected color
+    }
+
+    function saveState() {
+        // Limit stack size to proper amount (e.g., 20)
+        if (state.undoStack.length > 20) state.undoStack.shift();
+
+        state.undoStack.push(canvas.toDataURL());
+        state.redoStack = []; // Clear redo on new action
+        updateUndoUI();
+    }
+
+    function undo() {
+        if (state.undoStack.length <= 1) return; // Keep initial buffer
+
+        const current = state.undoStack.pop();
+        state.redoStack.push(current);
+
+        const prev = state.undoStack[state.undoStack.length - 1];
+        restoreState(prev);
+        updateUndoUI();
+    }
+
+    function redo() {
+        if (state.redoStack.length === 0) return;
+
+        const next = state.redoStack.pop();
+        state.undoStack.push(next);
+        restoreState(next);
+        updateUndoUI();
+    }
+
+    function restoreState(dataUrl) {
+        const img = new Image();
+        img.src = dataUrl;
+        img.onload = () => {
+            // Must clear full logical size
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            // Draw image to fill visual size
+            ctx.drawImage(img, 0, 0, canvas.width / dpr, canvas.height / dpr);
+        };
+    }
+
+    function updateUndoUI() {
+        const undoBtn = document.getElementById('btn-undo');
+        const redoBtn = document.getElementById('btn-redo');
+        if (undoBtn) undoBtn.disabled = state.undoStack.length <= 1;
+        if (redoBtn) redoBtn.disabled = state.redoStack.length === 0;
+    }
+
+    // --- Drawing Core ---
+
+    ctx.strokeStyle = state.color;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.lineWidth = state.size;
+
+    function getCoords(e) {
+        // Use client coords relative to rect directly
+        const r = canvas.getBoundingClientRect();
+        let x, y;
+
+        if (e.touches && e.touches[0]) {
+            x = e.touches[0].clientX - r.left;
+            y = e.touches[0].clientY - r.top;
+        } else {
+            x = e.clientX - r.left;
+            y = e.clientY - r.top;
+        }
+
+        // No manual scaling needed because ctx.scale(dpr, dpr) handles it!
+        return { x, y };
+    }
+
+    function startDraw(e) {
+        if (e.type === 'touchstart') e.preventDefault(); // Prevent scroll
+
+        const coords = getCoords(e);
+        if (state.mode === 'stamp') {
+            saveState(); // Save BEFORE stamping
+            placeStamp(coords.x, coords.y);
+            return;
+        }
+
+        state.isDrawing = true;
+        [state.lastX, state.lastY] = [coords.x, coords.y];
+
+        // Save state BEFORE starting a new stroke? 
+        // No, typically save AFTER stroke completes
+    }
+
+    function draw(e) {
+        if (!state.isDrawing || state.mode === 'stamp') return;
+        if (e.type === 'touchmove') e.preventDefault();
+
+        const coords = getCoords(e);
+        ctx.beginPath();
+        ctx.moveTo(state.lastX, state.lastY);
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+        [state.lastX, state.lastY] = [coords.x, coords.y];
+    }
+
+    function endDraw(e) {
+        if (state.isDrawing) {
+            state.isDrawing = false;
+            saveState(); // Save AFTER stroke
+        }
+    }
+
+    // Listeners
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mouseleave', endDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', draw, { passive: false });
+    canvas.addEventListener('touchend', endDraw);
+
+    function placeStamp(x, y) {
+        ctx.font = `${state.size * 4}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(state.stampValue, x, y);
+        state.isDrawing = false; // Just in case
+        saveState(); // Double ensure state is saved? No, done in startDraw for click
+    }
+
+    // --- Tool Connections ---
+
+    // Stamp Selection
+    document.querySelectorAll('.stamp-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.mode = 'stamp';
+            state.stampValue = btn.dataset.stamp;
+            App.toast(`Magic stamp: ${state.stampValue}! 🍭`, 'pink');
+        });
+    });
+
+    // Size Slider
+    const sizeSlider = document.getElementById('brush-size');
+    if (sizeSlider) {
+        sizeSlider.addEventListener('input', e => {
+            state.size = e.target.value;
+            ctx.lineWidth = state.size;
+        });
+    }
+
+    document.getElementById('clear-canvas').addEventListener('click', () => {
+        saveState(); // Save before clearing
+        ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+        saveState(); // Save blank state
+        App.toast('Canvas cleared! 🧊', 'blue');
+    });
+
+    document.getElementById('send-doodle').addEventListener('click', async () => {
+        const snapshot = canvas.toDataURL('image/png');
+
+        const sendLogic = async (targetId) => {
+            const sb = App.state.supabase;
+            if (!sb) {
+                App.state.lastDoodle = snapshot;
+                App.toast('Local doodle saved! 🎨', 'pink');
+                App.setView('home');
+                return;
+            }
+
+            try {
+                App.toast('Sending magic... 🚀', 'pink');
+                const user = (await sb.auth.getUser()).data.user;
+
+                // Find destination UUID from kawaii_id
+                const { data: target, error: targetError } = await sb
+                    .from('profiles')
+                    .select('id')
+                    .eq('kawaii_id', targetId)
+                    .single();
+
+                if (targetError || !target) throw new Error("Could not find friend in cloud!");
+
+                const { error } = await sb
+                    .from('doodles')
+                    .insert({
+                        sender_id: user.id,
+                        receiver_id: target.id,
+                        image_data: snapshot
+                    });
+
+                if (error) throw error;
+                App.toast('Doodle sent with magic! 💖', 'pink');
+
+                // --- NATIVE WALLPAPER LOGIC (Cordova) ---
+                if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                    try {
+                        App.toast('Setting Wallpaper... 🖼️', 'blue');
+                        // Cordova plugin exposes 'wallpaper' (lowercase) globally
+                        if (window.wallpaper) {
+                            window.wallpaper.setImageBase64(snapshot);
+                            App.toast('Lock Screen Updated! 🔓✨', 'pink');
+                        } else {
+                            console.warn("Cordova Wallpaper plugin not found");
+                            App.toast('Wallpaper plugin missing ⚠️', 'blue');
+                        }
+                    } catch (err) {
+                        console.error("Wallpaper set failed", err);
+                    }
+                }
+                // ----------------------------------------
+
+                App.state.activeRecipient = null;
+                App.setView('home');
+                App.loadHistory();
+            } catch (e) {
+                console.error(e);
+                App.toast(`Send failed: ${e.message || 'Check database'} 😭`, 'blue');
+            }
+        };
+
+        if (App.state.activeRecipient) {
+            sendLogic(App.state.activeRecipient);
+        } else {
+            App.openFriendPicker((selectedId) => {
+                sendLogic(selectedId);
+            });
+        }
+    });
+
+    if (window.Social) Social.renderRecipientBubbles();
+
+    // Boot up
+    initPalette();
+    initHistory();
+};
