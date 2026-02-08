@@ -71,6 +71,39 @@ const Social = {
         }
     },
 
+    async removeFriend(relId, username) {
+        if (!confirm(`Are you sure you want to remove ${username}? 🥺`)) return;
+
+        const sb = App.state.supabase;
+        if (!sb) return;
+
+        // Optimistic UI Update
+        const previousFriends = [...this.friends];
+        this.friends = this.friends.filter(f => f.relId !== relId);
+        this.renderFriendList();
+
+        // Also remove from active selection if present
+        // We need lookup by Kawaii ID usually, but here we have relId.
+        // Let find the ID first? Or just rely on re-render.
+        // Actually renderRecipientBubbles uses this.friends, so it will update.
+        this.renderRecipientBubbles();
+
+        try {
+            const { error } = await sb
+                .from('friends')
+                .delete()
+                .eq('id', relId);
+
+            if (error) throw error;
+            App.toast('Friend removed 👋', 'pink');
+        } catch (e) {
+            console.error(e);
+            App.toast('Failed to remove friend 😭', 'blue');
+            this.friends = previousFriends; // Revert
+            this.renderFriendList();
+        }
+    },
+
     async sendFriendRequest(targetProfile) {
         const sb = App.state.supabase;
         if (!sb) return;
@@ -228,16 +261,15 @@ const Social = {
         }
 
         list.innerHTML = this.friends.map(f => {
-            const isActive = App.state.activeRecipient === f.id;
             return `
-                <div id="friend-row-${f.id}" class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 ${isActive ? 'border-pink-400 bg-pink-50' : 'border-transparent'} animate-float" style="animation-delay: ${Math.random()}s">
+                <div id="friend-row-${f.id}" class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 border-transparent animate-float" style="animation-delay: ${Math.random()}s">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 ${isActive ? 'bg-pink-400' : 'bg-pink-100'} rounded-full flex items-center justify-center border-2 border-white transition-colors">
-                            <i data-lucide="user" class="w-5 h-5 ${isActive ? 'text-white' : 'text-pink-400'}"></i>
+                        <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white transition-colors">
+                            <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
                         </div>
                         <div>
-                            <p class="font-bold text-sm ${isActive ? 'text-pink-600' : ''}">${f.username}</p>
-                            <p class="text-[10px] ${isActive ? 'text-pink-400' : 'text-pink-300'}">ID: ${f.id} ${f.status === 'pending' ? '(Pending 💌)' : ''}</p>
+                            <p class="font-bold text-sm text-gray-700">${f.username}</p>
+                            <p class="text-[10px] text-pink-300">ID: ${f.id} ${f.status === 'pending' ? '(Pending 💌)' : ''}</p>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -246,9 +278,9 @@ const Social = {
                                 <i data-lucide="check" class="w-4 h-4"></i>
                             </button>
                         ` : ''}
-                        ${f.status === 'accepted' || f.id === 'kawaii-6789' ? `
-                            <button onclick="Social.setActiveRecipient('${f.id}')" class="px-3 py-1 ${isActive ? 'bg-pink-500' : 'bg-blue-400'} text-white rounded-full text-[10px] font-black shadow-sm hover:scale-105 active:scale-95 transition-all">
-                                ${isActive ? 'SELECTED 💖' : 'SELECT 🎨'}
+                        ${f.status === 'accepted' ? `
+                            <button onclick="Social.removeFriend('${f.relId}', '${f.username}')" class="w-8 h-8 bg-red-50 text-red-400 rounded-full flex items-center justify-center shadow-sm hover:bg-red-100 active:scale-95 transition-all">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         ` : ''}
                     </div>
@@ -259,11 +291,15 @@ const Social = {
         if (window.lucide) lucide.createIcons();
     },
 
-    setActiveRecipient(id) {
-        App.state.activeRecipient = id;
-        App.toast('New recipient set! 🎯', 'pink');
-        this.renderFriendList();
-        if (App.state.view === 'draw') this.renderRecipientBubbles();
+    toggleRecipient(id) {
+        const index = App.state.activeRecipients.indexOf(id);
+        if (index === -1) {
+            App.state.activeRecipients.push(id);
+            // App.toast('Friend selected! 🎯', 'pink'); // Too spammy for multi-select
+        } else {
+            App.state.activeRecipients.splice(index, 1);
+        }
+        this.renderRecipientBubbles();
     },
 
     renderRecipientBubbles() {
@@ -278,9 +314,9 @@ const Social = {
         }
 
         container.innerHTML = onlineFriends.map(f => {
-            const isActive = App.state.activeRecipient === f.id;
+            const isActive = App.state.activeRecipients.includes(f.id);
             return `
-                <button onclick="Social.setActiveRecipient('${f.id}')" 
+                <button onclick="Social.toggleRecipient('${f.id}')" 
                         class="flex flex-col items-center gap-1 transition-all ${isActive ? 'scale-110' : 'opacity-60 scale-90'}">
                     <div class="w-10 h-10 rounded-full border-2 ${isActive ? 'border-pink-500 bg-pink-100' : 'border-gray-200 bg-white'} flex items-center justify-center overflow-hidden">
                         <span class="text-xs font-bold ${isActive ? 'text-pink-500' : 'text-gray-400'}">${f.username[0].toUpperCase()}</span>

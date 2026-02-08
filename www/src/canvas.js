@@ -378,72 +378,75 @@ window.initCanvas = function () {
     document.getElementById('send-doodle').addEventListener('click', async () => {
         const snapshot = canvas.toDataURL('image/png');
 
+        // Helper function for single send (No UI updates inside)
         const sendLogic = async (targetId) => {
             const sb = App.state.supabase;
-            if (!sb) {
+            if (!sb) return; // Skip if no cloud
+
+            const user = (await sb.auth.getUser()).data.user;
+            // Find destination UUID from kawaii_id
+            const { data: target, error: targetError } = await sb
+                .from('profiles')
+                .select('id')
+                .eq('kawaii_id', targetId)
+                .single();
+
+            if (targetError || !target) throw new Error(`Friend ${targetId} not found!`);
+
+            const { error } = await sb
+                .from('doodles')
+                .insert({
+                    sender_id: user.id,
+                    receiver_id: target.id,
+                    image_data: snapshot
+                });
+
+            if (error) throw error;
+        };
+
+        if (App.state.activeRecipients.length > 0) {
+            App.toast(`Sending to ${App.state.activeRecipients.length} friends... 🚀`, 'pink');
+
+            try {
+                // Execute all sends in parallel
+                await Promise.all(App.state.activeRecipients.map(id => sendLogic(id)));
+
+                // Success!
+                App.toast('Doodles sent with magic! 💖', 'pink');
+
+                // --- NATIVE WALLPAPER LOGIC (One-time) ---
+                if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                    try {
+                        App.toast('Setting Wallpaper... 🖼️', 'blue');
+                        if (window.wallpaper) {
+                            window.wallpaper.setImageBase64(snapshot);
+                            App.toast('Lock Screen Updated! 🔓✨', 'pink');
+                        }
+                    } catch (err) { console.error("Wallpaper error", err); }
+                }
+
+                // Cleanup
+                App.state.activeRecipients = [];
+                App.setView('home');
+                App.loadHistory();
+
+            } catch (e) {
+                console.error(e);
+                App.toast(`Send failed: ${e.message} 😭`, 'blue');
+            }
+        } else {
+            // Saving local only? Or just require recipient?
+            if (!App.state.supabase) {
                 App.state.lastDoodle = snapshot;
                 App.toast('Local doodle saved! 🎨', 'pink');
                 App.setView('home');
                 return;
             }
 
-            try {
-                App.toast('Sending magic... 🚀', 'pink');
-                const user = (await sb.auth.getUser()).data.user;
-
-                // Find destination UUID from kawaii_id
-                const { data: target, error: targetError } = await sb
-                    .from('profiles')
-                    .select('id')
-                    .eq('kawaii_id', targetId)
-                    .single();
-
-                if (targetError || !target) throw new Error("Could not find friend in cloud!");
-
-                const { error } = await sb
-                    .from('doodles')
-                    .insert({
-                        sender_id: user.id,
-                        receiver_id: target.id,
-                        image_data: snapshot
-                    });
-
-                if (error) throw error;
-                App.toast('Doodle sent with magic! 💖', 'pink');
-
-                // --- NATIVE WALLPAPER LOGIC (Cordova) ---
-                if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-                    try {
-                        App.toast('Setting Wallpaper... 🖼️', 'blue');
-                        // Cordova plugin exposes 'wallpaper' (lowercase) globally
-                        if (window.wallpaper) {
-                            window.wallpaper.setImageBase64(snapshot);
-                            App.toast('Lock Screen Updated! 🔓✨', 'pink');
-                        } else {
-                            console.warn("Cordova Wallpaper plugin not found");
-                            App.toast('Wallpaper plugin missing ⚠️', 'blue');
-                        }
-                    } catch (err) {
-                        console.error("Wallpaper set failed", err);
-                    }
-                }
-                // ----------------------------------------
-
-                App.state.activeRecipient = null;
-                App.setView('home');
-                App.loadHistory();
-            } catch (e) {
-                console.error(e);
-                App.toast(`Send failed: ${e.message || 'Check database'} 😭`, 'blue');
-            }
-        };
-
-        if (App.state.activeRecipient) {
-            sendLogic(App.state.activeRecipient);
-        } else {
-            App.openFriendPicker((selectedId) => {
-                sendLogic(selectedId);
-            });
+            App.toast('Select friends from the list above! 👆', 'blue');
+            const bubbles = document.getElementById('friend-bubbles');
+            if (bubbles) bubbles.classList.add('animate-bounce');
+            setTimeout(() => bubbles?.classList.remove('animate-bounce'), 1000);
         }
     });
 

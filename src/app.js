@@ -12,22 +12,29 @@ const App = {
         session: null,
         lastDoodle: null,
         history: [],
-        activeRecipient: null,
+        activeRecipients: [],
         supabase: null,
         config: {
             url: window.CONFIG?.SUPABASE_URL || localStorage.getItem('sb-url') || '',
             key: window.CONFIG?.SUPABASE_KEY || localStorage.getItem('sb-key') || ''
         },
-        magicClickCount: 0
+        magicClickCount: 0,
+        bootLogs: []
     },
 
     logBoot(msg) {
         console.log(msg);
-        const log = document.getElementById('boot-log');
+        this.state.bootLogs.push(`> ${msg}`);
+        const log = document.getElementById('boot-log-content');
         if (log) {
             log.innerHTML += `> ${msg}<br>`;
             log.scrollTop = log.scrollHeight;
         }
+    },
+
+    toggleReleaseNotes() {
+        const modal = document.getElementById('release-notes-modal');
+        if (modal) modal.classList.toggle('hidden');
     },
 
     handleMagicSequence() {
@@ -65,6 +72,14 @@ const App = {
             // 00. Truly Fullscreen Mode for Android
             if (window.Capacitor && window.Capacitor.isNativePlatform()) {
                 this.enableFullscreenMode();
+                this.enableFullscreenMode();
+                window.Capacitor.Plugins.App.addListener('appStateChange', ({ isActive }) => {
+                    if (isActive) {
+                        this.enableFullscreenMode();
+                        // Redundant check for slower devices
+                        setTimeout(() => this.enableFullscreenMode(), 1000);
+                    }
+                });
             }
 
             // 0. Handle Bridge Redirect for deep linking
@@ -407,7 +422,6 @@ const App = {
                 this.enableFullscreenMode();
 
                 if (user && user.authentication && user.authentication.idToken) {
-                    this.toast('Syncing with Cloud... ✨', 'pink');
                     const { data, error } = await this.state.supabase.auth.signInWithIdToken({
                         provider: 'google',
                         token: user.authentication.idToken
@@ -466,6 +480,7 @@ const App = {
     },
 
     setView(viewName) {
+        if (this.state.view === viewName) return; // Prevent reset if already on view
         this.state.view = viewName;
         this.renderView();
 
@@ -528,251 +543,234 @@ const App = {
         const nav = document.querySelector('nav');
 
         // Force Landing if no session
-        if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget') {
+        if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget' && this.state.view !== 'setup') {
             this.state.view = 'landing';
         }
 
-        switch (this.state.view) {
-            case 'landing':
-                content.innerHTML = this.templates.landing();
-                header.style.display = 'none';
-                nav.style.display = 'none';
-                break;
-            case 'setup':
-                content.innerHTML = this.templates.setup();
-                header.style.display = 'none';
-                nav.style.display = 'none';
-                break;
-            case 'home': content.innerHTML = this.templates.home(); break;
-            case 'draw':
-                content.innerHTML = this.templates.draw();
-                if (window.initCanvas) window.initCanvas();
-                break;
-            case 'friends': content.innerHTML = this.templates.friends(); break;
-            case 'profile': content.innerHTML = this.templates.profile(); break;
-            case 'history': content.innerHTML = this.templates.history(); break;
-            case 'widget': content.innerHTML = this.templates.widget(); break;
-            default: content.innerHTML = `<div>404 - Kawaii Not Found 😭</div>`;
+        // Toggle Header/Nav based on view
+        const hideNav = ['landing', 'setup', 'widget'].includes(this.state.view);
+        if (header) header.style.display = hideNav ? 'none' : 'flex';
+        if (nav) nav.style.display = hideNav ? 'none' : 'flex';
+
+        // Get Template
+        let html = '';
+        if (this.templates[this.state.view]) {
+            html = this.templates[this.state.view]();
+        } else {
+            html = `<div class="flex-center" style="height: 100vh;">404 - Kawaii Not Found 😭</div>`;
+        }
+
+        // Render with Global Transition
+        content.innerHTML = `<div class="view-transition" style="width: 100%; height: 100%;">${html}</div>`;
+
+        // Post-Render Effects
+        if (window.lucide) lucide.createIcons();
+
+        // Specific View Logic
+        if (this.state.view === 'draw') {
+            if (window.initCanvas) {
+                // slight delay to ensure DOM is ready and layout is settled
+                requestAnimationFrame(() => window.initCanvas());
+            }
+        }
+
+        if (this.state.view === 'friends' && window.Social) {
+            Social.renderFriendsList();
         }
     },
 
     templates: {
         landing: () => `
-            <div class="flex flex-col items-center justify-center min-h-[60vh] gap-8 text-center animate-float">
-                <div class="relative">
-                    <div class="w-40 h-40 bg-white/40 rounded-full border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
-                        <i data-lucide="sparkles" class="w-20 h-20 text-yellow-300 animate-pulse"></i>
+            <div class="layout-container flex-center" style="background: var(--primary-gradient)">
+                <div class="card-premium flex-center flex-col gap-8 animate-float" style="background: rgba(255,255,255,0.9); padding: 40px; margin: 20px;">
+                    <img src="src/assets/logo.png" style="width: 120px; height: 120px; border-radius: 30px; box-shadow: 0 10px 30px rgba(255,105,180,0.3);" />
+                    
+                    <div class="text-center">
+                        <h1 style="font-size: 24px; font-weight: 800; color: #333; margin-bottom: 8px;">Kawaii Doodle</h1>
+                        <p style="color: #666; font-size: 14px;">Hand-drawn magic for friends ✨</p>
                     </div>
-                    <div class="absolute -top-4 -right-4 bg-pink-400 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg rotate-12">KAWAII!</div>
+
+                    <button onclick="App.handleGoogleSignIn()" class="btn-premium" style="width: 100%; justify-content: center;">
+                        <span style="font-size: 16px;">Sign in with Google</span>
+                        <i data-lucide="arrow-right" style="width: 18px;"></i>
+                    </button>
+                    
+                    <button onclick="App.toggleReleaseNotes()" class="btn-icon" style="position: absolute; top: 20px; right: 20px;">
+                        <i data-lucide="sparkles" style="color: #FFD700;"></i>
+                    </button>
+                    
+                    <div style="font-size: 10px; color: #999; margin-top: 20px;">
+                        v2.5 • Billion Dollar Polish
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-4xl font-extrabold text-white drop-shadow-lg mb-2">Kawaii Doodle</h1>
-                    <p class="text-white/80 font-medium italic">Hand-drawn magic for friends ✨</p>
-                </div>
-                <button onclick="App.handleGoogleSignIn()" class="bg-white text-pink-500 px-8 py-4 rounded-full font-black text-lg shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3">
-                    <i data-lucide="log-in" class="w-6 h-6"></i> Enter the Magic
-                </button>
-                <p class="text-white/50 text-[10px] max-w-[200px]">Sign in with your Google account to start doodling!</p>
+                 
+                 <div id="release-notes-modal" class="hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-50 flex-center" onclick="this.classList.add('hidden')">
+                    <div class="card-premium" style="width: 80%; max-width: 320px;" onclick="event.stopPropagation()">
+                        <h3 style="font-weight: 800; margin-bottom: 16px; color: #333; display: flex; justify-content: space-between;">
+                            What's New ✨
+                            <button onclick="document.getElementById('release-notes-modal').classList.add('hidden')"><i data-lucide="x" style="width:16px"></i></button>
+                        </h3>
+                        <div style="font-size: 13px; color: #555; line-height: 1.6;">
+                            <p style="margin-bottom:8px">• <b>Fluid Motion</b>: Everything feels alive.</p>
+                            <p style="margin-bottom:8px">• <b>Smart Toasts</b>: Notifications never stack.</p>
+                            <p>• <b>Zero Clipping</b>: Pixel perfect layout.</p>
+                        </div>
+                    </div>
+                 </div>
             </div>
         `,
         setup: () => `
-            <div class="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center">
-                <div class="bg-white/80 p-8 rounded-bubbly shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-float">
-                    <div>
-                        <h2 class="text-2xl font-black text-pink-500 mb-2">Welcome Home! 🏡</h2>
-                        <p class="text-gray-500 text-sm italic">What should your friends call you?</p>
+            <div class="layout-container flex-center">
+                <div class="card-premium flex-center flex-col gap-6" style="width: 100%; max-width: 340px;">
+                    <div class="text-center">
+                        <h2 style="font-size: 24px; font-weight: 800; color: #333; margin-bottom: 8px;">Welcome Home! 🏡</h2>
+                        <p style="color: #666; font-size: 14px;">What should your friends call you?</p>
                     </div>
-                    <div>
-                        <input id="setup-name" type="text" placeholder="Your Sweet Name..." class="w-full bg-pink-50 px-6 py-4 rounded-full border-none focus:ring-4 focus:ring-pink-300 outline-none text-center font-bold text-pink-600 text-lg">
-                    </div>
-                    <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="bg-pink-500 text-white w-full py-4 rounded-full font-black text-lg shadow-lg hover:bg-pink-600 active:scale-95 transition-all">
+                    
+                    <input id="setup-name" type="text" placeholder="Your Sweet Name..." style="width: 100%; padding: 16px; border-radius: 16px; border: 1px solid #eee; background: #f9f9f9; text-align: center; font-size: 18px; font-weight: bold; outline: none; color: #d05e94;">
+                    
+                    <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="btn-premium" style="width: 100%; justify-content: center;">
                         Let's Go! 🚀
                     </button>
                 </div>
             </div>
         `,
         home: () => `
-            <div class="flex flex-col items-center gap-6 animate-float">
-                <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden">
-                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain" />` : `
-                    <div class="text-center p-4">
-                        <i data-lucide="image" class="w-12 h-12 mx-auto text-pink-300 mb-2"></i>
-                        <p class="font-bold text-pink-400 text-sm">Waiting for a doodle...</p>
-                    </div>`}
+            <div class="layout-container" style="justify-content: center; gap: 24px;">
+                <div class="card-premium flex-center" style="height: 320px; position: relative; overflow: hidden; padding: 0;">
+                     ${App.state.lastDoodle ?
+                `<img src="${App.state.lastDoodle}" style="width: 100%; height: 100%; object-fit: contain;" />` :
+                `<div class="text-center" style="opacity: 0.5;">
+                            <i data-lucide="image" style="width: 48px; height: 48px; margin-bottom: 12px; color: #ccc"></i>
+                            <p style="color: #ccc">No doodles yet...</p>
+                         </div>`
+            }
                 </div>
+                
                 <div class="text-center">
-                    <h2 class="text-2xl font-bold text-white drop-shadow-md">Stay Kawaii, ${App.state.user.username.split(' ')[0]}! ✨</h2>
-                    <p class="text-[10px] text-white/70">ID: ${App.state.user.kawaiiId}</p>
+                    <h2 style="font-size: 28px; font-weight: 800; color: #333;">Hello, ${App.state.user.username.split(' ')[0]}</h2>
+                    <p style="color: #888; font-size: 13px; margin-top: 4px; font-family: monospace;">ID: ${App.state.user.kawaiiId}</p>
                 </div>
-                <div class="flex gap-4">
-                    <button onclick="App.setView('draw')" class="btn-bubbly btn-primary hover:scale-105">
-                        <i data-lucide="palette"></i> Doodle! 🎨
+
+                <div class="flex-center" style="gap: 16px;">
+                    <button onclick="App.setView('draw')" class="btn-premium" style="flex: 1; height: 56px;">
+                        <i data-lucide="palette"></i> Doodle
                     </button>
-                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105">
-                        <i data-lucide="history"></i> History 📜
+                    <button onclick="App.setView('history')" class="btn-premium" style="flex: 1; height: 56px; background: white; color: #333; border: 1px solid #eee; box-shadow: none;">
+                        <i data-lucide="history"></i> History
                     </button>
                 </div>
             </div>
         `,
         widget: () => `
-            <div class="h-screen w-full flex items-center justify-center p-4">
-                <div class="w-full aspect-square bg-white/40 backdrop-blur-md rounded-bubbly border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden animate-float">
-                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain p-2" />` : `
-                    <div class="text-center p-4">
-                        <i data-lucide="sparkles" class="w-12 h-12 mx-auto text-yellow-300 mb-2 animate-pulse"></i>
-                        <p class="font-bold text-white text-sm drop-shadow-sm">Magic widget ready...</p>
+             <div class="layout-container flex-center">
+                <div class="card-premium flex-center" style="width: 100%; aspect-ratio: 1;">
+                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" style="width: 100%; height: 100%; object-fit: contain;" />` : `
+                    <div class="text-center">
+                        <i data-lucide="sparkles" style="width: 48px; height: 48px; color: #FFD700; margin-bottom: 8px;" class="pulse-animation"></i>
+                        <p style="font-weight: bold; color: #888;">Widget Ready</p>
                     </div>`}
                 </div>
             </div>
         `,
         draw: () => `
-            <div class="w-full h-full flex flex-col gap-4">
-                <canvas id="drawing-canvas" class="flex-1 bg-white rounded-bubbly border-4 border-pink-200 shadow-inner w-full touch-none"></canvas>
-                
-                <div class="flex flex-col gap-3 bg-white/60 p-4 rounded-bubbly shadow-sm">
-                    <!-- Recipient Selection Bar -->
-                    <div id="recipient-selection" class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-pink-100 mb-1 no-scrollbar">
-                        <span class="text-[10px] font-bold text-pink-400 whitespace-nowrap">SEND TO:</span>
-                        <div id="friend-bubbles" class="flex gap-2">
-                           <p class="text-[10px] text-gray-400">Loading friends...</p>
-                        </div>
-                    </div>
+            <div class="layout-container" style="padding: 16px; gap: 16px;">
+                <!-- Canvas Area -->
+                <div style="flex: 1; position: relative; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white;">
+                    <canvas id="drawing-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+                </div>
 
-                    <!-- Enhanced Color Palette -->
-                    <div class="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-                         <div id="palette-container" class="flex gap-2">
-                            <!-- Injected by initCanvas -->
+                <!-- Tools Card -->
+                <div class="card-premium" style="display: flex; flex-direction: column; gap: 16px;">
+                    
+                    <!-- Recipients (Horizontal Scroll) -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                         <span style="font-size: 10px; font-weight: 800; color: #d05e94; letter-spacing: 1px;">SEND TO</span>
+                         <div style="display: flex; gap: 8px; overflow-x: auto; max-width: 70%;" class="no-scrollbar" id="friend-bubbles">
+                             <div style="font-size: 10px; color: #ccc;">Loading...</div>
                          </div>
-                         <div class="w-[2px] h-6 bg-gray-200 mx-1"></div>
-                         <button id="btn-custom-color" class="relative hover:scale-110 transition-transform">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 border-2 border-white shadow-sm flex items-center justify-center">
-                                <i data-lucide="plus" class="w-4 h-4 text-white"></i>
-                            </div>
-                         </button>
                     </div>
 
-                    <div class="flex justify-between items-center gap-2">
-                        <!-- Undo/Redo -->
-                        <div class="flex gap-1 bg-gray-100 p-1 rounded-full">
-                            <button id="btn-undo" class="w-8 h-8 rounded-full bg-white text-gray-400 shadow-sm flex items-center justify-center hover:text-pink-500 disabled:opacity-50">
-                                <i data-lucide="undo-2" class="w-4 h-4"></i>
-                            </button>
-                            <button id="btn-redo" class="w-8 h-8 rounded-full bg-white text-gray-400 shadow-sm flex items-center justify-center hover:text-pink-500 disabled:opacity-50">
-                                <i data-lucide="redo-2" class="w-4 h-4"></i>
-                            </button>
+                    <!-- Actions Row -->
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="display: flex; gap: 8px;">
+                            <button id="btn-undo" class="btn-icon"><i data-lucide="undo-2" style="width: 18px;"></i></button>
+                            <button id="clear-canvas" class="btn-icon" style="color: #FF6B6B;"><i data-lucide="trash-2" style="width: 18px;"></i></button>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px;" id="palette-container">
+                            <!-- Colors injected here -->
                         </div>
 
-                        <!-- Stamps -->
-                        <div class="flex gap-2 bg-pink-50 p-1 rounded-full px-3">
-                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="💖">💖</button>
-                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="🍭">🍭</button>
-                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="⭐">⭐</button>
-                            <button class="stamp-btn text-xl hover:scale-125 transition-transform" data-stamp="🎀">🎀</button>
-                        </div>
+                        <button id="send-doodle" class="btn-premium" style="padding: 10px 20px; border-radius: 16px; font-size: 14px;">
+                            Send <i data-lucide="send" style="width: 14px;"></i>
+                        </button>
                     </div>
                     
-                    <div class="flex items-center gap-3 border-t border-pink-100 pt-3">
-                        <i data-lucide="brush" class="w-4 h-4 text-gray-400"></i>
-                        <input id="brush-size" type="range" min="2" max="40" value="5" class="flex-1 accent-pink-400">
-                        <button id="clear-canvas" class="p-2 hover:bg-red-50 text-red-400 rounded-full transition-colors" title="Clear All">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                        <button id="send-doodle" class="bg-pink-500 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-pink-600 active:scale-95 transition-all flex items-center gap-2">
-                            <span>Send</span> <i data-lucide="send" class="w-4 h-4"></i>
-                        </button>
-                    </div>
+                    <!-- Hidden Brushes / Stamps (Simplified for now) -->
+                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px;"> 
+                        <div style="display: flex; gap: 12px;">
+                            <button class="stamp-btn" data-stamp="💖" style="font-size: 20px;">💖</button>
+                            <button class="stamp-btn" data-stamp="⭐" style="font-size: 20px;">⭐</button>
+                        </div>
+                        <input id="brush-size" type="range" min="2" max="40" value="5" style="width: 100px; accent-color: #d05e94;">
+                     </div>
                 </div>
             </div>
         `,
         friends: () => `
-            <div class="w-full max-w-md flex flex-col gap-4">
-                <div class="bg-white/60 p-4 rounded-bubbly shadow-sm">
-                    <h3 class="font-bold mb-3 flex items-center gap-2">
-                        <i data-lucide="search" class="w-4 h-4"></i> Find Friends
-                    </h3>
-                    <div class="flex gap-2">
-                        <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." class="flex-1 bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none">
-                        <button id="btn-search-friend" class="bg-pink-400 text-white p-2 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
-                            <i data-lucide="user-plus"></i>
-                        </button>
+             <div class="layout-container">
+                <div class="card-premium" style="margin-bottom: 24px;">
+                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #333;">Find Friends</h2>
+                    <div style="display: flex; gap: 8px;">
+                        <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #eee; outline: none;">
+                        <button id="btn-search-friend" class="btn-premium" style="padding: 0 16px; width: 48px; border-radius: 12px;"><i data-lucide="search" style="width: 20px;"></i></button>
                     </div>
                 </div>
-                <div id="friend-list" class="flex flex-col gap-2">
-                    <!-- Loaded dynamically -->
+                <!-- Dynamic List Container -->
+                <div id="friend-list" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-bottom: 100px;">
+                    <!-- Friend items will render here with card-premium style -->
                 </div>
-            </div>
+             </div>
         `,
         profile: () => `
-            <div class="flex flex-col items-center gap-6 w-full max-w-sm">
-                <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
-                    <i data-lucide="user" class="w-12 h-12 text-gray-300"></i>
-                </div>
-                <div class="text-center">
-                    <p class="text-xl font-bold border-none outline-none py-1">${App.state.user.username}</p>
-                    <p class="text-pink-500 font-bold text-xs">ID: ${App.state.user.kawaiiId}</p>
-                </div>
-                
-                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
-                    <p class="text-[10px] font-medium mb-1">Signed in via Google ✨</p>
-                    <button onclick="App.state.supabase.auth.signOut().then(() => location.reload())" class="bg-gray-100 text-gray-500 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-gray-200 active:scale-95 transition-all">
+            <div class="layout-container flex-center">
+                <div class="card-premium" style="width: 100%; max-width: 320px; text-align: center;">
+                    <div style="width: 80px; height: 80px; background: #fff; border: 2px solid #eee; border-radius: 50%; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                         <i data-lucide="user" style="width: 32px; color: #ccc;"></i>
+                    </div>
+                    <h2 style="font-size: 20px; font-weight: 700; color: #333;">${App.state.user.username}</h2>
+                    
+                    <div style="background: #f9f9f9; padding: 12px; border-radius: 12px; margin: 24px 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee;">
+                        <span style="font-family: monospace; font-size: 14px; color: #555;">${App.state.user.kawaiiId}</span>
+                        <button onclick="navigator.clipboard.writeText('${App.state.user.kawaiiId}').then(() => App.toast('Copied! 📋', 'pink'))" class="btn-icon" style="width: 32px; height: 32px;">
+                            <i data-lucide="copy" style="width: 14px; color: #888;"></i>
+                        </button>
+                    </div>
+
+                    <button onclick="App.state.supabase.auth.signOut().then(() => location.reload())" class="btn-premium" style="background: #eee; color: #555; width: 100%; margin-top: 8px; box-shadow: none;">
                         Sign Out
                     </button>
-                </div>
-
-                <!-- Hidden Technical Settings -->
-                <div id="admin-settings" class="hidden bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
-                    <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 border-b border-gray-100 pb-2">
-                        <i data-lucide="settings" class="w-4 h-4"></i> Account Connection
-                    </h3>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">CONNECTION URL</label>
-                        <input id="sb-url" type="text" value="${App.state.config.url}" placeholder="https://xyz.supabase.co" class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
+                    
+                     <!-- Hidden Admin Settings -->
+                    <div id="admin-settings" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                        <input id="sb-url" type="text" placeholder="URL" value="${App.state.config.url}" style="width: 100%; margin-bottom: 8px; padding: 8px; border: 1px solid #eee; border-radius: 8px;">
+                        <input id="sb-key" type="password" placeholder="Key" value="${App.state.config.key}" style="width: 100%; margin-bottom: 8px; padding: 8px; border: 1px solid #eee; border-radius: 8px;">
+                        <button onclick="App.handleSaveConfig()" class="btn-premium" style="font-size: 12px; padding: 8px;">Save Connections</button>
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">ACCESS KEY</label>
-                        <input id="sb-key" type="password" value="${App.state.config.key}" placeholder="eyJhbG..." class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
-                    </div>
-                    <button onclick="App.handleSaveConfig()" class="bg-pink-400 text-white px-8 py-2 rounded-full font-bold shadow-md hover:bg-pink-500 active:scale-95 transition-all mt-2">
-                        Save Setup
-                    </button>
                 </div>
-                
-                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs flex flex-col gap-2">
-                     <button onclick="navigator.serviceWorker.getRegistrations().then(regs => { for(let reg of regs) reg.unregister(); location.reload(); });" class="bg-yellow-100 text-yellow-600 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-yellow-200 active:scale-95 transition-all flex items-center justify-center gap-2">
-                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Force Update App
-                    </button>
-                    <p class="text-[8px] text-gray-400 text-center">Use this if magic seems stuck!</p>
-                </div>
-
-                <p class="text-center text-[10px] text-green-500 font-bold ${App.state.supabase ? 'opacity-100' : 'opacity-0'}">✓ Multi-device sync active</p>
-                
-                <a href="?view=widget" target="_blank" class="w-full bg-blue-100/50 p-4 rounded-bubbly flex items-center justify-between hover:bg-blue-200/50 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <i data-lucide="layout" class="text-blue-500"></i>
-                        <div class="text-left">
-                            <p class="font-bold text-sm text-blue-600">Widget Mode</p>
-                            <p class="text-[10px] text-blue-400">Perfect for Home Screen!</p>
-                        </div>
-                    </div>
-                    <i data-lucide="chevron-right" class="text-blue-400"></i>
-                </a>
-                <p class="text-center text-[10px] text-gray-500">Your data is stored safely in the cloud.</p>
             </div>
         `,
         history: () => `
-            <div class="w-full max-w-md flex flex-col gap-4">
-                <header class="text-center mb-2">
-                    <h2 class="text-2xl font-black text-white drop-shadow-md">Magic History 📜</h2>
-                    <p class="text-white/70 text-xs italic">All your sent and received doodles ✨</p>
-                </header>
-                <div class="flex flex-col gap-4">
-                    ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
+            <div class="layout-container">
+                <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 16px; padding-left: 8px; color: #333;">History</h2>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; overflow-y: auto; padding-bottom: 20px;">
+                    ${App.state.history.length === 0 ? `<p style="grid-column: span 2; text-align: center; color: #999; margin-top: 40px;">No magic yet...</p>` :
                 App.state.history.map(d => `
-                        <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
-                            <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
-                            <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
-                                <span>${d.sender_id === App.state.session.user.id ? 'SENT 📤' : 'RECEIVED 📥'}</span>
-                                <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
+                        <div class="card-premium" style="padding: 8px; border-radius: 16px; display: flex; flex-direction: column;">
+                            <img src="${d.image_data}" style="width: 100%; aspect-ratio: 1; object-fit: contain; background: white; border-radius: 12px; margin-bottom: 8px; border: 1px solid #eee;" />
+                            <div style="font-size: 10px; color: #888; text-align: right; margin-top: auto;">
+                                ${new Date(d.created_at).toLocaleDateString()}
                             </div>
                         </div>
                     `).join('')}
@@ -781,32 +779,83 @@ const App = {
         `
     },
 
+    // Elite Haptics Helper
+    haptic(type = 'light') {
+        if (!navigator.vibrate) return;
+        if (type === 'success') navigator.vibrate(10); // Tiny tick
+        if (type === 'medium') navigator.vibrate(20);
+        if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
+    },
+
+    // --- Elite Tier Singleton Toast ---
     toast(message, type = 'info') {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+
+        const existing = container.querySelector('.toast-pill');
+
+        // Pulse logic for Singleton
+        if (existing) {
+            const textSpan = existing.querySelector('span');
+            if (textSpan) textSpan.innerText = message;
+
+            // Trigger reflow for pulse animation
+            existing.classList.remove('pulse-animation');
+            void existing.offsetWidth; // Force reflow
+            existing.classList.add('pulse-animation');
+
+            // Reset timeout
+            clearTimeout(existing.dismissTimeout);
+            existing.dismissTimeout = setTimeout(() => {
+                existing.style.opacity = '0';
+                existing.style.transform = 'translateY(-20px)';
+                setTimeout(() => existing.remove(), 300);
+            }, 3000);
+            return;
+        }
+
+        // Create new Pill
         const toast = document.createElement('div');
-        toast.className = `toast-enter glass px-6 py-3 rounded-full shadow-lg mb-2 font-bold flex items-center gap-2 text-white z-[100]`;
-        if (type === 'pink') toast.classList.add('bg-pink-500');
-        else if (type === 'blue') toast.classList.add('bg-blue-500');
-        else toast.classList.add('bg-gray-800');
-        toast.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4"></i> ${message}`;
-        const container = document.getElementById('toasts');
+        toast.className = 'toast-pill';
+
+        // Icon based on type
+        const iconName = type === 'pink' || type === 'success' ? 'sparkles' : 'info';
+        const iconColor = type === 'pink' ? '#FF69B4' : '#4A90E2';
+
+        toast.innerHTML = `
+            <i data-lucide="${iconName}" style="color: ${iconColor}; width: 18px; height: 18px;"></i>
+            <span class="toast-message">${message}</span>
+        `;
+
         container.appendChild(toast);
         if (window.lucide) lucide.createIcons();
-        setTimeout(() => {
+
+        toast.dismissTimeout = setTimeout(() => {
             toast.style.opacity = '0';
             toast.style.transform = 'translateY(-20px)';
-            toast.style.transition = 'all 0.5s ease-out';
-            setTimeout(() => toast.remove(), 500);
+            setTimeout(() => toast.remove(), 300);
         }, 3000);
     },
 
     createSparkle(x, y) {
+        // High-end particle logic could go here, keeping simple for now to focus on UI
         const s = document.createElement('div');
-        s.className = 'sparkle-particle';
-        s.style.left = `${x - 7}px`;
-        s.style.top = `${y - 7}px`;
-        s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', 'white'][Math.floor(Math.random() * 4)];
+        s.style.position = 'fixed';
+        s.style.left = x + 'px';
+        s.style.top = y + 'px';
+        s.style.width = '6px';
+        s.style.height = '6px';
+        s.style.backgroundColor = '#FFD1DC';
+        s.style.borderRadius = '50%';
+        s.style.pointerEvents = 'none';
+        s.className = 'view-transition'; // Reuse fade animation
         document.body.appendChild(s);
-        setTimeout(() => s.remove(), 800);
+        setTimeout(() => s.remove(), 500);
     },
 
     async openFriendPicker(callback) {
@@ -858,7 +907,12 @@ const App = {
 
     handlePickerSelect(id, username) {
         document.getElementById('recipient-modal').classList.add('hidden');
-        this.state.activeRecipient = id;
+
+        // Multi-select support for legacy picker
+        if (!this.state.activeRecipients.includes(id)) {
+            this.state.activeRecipients.push(id);
+        }
+
         this.toast(`Selected ${username}! 🎯`, 'pink');
         // Update UI if needed
         if (window.Social) Social.renderRecipientBubbles();
@@ -901,25 +955,14 @@ window.handleSearchFriend = () => {
 
 window.addEventListener('DOMContentLoaded', () => {
     App.init();
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-            .then(reg => {
-                console.log('✨ Service Worker Registered!', reg);
-                reg.addEventListener('updatefound', () => {
-                    const newWorker = reg.installing;
-                    newWorker.addEventListener('statechange', () => {
-                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                            App.toast('New magic found! Updating... 🔄', 'pink');
-                        }
-                    });
-                });
-            })
-            .catch(err => console.log('😭 Service Worker Failed!', err));
 
-        // Auto-reload when new SW takes control
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-            console.log('🔄 New Service Worker took control, reloading...');
-            window.location.reload();
+    // 🛑 FORCE UNREGISTER SERVICE WORKER TO FIX CACHE ISSUES
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let registration of registrations) {
+                console.log('🗑️ Unregistering SW to force update:', registration);
+                registration.unregister();
+            }
         });
     }
 });

@@ -5,6 +5,7 @@
     "server": {
         "androidScheme": "https"
     },
+    "backgroundColor": "#FFD1DC",
     "plugins": {
         "GoogleAuth": {
             "scopes": [
@@ -12,7 +13,7 @@
                 "email"
             ],
             "serverClientId": "122450948192-kpqrglufceoa8d1554n9nq2ca0chk6iu.apps.googleusercontent.com",
-            "forceCodeForRefreshToken": true
+            "forceCodeForRefreshToken": false
         }
     }
 }
