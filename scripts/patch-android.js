@@ -94,9 +94,30 @@ function patchStrings() {
     let content = fs.readFileSync(filePath, 'utf8');
     if (!content.includes('server_client_id')) {
         // Use the hardcoded ID we know is correct
-        content = content.replace('</resources>', '    <string name="server_client_id">122450948192-kpqrglufceoa8d1554n9nq2ca0chk6iu.apps.googleusercontent.com</string>\n</resources>');
+        content = content.replace('</resources>', '    <string name="server_client_id">338129743756-1u308evrhbor1sn79u8u7ceqlh8acvos.apps.googleusercontent.com</string>\n</resources>');
         fs.writeFileSync(filePath, content);
         console.log("✅ Patched strings.xml (Google Auth)");
+    }
+}
+
+
+function patchGradle() {
+    const filePath = 'android/capacitor-cordova-android-plugins/build.gradle';
+    if (!fs.existsSync(filePath)) {
+        console.log(`Skipping ${filePath} - not found`);
+        return;
+    }
+    let content = fs.readFileSync(filePath, 'utf8');
+    if (content.includes('flatDir')) {
+        // Remove the flatDir block
+        content = content.replace(/flatDir\s*{[^}]*dirs\s*'src\/main\/libs',\s*'libs'\s*}/g, '');
+        // Clean up empty lines if any
+        content = content.replace(/repositories\s*{\s*google\(\)\s*mavenCentral\(\)\s*}/, 'repositories {\n        google()\n        mavenCentral()\n    }');
+
+        fs.writeFileSync(filePath, content);
+        console.log("✅ Patched capacitor-cordova-android-plugins/build.gradle (AGPBI warning)");
+    } else {
+        console.log("ℹ️ Gradle file already patched");
     }
 }
 
@@ -104,3 +125,4 @@ patchManifest();
 patchStyles();
 patchMainActivity();
 patchStrings();
+patchGradle();

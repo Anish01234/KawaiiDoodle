@@ -37,7 +37,37 @@ window.initCanvas = function () {
         '#FFC6FF', '#BDB2FF', '#FFFFFC', '#D0D0D0', '#808080', '#000000'
     ];
 
+    // --- Restore Pending Draft/Doodle ---
+    if (App.state.pendingDoodle) {
+        const img = new Image();
+        img.src = App.state.pendingDoodle;
+        img.onload = () => {
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            ctx.drawImage(img, 0, 0, canvas.width / dpr, canvas.height / dpr);
+            saveState(); // Save as initial state for undo
+            App.toast('Doodle loaded for editing! ✏️', 'pink');
+        };
+        App.state.pendingDoodle = null;
+    }
+
     // --- Init Methods ---
+
+    // Save Draft Logic
+    const saveBtn = document.getElementById('save-draft');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+            const data = canvas.toDataURL();
+            App.saveDraft(data);
+            // const drafts = JSON.parse(localStorage.getItem('kawaii-drafts') || '[]');
+            // drafts.unshift({ id: Date.now(), image_data: data, created_at: new Date().toISOString() });
+            // localStorage.setItem('kawaii-drafts', JSON.stringify(drafts));
+            // App.toast('Draft saved to History! 📂', 'pink');
+
+            // Optional: Animate button
+            saveBtn.classList.add('scale-125', 'text-pink-500');
+            setTimeout(() => saveBtn.classList.remove('scale-125', 'text-pink-500'), 200);
+        });
+    }
 
     function initPalette() {
         const container = document.getElementById('palette-container');
@@ -217,9 +247,11 @@ window.initCanvas = function () {
 
     function setColor(newColor) {
         state.color = newColor;
-        state.mode = 'pen';
+        // Don't auto-switch if we are in fill mode
+        if (state.mode !== 'fill') {
+            state.mode = 'pen';
+        }
         ctx.strokeStyle = state.color;
-        // Visual feedback? maybe border on selected color
     }
 
     function saveState() {
@@ -294,9 +326,19 @@ window.initCanvas = function () {
     }
 
     function startDraw(e) {
-        if (e.type === 'touchstart') e.preventDefault(); // Prevent scroll
+        if (e.type === 'touchstart') {
+            // e.preventDefault(); // Don't block everything, we need clicks for buttons? No, buttons are outside canvas
+            e.preventDefault();
+        }
 
         const coords = getCoords(e);
+
+        if (state.mode === 'fill') {
+            floodFill(coords.x, coords.y, state.color);
+            // Do NOT reset mode to pen
+            return;
+        }
+
         if (state.mode === 'stamp') {
             saveState(); // Save BEFORE stamping
             placeStamp(coords.x, coords.y);
@@ -305,9 +347,6 @@ window.initCanvas = function () {
 
         state.isDrawing = true;
         [state.lastX, state.lastY] = [coords.x, coords.y];
-
-        // Save state BEFORE starting a new stroke? 
-        // No, typically save AFTER stroke completes
     }
 
     function draw(e) {
@@ -348,7 +387,93 @@ window.initCanvas = function () {
         saveState(); // Double ensure state is saved? No, done in startDraw for click
     }
 
+    // --- Flood Fill Logic (Optimized) ---
+    function floodFill(startX, startY, fillColor) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        const width = canvas.width;
+        const height = canvas.height;
+
+        const pixelX = Math.round(startX * dpr);
+        const pixelY = Math.round(startY * dpr);
+
+        if (pixelX < 0 || pixelX >= width || pixelY < 0 || pixelY >= height) return;
+
+        const startIdx = (pixelY * width + pixelX) * 4;
+        const targetR = data[startIdx];
+        const targetG = data[startIdx + 1];
+        const targetB = data[startIdx + 2];
+        const targetA = data[startIdx + 3];
+
+        const parseColor = (str) => {
+            if (str.startsWith('#')) {
+                const bigint = parseInt(str.slice(1), 16);
+                return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255, 255];
+            } else if (str.startsWith('rgb')) {
+                const match = str.match(/\d+/g);
+                return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2]), 255];
+            }
+            return [0, 0, 0, 255];
+        };
+        const [fillR, fillG, fillB, fillA] = parseColor(fillColor);
+
+        if (targetR === fillR && targetG === fillG && targetB === fillB && targetA === fillA) return;
+
+        const stack = [[pixelX, pixelY]];
+
+        while (stack.length > 0) {
+            const [x, y] = stack.pop();
+            const idx = (y * width + x) * 4;
+
+            data[idx] = fillR;
+            data[idx + 1] = fillG;
+            data[idx + 2] = fillB;
+            data[idx + 3] = fillA;
+
+            // Check neighbors
+            const neighbors = [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]];
+            for (const [nx, ny] of neighbors) {
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+                    const nIdx = (ny * width + nx) * 4;
+                    if (data[nIdx] === targetR && data[nIdx + 1] === targetG &&
+                        data[nIdx + 2] === targetB && data[nIdx + 3] === targetA) {
+
+                        // FILL NOW to prevent adding same pixel multiple times
+                        data[nIdx] = fillR;
+                        data[nIdx + 1] = fillG;
+                        data[nIdx + 2] = fillB;
+                        data[nIdx + 3] = fillA;
+
+                        stack.push([nx, ny]);
+                    }
+                }
+            }
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        saveState();
+    }
+
     // --- Tool Connections ---
+
+    // Fill Tool Button
+    const fillBtn = document.getElementById('btn-fill-tool');
+    if (fillBtn) {
+        fillBtn.addEventListener('click', () => {
+            const icon = fillBtn.querySelector('svg') || fillBtn.querySelector('i');
+
+            if (state.mode === 'fill') {
+                state.mode = 'pen';
+                if (icon) icon.classList.remove('text-pink-500');
+                fillBtn.classList.remove('border-pink-300');
+            } else {
+                state.mode = 'fill';
+                // App.toast('Paint Bucket Ready! 🪣', 'pink');
+                if (icon) icon.classList.add('text-pink-500');
+                fillBtn.classList.add('border-pink-300');
+            }
+        });
+    }
 
     // Stamp Selection
     document.querySelectorAll('.stamp-btn').forEach(btn => {
@@ -384,24 +509,65 @@ window.initCanvas = function () {
             if (!sb) return; // Skip if no cloud
 
             const user = (await sb.auth.getUser()).data.user;
-            // Find destination UUID from kawaii_id
+
+            // 1. Find destination UUID & FCM Token from kawaii_id
             const { data: target, error: targetError } = await sb
                 .from('profiles')
-                .select('id')
+                .select('id, fcm_token') // Fetch token too!
                 .eq('kawaii_id', targetId)
                 .single();
 
             if (targetError || !target) throw new Error(`Friend ${targetId} not found!`);
 
-            const { error } = await sb
+            // 2. Insert Doodle
+            const { data: doodleData, error } = await sb
                 .from('doodles')
                 .insert({
                     sender_id: user.id,
                     receiver_id: target.id,
                     image_data: snapshot
-                });
+                })
+                .select('id')
+                .single();
 
             if (error) throw error;
+
+            // 3. Trigger Push Notification (Wake up friend!)
+            if (target.fcm_token) {
+                // AUTH REQUIRED: You must put your Firebase Server Key here!
+                const SERVER_KEY = 'AIzaSyALRaXqvJZk7Xogiwmqgnlgx0KhKjlHtZ8';
+
+                if (SERVER_KEY === 'YOUR_FIREBASE_SERVER_KEY') {
+                    console.warn("⚠️ Push skipped: Please add your Firebase Server Key in canvas.js");
+                } else {
+                    try {
+                        console.log("🚀 Invoking Supabase Edge Function: 'push'...");
+                        const { data: funcData, error: funcError } = await App.state.supabase.functions.invoke('push', {
+                            body: {
+                                to: target.fcm_token,
+                                title: 'New Magic! ✨',
+                                body: `You received a doodle from ${App.state.user.username}!`,
+                                data: {
+                                    type: 'doodle',
+                                    sender: App.state.user.username,
+                                    doodle_id: doodleData?.id, // Added ID!
+                                    click_action: 'FCM_PLUGIN_ACTIVITY'
+                                }
+                            }
+                        });
+
+                        if (funcError) {
+                            console.error("❌ Edge Function Error:", funcError);
+                            App.toast('Push Server Error ☁️', 'blue');
+                        } else {
+                            console.log("✅ Edge Function Result:", funcData);
+                            App.toast('Notification sent! 🚀', 'pink');
+                        }
+                    } catch (pushErr) {
+                        console.error("Push invocation failed:", pushErr);
+                    }
+                }
+            }
         };
 
         if (App.state.activeRecipients.length > 0) {
@@ -414,16 +580,8 @@ window.initCanvas = function () {
                 // Success!
                 App.toast('Doodles sent with magic! 💖', 'pink');
 
-                // --- NATIVE WALLPAPER LOGIC (One-time) ---
-                if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-                    try {
-                        App.toast('Setting Wallpaper... 🖼️', 'blue');
-                        if (window.wallpaper) {
-                            window.wallpaper.setImageBase64(snapshot);
-                            App.toast('Lock Screen Updated! 🔓✨', 'pink');
-                        }
-                    } catch (err) { console.error("Wallpaper error", err); }
-                }
+                // Success!
+                App.toast('Doodles sent with magic! 💖', 'pink');
 
                 // Cleanup
                 App.state.activeRecipients = [];

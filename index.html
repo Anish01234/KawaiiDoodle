@@ -3,7 +3,30 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <style>
+        :root {
+            /* Support for high DPI / zoomed screens */
+            --app-height: 100%;
+        }
+
+        html,
+        body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            /* Force text not to blow up too much on zoomed devices */
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+
+        #app {
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
     <title>Kawaii Doodle - Social Drawing</title>
     <!-- Tailwind Play CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -33,7 +56,7 @@
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2.7">
     <link rel="manifest" href="manifest.json">
     <!-- Failsafe Error Handler -->
     <script>
@@ -51,6 +74,18 @@
                 </div>`;
         };
     </script>
+    <style>
+        /* Minimized Nav State for Draw Mode */
+        .nav-minimized {
+            right: 1rem !important;
+            left: auto !important;
+            transform: scale(0.7) !important;
+            opacity: 0.8 !important;
+            padding: 8px 16px !important;
+            border-radius: 999px !important;
+            gap: 0 !important;
+        }
+    </style>
 </head>
 
 <body class="bg-kawaii-pink min-h-screen font-['Quicksand'] text-gray-700 overflow-hidden">
@@ -87,16 +122,16 @@
             </div>
         </main>
 
-        <!-- Dynamic Navigation -->
+        <!-- Dynamic Navigation (Floating Pill) -->
         <nav id="app-nav"
-            class="flex gap-4 justify-center bg-white/80 backdrop-blur-lg p-3 rounded-t-bubbly shadow-lg border-t border-white/20">
+            class="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-8 justify-center bg-white/70 backdrop-blur-xl px-10 py-4 rounded-full shadow-2xl border border-white/50 z-[90] transition-all hover:scale-105 hover:bg-white/80">
             <button id="nav-draw"
-                class="w-14 h-14 bg-pink-400 text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all">
-                <i data-lucide="pen-tool"></i>
+                class="w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-400 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-pink-300/50 hover:-translate-y-1 transition-all">
+                <i data-lucide="pen-tool" class="w-6 h-6"></i>
             </button>
             <button id="nav-home"
-                class="w-14 h-14 bg-blue-400 text-white rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all">
-                <i data-lucide="home"></i>
+                class="w-12 h-12 bg-white text-gray-400 rounded-full flex items-center justify-center shadow-sm border border-gray-100 hover:text-blue-400 hover:border-blue-200 hover:-translate-y-1 transition-all">
+                <i data-lucide="home" class="w-6 h-6"></i>
             </button>
         </nav>
 
@@ -106,8 +141,7 @@
         <!-- Recipient Picker Modal -->
         <div id="recipient-modal"
             class="hidden fixed inset-0 bg-black/50 z-[200] flex items-center justify-center backdrop-blur-sm p-4">
-            <div
-                class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform transition-all scale-100 animate-float">
+            <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl transform transition-all scale-100">
                 <h3 class="text-xl font-black text-center text-pink-500 mb-4">Send to whom? 💌</h3>
                 <div id="modal-friend-list" class="flex flex-col gap-2 max-h-[60vh] overflow-y-auto no-scrollbar">
                     <!-- Dynamic List -->
@@ -119,14 +153,79 @@
             </div>
         </div>
 
+        <!-- Custom Color Picker Modal -->
+        <div id="color-picker-modal"
+            class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center backdrop-blur-sm p-4 animate-fade-in">
+            <div class="bg-white w-full max-w-sm rounded-[2rem] p-6 shadow-2xl flex flex-col gap-4 relative">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-black text-xl text-gray-700">Mix Magic Color! 🎨</h3>
+                    <button id="close-picker" class="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5 text-gray-500"></i>
+                    </button>
+                </div>
+
+                <!-- Saturation/Value Area -->
+                <div class="relative w-full h-48 rounded-xl overflow-hidden shadow-inner cursor-crosshair touch-none">
+                    <canvas id="picker-spectrum" class="w-full h-full"></canvas>
+                    <div id="spectrum-cursor"
+                        class="absolute w-4 h-4 rounded-full border-2 border-white shadow-md -ml-2 -mt-2 pointer-events-none transform transition-transform duration-75"
+                        style="top: 0; left: 0; background-color: transparent;"></div>
+                </div>
+
+                <!-- Hue Slider -->
+                <div class="relative w-full h-8 rounded-full overflow-hidden shadow-inner cursor-ew-resize touch-none">
+                    <canvas id="picker-hue" class="w-full h-full"></canvas>
+                    <div id="hue-cursor"
+                        class="absolute w-2 h-full bg-white border-x border-gray-300 shadow-md -ml-1 pointer-events-none"
+                        style="left: 0;"></div>
+                </div>
+
+                <!-- Preview & Select -->
+                <div class="flex gap-4 mt-2">
+                    <div id="preview-color" class="w-16 h-12 rounded-xl shadow-inner border border-gray-200 bg-white">
+                    </div>
+                    <button id="select-custom-color"
+                        class="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold rounded-xl shadow-lg hover:shadow-pink-500/30 active:scale-95 transition-all">
+                        Pick Color! ✨
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Kawaii Confirm Modal -->
+        <div id="confirm-modal"
+            class="hidden fixed inset-0 bg-black/60 z-[250] flex items-center justify-center backdrop-blur-md p-6 animate-fade-in">
+            <div
+                class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl transform transition-all scale-100 border-4 border-pink-100 flex flex-col items-center text-center gap-6">
+                <div class="w-20 h-20 bg-pink-50 rounded-full flex items-center justify-center text-4xl">
+                    ✨
+                </div>
+                <div>
+                    <h3 id="confirm-title" class="text-xl font-black text-pink-500 mb-2">Magic Request?</h3>
+                    <p id="confirm-message" class="text-gray-500 font-medium">Are you sure you want to do this magic?
+                    </p>
+                </div>
+                <div class="flex gap-3 w-full">
+                    <button id="confirm-cancel"
+                        class="flex-1 py-4 bg-gray-100 rounded-2xl font-bold text-gray-500 hover:bg-gray-200 active:scale-95 transition-all">
+                        Not now 🌸
+                    </button>
+                    <button id="confirm-ok"
+                        class="flex-1 py-4 bg-pink-500 text-white rounded-2xl font-black shadow-lg shadow-pink-200 hover:bg-pink-600 active:scale-95 transition-all">
+                        Yes! ✨
+                    </button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <!-- Scripts -->
     <script src="capacitor.js"></script>
-    <script src="src/canvas.js"></script>
-    <script src="src/social.js"></script>
-    <script src="src/config.js"></script>
-    <script src="src/app.js"></script>
+    <script src="src/canvas.js?v=2.7"></script>
+    <script src="src/social.js?v=2.7"></script>
+    <script src="src/config.js?v=2.7"></script>
+    <script src="src/app.js?v=2.7"></script>
 
     <script>
         // Initialize Lucide Icons

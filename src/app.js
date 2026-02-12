@@ -7,7 +7,8 @@ const App = {
         view: 'home',
         user: {
             username: localStorage.getItem('user-name') || '',
-            kawaiiId: localStorage.getItem('user-id') || ''
+            kawaiiId: localStorage.getItem('user-id') || '',
+            avatarUrl: localStorage.getItem('user-avatar') || ''
         },
         session: null,
         lastDoodle: null,
@@ -19,7 +20,34 @@ const App = {
             key: window.CONFIG?.SUPABASE_KEY || localStorage.getItem('sb-key') || ''
         },
         magicClickCount: 0,
+        notificationsEnabled: false,
         bootLogs: []
+    },
+
+    enableDebugConsole() {
+        if (window.consoleOverridden) return;
+        window.consoleOverridden = true;
+
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        const append = (type, args) => {
+            const msg = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+            App.state.bootLogs.push(`[${type}] ${msg}`);
+            // Also update UI if visible
+            const logEl = document.getElementById('boot-log-content');
+            if (logEl) {
+                logEl.innerHTML += `<div class="text-[10px] ${type === 'error' ? 'text-red-400' : 'text-green-300'} font-mono mb-1 border-b border-white/5 pb-1">> ${msg}</div>`;
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+        };
+
+        console.log = (...args) => { originalLog.apply(console, args); append('log', args); };
+        console.error = (...args) => { originalError.apply(console, args); append('error', args); };
+        console.warn = (...args) => { originalWarn.apply(console, args); append('warn', args); };
+
+        console.log("🐞 Debug Console Active!");
     },
 
     logBoot(msg) {
@@ -52,6 +80,7 @@ const App = {
     },
 
     async init() {
+        this.enableDebugConsole();
         this.logBoot("✨ Kawaii App Initializing...");
         this.logBoot(`Capacitor: ${window.Capacitor ? 'LOADED' : 'MISSING'}`);
         if (window.Capacitor) {
@@ -174,8 +203,12 @@ const App = {
                     if (profile && profile.username && profile.kawaii_id) {
                         this.state.user.username = profile.username;
                         this.state.user.kawaiiId = profile.kawaii_id;
+                        this.state.user.avatarUrl = profile.avatar_url || localStorage.getItem('user-avatar') || '';
+
                         localStorage.setItem('user-name', profile.username);
                         localStorage.setItem('user-id', profile.kawaii_id);
+                        if (this.state.user.avatarUrl) localStorage.setItem('user-avatar', this.state.user.avatarUrl);
+
                         this.loadAppData();
                     } else {
                         // Logged in but profile is missing or blank? Go to setup!
@@ -203,6 +236,20 @@ const App = {
             this.renderView();
             this.finalizeInit();
 
+            // 3. Initialize Push (FCM) & Google Auth
+            if (window.Capacitor.isNativePlatform()) {
+                setTimeout(() => {
+                    this.initPush();
+                    // Pre-initialize Google Auth for snappier login
+                    const { GoogleAuth } = window.Capacitor.Plugins;
+                    if (GoogleAuth) {
+                        GoogleAuth.initialize({
+                            clientId: '338129743756-1u308evrhbor1sn79u8u7ceqlh8acvos.apps.googleusercontent.com',
+                        }).catch(e => console.log("GoogleAuth Init deferred:", e));
+                    }
+                }, 2000);
+            }
+
         } catch (e) {
             console.error("Critical Init Error:", e);
             this.toast('Magic startup failed... trying offline mode 🩹', 'blue');
@@ -210,6 +257,163 @@ const App = {
             this.renderView();
             this.finalizeInit();
         }
+    },
+
+    async checkIfPushEnabled() {
+        const { PushNotifications } = window.Capacitor.Plugins;
+        if (!PushNotifications) return false;
+        try {
+            const status = await PushNotifications.checkPermissions();
+            this.state.notificationsEnabled = (status.receive === 'granted');
+            return this.state.notificationsEnabled;
+        } catch (e) { return false; }
+    },
+
+    async requestPushPermission() {
+        const { PushNotifications, App: CapApp } = window.Capacitor.Plugins;
+        if (!PushNotifications) return;
+
+        let status = await PushNotifications.checkPermissions();
+
+        if (status.receive === 'prompt') {
+            status = await PushNotifications.requestPermissions();
+        }
+
+        if (status.receive !== 'granted') {
+            // If explicitly denied, we must guide to settings
+            this.confirmKawaii({
+                title: "Magic Blocked! 🔕",
+                message: "Notifications are blocked. Open settings to enable magic?",
+                okText: "Open Settings ⚙️",
+                onConfirm: async () => {
+                    console.log("🚀 Magic Signal: Attempting to open app settings...");
+                    try {
+                        const Cap = window.Capacitor;
+                        const appPlugin = Cap?.Plugins?.App;
+
+                        // Try multiple method names for robustness
+                        const opener = appPlugin?.openAppSettings || appPlugin?.openSettings;
+
+                        if (typeof opener === 'function') {
+                            await opener.call(appPlugin);
+                        } else {
+                            console.warn("⚠️ settings_method_missing");
+                            this.showPermissionGuide();
+                        }
+                    } catch (e) {
+                        console.error("❌ settings_fail:", e);
+                        this.showPermissionGuide();
+                    }
+                }
+            });
+        } else if (status.receive === 'granted') {
+            this.toast("Magic is already active! 📡✨", "pink");
+            this.state.notificationsEnabled = true;
+            this.renderView();
+        }
+        // If permission was granted (either initially or after prompt), proceed to initPush
+        if (status.receive === 'granted') {
+            this.initPush();
+        }
+    },
+
+    showPermissionGuide() {
+        this.confirmKawaii({
+            title: "Magic Activation Guide 📡",
+            message: "Automatic setup paused! ✨\n\nTo hear your friends' magic, please click 'Open Settings' and enable 'Notifications' for Kawaii Doodle.\n\nIt only takes 5 seconds! 🌸",
+            okText: "Open Settings ⚙️",
+            onConfirm: async () => {
+                try {
+                    const Cap = window.Capacitor;
+                    const appPlugin = Cap?.Plugins?.App;
+                    const opener = appPlugin?.openAppSettings || appPlugin?.openSettings;
+
+                    if (typeof opener === 'function') {
+                        await opener.call(appPlugin);
+                    } else {
+                        // Clear description for the user
+                        this.toast("Please open Phone Settings > Apps > Kawaii Doodle > Notifications! 🎨", "blue");
+                    }
+                } catch (err) {
+                    console.error("Settings Guide Fail:", err);
+                    this.toast("Manual setting required! ⚙️", "blue");
+                }
+            }
+        });
+    },
+
+    async requestAllPermissions() {
+        this.toast('Syncing all magic realms... 🔮', 'pink');
+        try {
+            await this.requestPushPermission();
+            // Trigger any other permission prompts if needed
+            if (window.navigator.vibrate) window.navigator.vibrate(20);
+            this.toast('All systems Kawaii! 🌈', 'pink');
+        } catch (e) { console.error(e); }
+    },
+
+    async initPush() {
+        const { PushNotifications } = window.Capacitor.Plugins;
+        if (!PushNotifications) return;
+
+        console.log("🔔 Initializing Push Notifications...");
+
+        // Check & Update Status
+        let status = await PushNotifications.checkPermissions();
+        if (status.receive === 'prompt') {
+            // Only auto-request if we are in a 'fresh' state where it's appropriate
+            // For now, let's try to request, but it might resolve to prompt
+            status = await PushNotifications.requestPermissions();
+        }
+
+        if (status.receive !== 'granted') {
+            console.log("🔕 Push permission not granted");
+            this.state.notificationsEnabled = false;
+            // Render view to show the button
+            if (this.state.view === 'home') this.renderView();
+            return;
+        }
+
+        this.state.notificationsEnabled = true;
+
+        // Register
+        await PushNotifications.register();
+
+        // On success
+        PushNotifications.addListener('registration', async (token) => {
+            console.log('🔔 Push Token:', token.value);
+            // Save to Supabase (User needs to add 'fcm_token' column!)
+            if (this.state.session) {
+                try {
+                    await this.state.supabase
+                        .from('profiles')
+                        .update({ fcm_token: token.value })
+                        .eq('id', this.state.session.user.id);
+                    console.log("✅ FCM Token saved to profile");
+                } catch (e) { console.warn("Failed to save FCM token (column missing?)", e); }
+            }
+        });
+
+        // On error
+        PushNotifications.addListener('registrationError', (error) => {
+            console.error('Push registration error: ', error);
+        });
+
+        // On notification received (Foreground)
+        PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+            console.log('🔔 Push received:', notification);
+            this.toast(`New magic in the air! ✨`, 'pink');
+
+            // If the notification contains image data (data-only payload), we could set wallpaper here
+            // But usually we just refresh history
+            this.loadHistory();
+        });
+
+        // On notification tapped
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+            console.log('🔔 Push tapped:', notification);
+            this.setView('history');
+        });
     },
 
     enableFullscreenMode() {
@@ -226,6 +430,7 @@ const App = {
     finalizeInit() {
         this.setupNavigation();
         if (window.lucide) lucide.createIcons();
+        this.fixZoomedLayout(); // Call the new layout fix
     },
 
     generateKawaiiId() {
@@ -298,23 +503,96 @@ const App = {
             Social.listenToSocial();
         }
         this.loadHistory();
+
+        // 🔄 Polling Fallback: Check for new magic every 30s
+        // This ensures updates happen even if the socket connection drops silently.
+        setInterval(() => {
+            console.log("⏱️ Polling: Checking for new doodles...");
+            this.loadHistory();
+        }, 30000);
     },
 
     async loadHistory() {
         if (!this.state.supabase || !this.state.session) return;
         try {
-            const { data, error } = await this.state.supabase
+            // 1. Load History (Doodles)
+            const { data: doodles, error: doodleError } = await this.state.supabase
                 .from('doodles')
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
+                .order('created_at', { ascending: false })
+                .limit(50); // Optimization: Only load recent magic! ✨
+
+            if (doodleError) throw doodleError;
+
+            // 2. Load Drafts (from Cloud)
+            const { data: drafts, error: draftError } = await this.state.supabase
+                .from('drafts')
+                .select('*')
+                .eq('user_id', this.state.session.user.id)
                 .order('created_at', { ascending: false });
 
-            if (error) throw error;
-            this.state.history = data;
-            if (data.length > 0) {
-                this.state.lastDoodle = data[0].image_data;
-                // Auto-set wallpaper if it's for me and new!
-                this.setSmartWallpaper(data[0]);
+            if (draftError) console.warn("Drafts load error:", draftError);
+            this.state.drafts = drafts || [];
+
+            // 3. Process Doodles (Group Sent & Cache Names)
+            const userIds = new Set();
+            doodles.forEach(d => {
+                userIds.add(d.sender_id);
+                userIds.add(d.receiver_id);
+            });
+
+            if (userIds.size > 0) {
+                const { data: profiles, error: profError } = await this.state.supabase
+                    .from('profiles')
+                    .select('*')
+                    .in('id', Array.from(userIds));
+
+                if (profiles) {
+                    if (!this.state.userCache) this.state.userCache = {};
+                    if (!this.state.avatarCache) this.state.avatarCache = {};
+                    profiles.forEach(p => {
+                        this.state.userCache[p.id] = p.username;
+                        this.state.avatarCache[p.id] = p.avatar_url;
+                    });
+                }
+            }
+
+            // Grouping Logic for SENT doodles
+            const groupedHistory = [];
+            const processedImages = new Set();
+
+            doodles.forEach(d => {
+                const isSent = d.sender_id === this.state.session.user.id;
+
+                if (isSent) {
+                    // Unique identifier for the "batch" - using image_data length + hash or just image_data
+                    // Since image_data is large, let's look for adjacent sends with same image
+                    if (processedImages.has(d.image_data)) {
+                        // Find the group and add recipient
+                        const group = groupedHistory.find(g => g.isGroup && g.image_data === d.image_data);
+                        if (group) {
+                            group.recipients.push(d.receiver_id);
+                        }
+                    } else {
+                        // Create new group
+                        processedImages.add(d.image_data);
+                        groupedHistory.push({
+                            ...d,
+                            isGroup: true,
+                            recipients: [d.receiver_id]
+                        });
+                    }
+                } else {
+                    groupedHistory.push(d); // Received doodles are always unique events
+                }
+            });
+
+            this.state.history = groupedHistory;
+
+            if (doodles.length > 0) {
+                this.state.lastDoodle = doodles[0].image_data;
+                this.setSmartWallpaper(doodles[0]);
             }
             if (this.state.view === 'home' || this.state.view === 'history') this.renderView();
         } catch (e) {
@@ -322,36 +600,79 @@ const App = {
         }
     },
 
+    async setWallpaper(imageData, id) {
+        this.confirmKawaii({
+            title: "New Look? 📱",
+            message: "Set this doodle as your lock screen?",
+            okText: "Set as Wallpaper! ✨",
+            onConfirm: async () => {
+                this.toast('Updating lock screen... ✨', 'pink');
+                try {
+                    const { Wallpaper } = window.Capacitor.Plugins;
+                    if (Wallpaper) {
+                        await Wallpaper.setSeamlessDoodleAsWallpaper({ image: imageData });
+                        this.toast('Lock screen updated! ✨', 'pink');
+                        if (id) localStorage.setItem('last-wallpaper-id', id);
+                    } else {
+                        this.toast('Feature not available 😭', 'blue');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    this.toast('Failed to set wallpaper', 'blue');
+                }
+            }
+        });
+    },
+
     async setSmartWallpaper(doodle) {
         if (!doodle || !doodle.image_data) return;
 
-        // Only set wallpaper if *I* am the receiver
-        if (doodle.receiver_id !== this.state.session.user.id) return;
+        // CRITICAL: Only set if I am the RECEIVER.
+        // If I sent it, do NOT set my own wallpaper.
+        console.log(`🔍 Wallpaper Check: Me(${this.state.session.user.id}) vs Receiver(${doodle.receiver_id})`);
 
-        // Check if we already set this one to avoid spamming toast/plugin calls
-        const lastSetId = localStorage.getItem('last-wallpaper-id');
-        if (doodle.id === lastSetId) {
-            console.log("Wallpaper already set for doodle:", doodle.id);
+        if (doodle.receiver_id !== this.state.session.user.id) {
+            console.log("Not setting wallpaper: I am the sender.");
             return;
         }
 
-        if (window.plugins && window.plugins.wallpaper) {
-            console.log("🖼️ Setting Smart Wallpaper for:", doodle.id);
-            this.toast('Updating lock screen... 📱', 'blue');
+        // Check persistent flag (requires SQL update: user must add column)
+        if (doodle.wallpaper_set_at) {
+            console.log("Wallpaper already set historically (DB flag). Skipping.");
+            return;
+        }
 
-            window.plugins.wallpaper.setImageBase64(
-                doodle.image_data,
-                () => {
-                    console.log("Wallpaper set successfully!");
-                    this.toast('Lock screen updated! ✨', 'pink');
-                    localStorage.setItem('last-wallpaper-id', doodle.id);
-                },
-                (err) => {
-                    console.error("Wallpaper error:", err);
-                    this.toast('Failed to set wallpaper 🥺', 'blue');
-                },
-                'lock'
-            );
+        const lastSetId = localStorage.getItem('last-wallpaper-id');
+        if (doodle.id === lastSetId) return;
+
+        console.log("🖼️ Setting Wallpaper (Receiver Mode)...");
+        try {
+            const { Wallpaper } = window.Capacitor.Plugins;
+            if (Wallpaper) {
+                await Wallpaper.setSeamlessDoodleAsWallpaper({ image: doodle.image_data });
+                this.toast('Lock screen updated! ✨', 'pink');
+                localStorage.setItem('last-wallpaper-id', doodle.id);
+
+                // Mark as set in DB so it doesn't re-set on reinstall/clear data
+                // NOTE: This requires the 'wallpaper_set_at' column AND proper RLS policies
+                try {
+                    const { error } = await this.state.supabase
+                        .from('doodles')
+                        .update({ wallpaper_set_at: new Date().toISOString() })
+                        .eq('id', doodle.id); // This will FAIL if RLS blocks receivers
+
+                    if (error) {
+                        console.error("❌ DB Update Failed (RLS Permission?):", error);
+                        this.toast('Database sync failed! Check RLS policies.', 'blue');
+                    } else {
+                        console.log("✅ Successfully marked doodle as wallpaper_set_at in DB");
+                    }
+                } catch (dbErr) {
+                    console.warn("Could not update DB (column might be missing):", dbErr);
+                }
+            }
+        } catch (e) {
+            console.error("Wallpaper set failed:", e);
         }
     },
 
@@ -362,21 +683,46 @@ const App = {
             const user = (await this.state.supabase.auth.getUser()).data.user;
             if (!user) return;
 
+            // Intelligently grab the avatar: State -> LocalStorage -> Metadata -> Default
+            const metadataAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || user.user_metadata?.full_name;
+            // IMPORTANT: If state doesn't have it but metadata does, metadata wins!
+            const avatar = this.state.user.avatarUrl || metadataAvatar || localStorage.getItem('user-avatar') || '';
+
+            const updateData = {
+                id: user.id,
+                username: this.state.user.username,
+                kawaii_id: this.state.user.kawaiiId
+            };
+
+            // Only add if we have a valid avatar URL
+            if (avatar && avatar.startsWith('http')) {
+                updateData.avatar_url = avatar;
+                this.state.user.avatarUrl = avatar;
+                localStorage.setItem('user-avatar', avatar);
+            }
+
             const { error } = await this.state.supabase
                 .from('profiles')
-                .upsert({
-                    id: user.id,
-                    username: this.state.user.username,
-                    kawaii_id: this.state.user.kawaiiId
-                });
+                .upsert(updateData);
 
-            if (error) console.log("Profile sync failed:", error.message);
-            else console.log("✨ Profile synced!");
+            if (error) {
+                console.warn("Profile sync logic:", error.message);
+                // Fallback: If 'avatar_url' doesn't exist in DB, it will fail.
+                // We'll try one more time without it to keep the app working.
+                if (error.message.includes('avatar_url')) {
+                    delete updateData.avatar_url;
+                    await this.state.supabase.from('profiles').upsert(updateData);
+                    console.log("⚠️ avatar_url column missing - skipping avatar sync");
+                }
+            } else {
+                console.log("✨ Profile & Avatar synced!");
+            }
         } catch (e) { console.log("Sync error:", e); }
     },
 
     subscribeToDoodles() {
         if (!this.state.supabase) return;
+        if (this.state.doodleSubscription) return; // Prevent duplicates
 
         const channel = this.state.supabase
             .channel('public:doodles')
@@ -392,6 +738,7 @@ const App = {
             })
             .subscribe();
 
+        this.state.doodleSubscription = channel;
         console.log("📡 Listening for forest magic...");
     },
 
@@ -401,19 +748,10 @@ const App = {
             return;
         }
 
-        // Native Google Sign-In (No Browser)
         if (window.Capacitor && window.Capacitor.isNativePlatform()) {
             try {
-                this.toast('Opening native Google login... 📱', 'blue');
                 const { GoogleAuth } = window.Capacitor.Plugins;
                 if (!GoogleAuth) throw new Error("GoogleAuth plugin not found");
-
-                // Initialize GoogleAuth first
-                try {
-                    await GoogleAuth.initialize();
-                } catch (initError) {
-                    console.log("GoogleAuth already initialized or init not needed:", initError);
-                }
 
                 const user = await GoogleAuth.signIn();
                 this.logBoot("✅ Native Google Auth Success");
@@ -428,7 +766,16 @@ const App = {
                     });
 
                     if (error) throw error;
+
+                    // Capture Avatar
+                    if (user.imageUrl) {
+                        App.state.user.avatarUrl = user.imageUrl;
+                        localStorage.setItem('user-avatar', user.imageUrl);
+                    }
+
                     this.toast('Login Successful! 🎉', 'pink');
+                    // Force a profile sync before reload to ensure avatar travels to cloud
+                    await this.syncProfile();
                     window.location.reload();
                 } else {
                     throw new Error("No ID token received from Google");
@@ -459,6 +806,31 @@ const App = {
         } catch (e) {
             console.error(e);
             this.toast('Google login failed', 'blue');
+        }
+    },
+
+    async signOut() {
+        this.toast('Signing out... 👋', 'blue');
+        try {
+            // Fire and forget the remote sign out
+            if (this.state.supabase) {
+                this.state.supabase.auth.signOut();
+            }
+
+            // Clear all local session data immediately
+            localStorage.removeItem('sb-access-token');
+            localStorage.removeItem('sb-refresh-token');
+            localStorage.removeItem('user-name');
+            localStorage.removeItem('user-id');
+            localStorage.removeItem('user-avatar');
+
+            // Short delay to let the toast be seen before the hard reload
+            setTimeout(() => {
+                window.location.href = window.location.origin + window.location.pathname;
+            }, 500);
+        } catch (e) {
+            console.error("Sign out error:", e);
+            window.location.reload();
         }
     },
 
@@ -501,6 +873,29 @@ const App = {
             nav.style.display = 'flex';
             document.body.classList.add('bg-kawaii-pink');
             document.body.classList.remove('bg-transparent');
+
+            // Hide Nav for Draw Mode (User Request: "no home button needed")
+            const content = document.getElementById('content');
+            if (viewName === 'draw') {
+                document.body.classList.add('draw-mode');
+                nav.style.display = 'none';
+                if (content) {
+                    content.classList.remove('p-4', 'items-center', 'overflow-y-auto');
+                    content.classList.add('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                }
+            } else {
+                document.body.classList.remove('draw-mode');
+                nav.style.display = 'flex';
+                // Reset minimized state just in case
+                nav.classList.remove('nav-minimized');
+                if (nav.firstElementChild) nav.firstElementChild.style.display = 'flex';
+
+                if (content && viewName !== 'landing') {
+                    // Restore default content style
+                    content.classList.add('p-4', 'items-center', 'overflow-y-auto');
+                    content.classList.remove('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                }
+            }
         }
 
         const currentView = this.state.view;
@@ -543,240 +938,477 @@ const App = {
         const nav = document.querySelector('nav');
 
         // Force Landing if no session
-        if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget' && this.state.view !== 'setup') {
+        if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget') {
             this.state.view = 'landing';
         }
 
-        // Toggle Header/Nav based on view
-        const hideNav = ['landing', 'setup', 'widget'].includes(this.state.view);
-        if (header) header.style.display = hideNav ? 'none' : 'flex';
-        if (nav) nav.style.display = hideNav ? 'none' : 'flex';
-
-        // Get Template
-        let html = '';
-        if (this.templates[this.state.view]) {
-            html = this.templates[this.state.view]();
-        } else {
-            html = `<div class="flex-center" style="height: 100vh;">404 - Kawaii Not Found 😭</div>`;
+        switch (this.state.view) {
+            case 'landing':
+                content.innerHTML = this.templates.landing();
+                header.style.display = 'none';
+                nav.style.display = 'none';
+                break;
+            case 'setup':
+                content.innerHTML = this.templates.setup();
+                header.style.display = 'none';
+                nav.style.display = 'none';
+                break;
+            case 'home': content.innerHTML = this.templates.home(); break;
+            case 'draw':
+                content.innerHTML = this.templates.draw();
+                // Delay canvas init to fix touch coordinates
+                setTimeout(() => {
+                    if (window.initCanvas) window.initCanvas();
+                }, 100);
+                // Ensure friends are loaded for recipient picker
+                if (window.Social && (!Social.friends || Social.friends.length === 0)) {
+                    Social.loadFriends().then(() => Social.renderRecipientBubbles());
+                }
+                break;
+            case 'friends': content.innerHTML = this.templates.friends(); break;
+            case 'profile': content.innerHTML = this.templates.profile(); break;
+            case 'history': content.innerHTML = this.templates.history(); break;
+            case 'widget': content.innerHTML = this.templates.widget(); break;
+            default: content.innerHTML = `<div>404 - Kawaii Not Found 😭</div>`;
         }
 
-        // Render with Global Transition
-        content.innerHTML = `<div class="view-transition" style="width: 100%; height: 100%;">${html}</div>`;
-
-        // Post-Render Effects
+        // Add animation class to new content
+        if (content.firstElementChild) {
+            content.firstElementChild.classList.add('animate-slide-up');
+        }
         if (window.lucide) lucide.createIcons();
-
-        // Specific View Logic
-        if (this.state.view === 'draw') {
-            if (window.initCanvas) {
-                // slight delay to ensure DOM is ready and layout is settled
-                requestAnimationFrame(() => window.initCanvas());
-            }
-        }
-
-        if (this.state.view === 'friends' && window.Social) {
-            Social.renderFriendsList();
-        }
     },
 
     templates: {
         landing: () => `
-            <div class="layout-container flex-center" style="background: var(--primary-gradient)">
-                <div class="card-premium flex-center flex-col gap-8 animate-float" style="background: rgba(255,255,255,0.9); padding: 40px; margin: 20px;">
-                    <img src="src/assets/logo.png" style="width: 120px; height: 120px; border-radius: 30px; box-shadow: 0 10px 30px rgba(255,105,180,0.3);" />
-                    
-                    <div class="text-center">
-                        <h1 style="font-size: 24px; font-weight: 800; color: #333; margin-bottom: 8px;">Kawaii Doodle</h1>
-                        <p style="color: #666; font-size: 14px;">Hand-drawn magic for friends ✨</p>
-                    </div>
-
-                    <button onclick="App.handleGoogleSignIn()" class="btn-premium" style="width: 100%; justify-content: center;">
-                        <span style="font-size: 16px;">Sign in with Google</span>
-                        <i data-lucide="arrow-right" style="width: 18px;"></i>
-                    </button>
-                    
-                    <button onclick="App.toggleReleaseNotes()" class="btn-icon" style="position: absolute; top: 20px; right: 20px;">
-                        <i data-lucide="sparkles" style="color: #FFD700;"></i>
-                    </button>
-                    
-                    <div style="font-size: 10px; color: #999; margin-top: 20px;">
-                        v2.5 • Billion Dollar Polish
+            <div class="flex flex-col items-center justify-center min-h-screen gap-8 text-center animate-float p-4">
+                <div class="relative">
+                    <div class="w-48 h-48 bg-white/40 rounded-full border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
+                        <img src="src/assets/logo.png" class="w-full h-full object-cover" alt="Kawaii Doodle Logo" />
                     </div>
                 </div>
-                 
-                 <div id="release-notes-modal" class="hidden absolute inset-0 bg-black/20 backdrop-blur-sm z-50 flex-center" onclick="this.classList.add('hidden')">
-                    <div class="card-premium" style="width: 80%; max-width: 320px;" onclick="event.stopPropagation()">
-                        <h3 style="font-weight: 800; margin-bottom: 16px; color: #333; display: flex; justify-content: space-between;">
-                            What's New ✨
-                            <button onclick="document.getElementById('release-notes-modal').classList.add('hidden')"><i data-lucide="x" style="width:16px"></i></button>
-                        </h3>
-                        <div style="font-size: 13px; color: #555; line-height: 1.6;">
-                            <p style="margin-bottom:8px">• <b>Fluid Motion</b>: Everything feels alive.</p>
-                            <p style="margin-bottom:8px">• <b>Smart Toasts</b>: Notifications never stack.</p>
-                            <p>• <b>Zero Clipping</b>: Pixel perfect layout.</p>
-                        </div>
-                    </div>
-                 </div>
+                <div>
+                    <!-- Removed text title since logo has text -->
+                    <p class="text-white font-bold drop-shadow-md italic mt-4 text-lg">Hand-drawn magic for friends ✨</p>
+                </div>
+
+                <!-- Google Sign In Button (Official Style) -->
+                <button onclick="App.handleGoogleSignIn()" class="bg-white text-gray-700 px-6 py-3 rounded-full font-medium text-lg shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center gap-4 w-72 justify-center border border-gray-100 relative z-10">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <span>Sign in with Google</span>
+                </button>
+                
+                <!-- Release Notes Button -->
+                <button onclick="App.toggleReleaseNotes()" class="absolute top-4 left-4 p-2 bg-white/80 rounded-full shadow-md hover:scale-110 active:scale-95 transition-transform border-2 border-yellow-200 z-50">
+                    <i data-lucide="sparkles" class="w-6 h-6 text-yellow-400"></i>
+                </button>
+
+                <div class="text-center">
+                    <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
+                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.6 (Build: ${new Date().toLocaleTimeString()})</p>
+                </div>
             </div>
+
+            <!-- Hidden Release Notes Modal (MOVED OUTSIDE) -->
+            <div id="release-notes-modal" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-8 backdrop-blur-md transition-all" onclick="this.classList.add('hidden')">
+                <div class="bg-white w-full max-w-sm h-3/4 rounded-bubbly shadow-2xl relative flex flex-col transform rotate-1 border-4 border-pink-100" onclick="event.stopPropagation()">
+                    
+                    <!-- Header -->
+                    <div class="p-6 border-b border-pink-50 bg-pink-50/50 rounded-t-bubbly">
+                        <h3 class="font-bold text-xl text-pink-500 flex justify-between items-center">
+                            <span>What's New? ✨</span>
+                            <button onclick="document.getElementById('release-notes-modal').classList.add('hidden')" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1 shadow-sm">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </h3>
+                        <p class="text-xs text-pink-300 font-bold mt-1">Version 2.6 - The Wallpaper Update! 🦄</p>
+                    </div>
+
+                    <!-- Scrollable Content -->
+                    <div class="flex-1 p-6 overflow-y-auto text-left space-y-4">
+                        
+                        <div class="bg-pink-50 p-3 rounded-xl border border-pink-100">
+                            <h4 class="font-bold text-pink-500 text-sm mb-1">🧼 Clean Start</h4>
         `,
         setup: () => `
-            <div class="layout-container flex-center">
-                <div class="card-premium flex-center flex-col gap-6" style="width: 100%; max-width: 340px;">
-                    <div class="text-center">
-                        <h2 style="font-size: 24px; font-weight: 800; color: #333; margin-bottom: 8px;">Welcome Home! 🏡</h2>
-                        <p style="color: #666; font-size: 14px;">What should your friends call you?</p>
+            <div class="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center animate-fade-in">
+                <div class="bg-white/80 p-8 rounded-bubbly shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-float">
+                    <div>
+                        <h2 class="text-2xl font-black text-pink-500 mb-2">Welcome Home! 🏡</h2>
+                        <p class="text-gray-500 text-sm italic">What should your friends call you?</p>
                     </div>
-                    
-                    <input id="setup-name" type="text" placeholder="Your Sweet Name..." style="width: 100%; padding: 16px; border-radius: 16px; border: 1px solid #eee; background: #f9f9f9; text-align: center; font-size: 18px; font-weight: bold; outline: none; color: #d05e94;">
-                    
-                    <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="btn-premium" style="width: 100%; justify-content: center;">
+                    <div>
+                        <input id="setup-name" type="text" placeholder="Your Sweet Name..." class="w-full bg-pink-50 px-6 py-4 rounded-full border-none focus:ring-4 focus:ring-pink-300 outline-none text-center font-bold text-pink-600 text-lg">
+                    </div>
+                    <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="bg-pink-500 text-white w-full py-4 rounded-full font-black text-lg shadow-lg hover:bg-pink-600 active:scale-95 transition-all">
                         Let's Go! 🚀
                     </button>
                 </div>
             </div>
         `,
         home: () => `
-            <div class="layout-container" style="justify-content: center; gap: 24px;">
-                <div class="card-premium flex-center" style="height: 320px; position: relative; overflow: hidden; padding: 0;">
-                     ${App.state.lastDoodle ?
-                `<img src="${App.state.lastDoodle}" style="width: 100%; height: 100%; object-fit: contain;" />` :
-                `<div class="text-center" style="opacity: 0.5;">
-                            <i data-lucide="image" style="width: 48px; height: 48px; margin-bottom: 12px; color: #ccc"></i>
-                            <p style="color: #ccc">No doodles yet...</p>
-                         </div>`
+            <div class="flex flex-col items-center gap-6 p-4 w-full max-w-md mx-auto animate-slide-up">
+                <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transform hover:scale-105 transition-transform duration-500">
+                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain" />` : `
+                    <div class="text-center p-4">
+                        <i data-lucide="image" class="w-12 h-12 mx-auto text-pink-300 mb-2"></i>
+                        <p class="font-bold text-pink-400 text-sm">Waiting for a doodle...</p>
+                    </div>`}
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-16 h-16 rounded-full border-4 border-white/50 shadow-lg overflow-hidden bg-pink-100 flex-shrink-0">
+                        ${App.state.user.avatarUrl ?
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover">` :
+                `<div class="w-full h-full flex items-center justify-center"><i data-lucide="user" class="w-8 h-8 text-pink-300"></i></div>`
             }
+                    </div>
+                    <div class="text-center">
+                        <h2 class="text-2xl font-bold text-white drop-shadow-md">Stay Kawaii, ${App.state.user.username.split(' ')[0]}! ✨</h2>
+                        <p class="text-[10px] text-white/70">ID: ${App.state.user.kawaiiId}</p>
                 </div>
-                
-                <div class="text-center">
-                    <h2 style="font-size: 28px; font-weight: 800; color: #333;">Hello, ${App.state.user.username.split(' ')[0]}</h2>
-                    <p style="color: #888; font-size: 13px; margin-top: 4px; font-family: monospace;">ID: ${App.state.user.kawaiiId}</p>
-                </div>
-
-                <div class="flex-center" style="gap: 16px;">
-                    <button onclick="App.setView('draw')" class="btn-premium" style="flex: 1; height: 56px;">
-                        <i data-lucide="palette"></i> Doodle
+                <div class="flex gap-4 flex-wrap justify-center">
+                    <button onclick="App.setView('draw')" class="btn-bubbly btn-primary hover:scale-105 active:scale-95 shrink-0">
+                        <i data-lucide="palette"></i> Doodle! 🎨
                     </button>
-                    <button onclick="App.setView('history')" class="btn-premium" style="flex: 1; height: 56px; background: white; color: #333; border: 1px solid #eee; box-shadow: none;">
-                        <i data-lucide="history"></i> History
+                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105 active:scale-95 shrink-0">
+                        <i data-lucide="history"></i> History 📜
                     </button>
+                    ${!App.state.notificationsEnabled ? `
+                    <!-- Unified Signal Activation -->
+                    <button onclick="App.requestAllPermissions()" class="btn-bubbly bg-yellow-100 border-yellow-200 text-yellow-600 hover:scale-105 active:scale-95 shrink-0 text-xs py-2 px-4 shadow-sm">
+                        <i data-lucide="radio" class="w-4 h-4"></i> Activate Notifications 📡
+                    </button>
+                    ` : ''}
                 </div>
             </div>
-        `,
+    `,
         widget: () => `
-             <div class="layout-container flex-center">
-                <div class="card-premium flex-center" style="width: 100%; aspect-ratio: 1;">
-                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" style="width: 100%; height: 100%; object-fit: contain;" />` : `
-                    <div class="text-center">
-                        <i data-lucide="sparkles" style="width: 48px; height: 48px; color: #FFD700; margin-bottom: 8px;" class="pulse-animation"></i>
-                        <p style="font-weight: bold; color: #888;">Widget Ready</p>
+            <div class="h-screen w-full flex items-center justify-center p-4">
+                <div class="w-full aspect-square bg-white/40 backdrop-blur-md rounded-bubbly border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden animate-float">
+                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain p-2" />` : `
+                    <div class="text-center p-4">
+                        <i data-lucide="sparkles" class="w-12 h-12 mx-auto text-yellow-300 mb-2 animate-pulse"></i>
+                        <p class="font-bold text-white text-sm drop-shadow-sm">Magic widget ready...</p>
                     </div>`}
                 </div>
             </div>
-        `,
+    `,
         draw: () => `
-            <div class="layout-container" style="padding: 16px; gap: 16px;">
+            <div class="h-full w-full relative flex flex-col items-center animate-fade-in overflow-hidden">
                 <!-- Canvas Area -->
-                <div style="flex: 1; position: relative; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); background: white;">
-                    <canvas id="drawing-canvas" style="width: 100%; height: 100%; display: block;"></canvas>
+                <div class="flex-1 w-full flex items-center justify-center p-6 min-h-0 relative">
+                    <div class="relative w-full aspect-square max-w-md max-h-full bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white overflow-hidden">
+                        <canvas id="drawing-canvas" class="w-full h-full touch-none"></canvas>
+                    </div>
                 </div>
+                
+                <!-- Controls Area -->
+                <div class="w-full shrink-0 z-40 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    <div class="bg-white/95 backdrop-blur-2xl p-4 rounded-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col gap-3 ring-8 ring-white/50 border border-pink-50">
 
-                <!-- Tools Card -->
-                <div class="card-premium" style="display: flex; flex-direction: column; gap: 16px;">
-                    
-                    <!-- Recipients (Horizontal Scroll) -->
-                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px;">
-                         <span style="font-size: 10px; font-weight: 800; color: #d05e94; letter-spacing: 1px;">SEND TO</span>
-                         <div style="display: flex; gap: 8px; overflow-x: auto; max-width: 70%;" class="no-scrollbar" id="friend-bubbles">
-                             <div style="font-size: 10px; color: #ccc;">Loading...</div>
-                         </div>
-                    </div>
-
-                    <!-- Actions Row -->
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div style="display: flex; gap: 8px;">
-                            <button id="btn-undo" class="btn-icon"><i data-lucide="undo-2" style="width: 18px;"></i></button>
-                            <button id="clear-canvas" class="btn-icon" style="color: #FF6B6B;"><i data-lucide="trash-2" style="width: 18px;"></i></button>
-                        </div>
-                        
-                        <div style="display: flex; gap: 8px;" id="palette-container">
-                            <!-- Colors injected here -->
-                        </div>
-
-                        <button id="send-doodle" class="btn-premium" style="padding: 10px 20px; border-radius: 16px; font-size: 14px;">
-                            Send <i data-lucide="send" style="width: 14px;"></i>
-                        </button>
-                    </div>
-                    
-                    <!-- Hidden Brushes / Stamps (Simplified for now) -->
-                     <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 4px;"> 
-                        <div style="display: flex; gap: 12px;">
-                            <button class="stamp-btn" data-stamp="💖" style="font-size: 20px;">💖</button>
-                            <button class="stamp-btn" data-stamp="⭐" style="font-size: 20px;">⭐</button>
-                        </div>
-                        <input id="brush-size" type="range" min="2" max="40" value="5" style="width: 100px; accent-color: #d05e94;">
-                     </div>
+            <!-- 1. Recipient Selection -->
+            <div id="recipient-selection" class="flex items-center gap-2 overflow-x-auto px-4 py-2 border-b border-pink-100/50 no-scrollbar touch-pan-x">
+                <span class="text-[10px] font-black text-pink-400 whitespace-nowrap tracking-wider">TO:</span>
+                <div id="friend-bubbles" class="flex gap-2">
+                    <p class="text-[10px] text-gray-400 font-bold">Loading...</p>
                 </div>
             </div>
-        `,
-        friends: () => `
-             <div class="layout-container">
-                <div class="card-premium" style="margin-bottom: 24px;">
-                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 16px; color: #333;">Find Friends</h2>
-                    <div style="display: flex; gap: 8px;">
-                        <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." style="flex: 1; padding: 12px; border-radius: 12px; border: 1px solid #eee; outline: none;">
-                        <button id="btn-search-friend" class="btn-premium" style="padding: 0 16px; width: 48px; border-radius: 12px;"><i data-lucide="search" style="width: 20px;"></i></button>
+
+            <!-- 2. Tools Row -->
+            <div class="flex items-center justify-between gap-2">
+                <!-- Palette -->
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 flex-1 touch-pan-x">
+                    <div id="palette-container" class="flex gap-2 shrink-0">
+                        <!-- Injected -->
                     </div>
                 </div>
-                <!-- Dynamic List Container -->
-                <div id="friend-list" style="display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-bottom: 100px;">
-                    <!-- Friend items will render here with card-premium style -->
+
+                <div class="w-[2px] h-6 bg-gray-100 shrink-0 rounded-full"></div>
+
+                <!-- Toggles -->
+                <div class="flex gap-2 shrink-0">
+                    <button id="btn-fill-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center hover:scale-110 transition-transform active:bg-pink-50 group">
+                        <i data-lucide="paint-bucket" class="w-5 h-5 text-gray-400 group-hover:text-pink-400 transition-colors"></i>
+                    </button>
+                    <button id="btn-custom-color" class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
+                        <i data-lucide="plus" class="w-5 h-5 text-white"></i>
+                    </button>
+                    <button onclick="document.getElementById('stamp-modal').classList.remove('hidden')" class="w-10 h-10 rounded-full bg-gradient-to-bl from-yellow-200 via-pink-200 to-purple-200 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform active:rotate-12">
+                        <span class="text-xl filter drop-shadow-sm">🦄</span>
+                    </button>
                 </div>
-             </div>
-        `,
-        profile: () => `
-            <div class="layout-container flex-center">
-                <div class="card-premium" style="width: 100%; max-width: 320px; text-align: center;">
-                    <div style="width: 80px; height: 80px; background: #fff; border: 2px solid #eee; border-radius: 50%; margin: 0 auto 16px auto; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-                         <i data-lucide="user" style="width: 32px; color: #ccc;"></i>
-                    </div>
-                    <h2 style="font-size: 20px; font-weight: 700; color: #333;">${App.state.user.username}</h2>
-                    
-                    <div style="background: #f9f9f9; padding: 12px; border-radius: 12px; margin: 24px 0; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee;">
-                        <span style="font-family: monospace; font-size: 14px; color: #555;">${App.state.user.kawaiiId}</span>
-                        <button onclick="navigator.clipboard.writeText('${App.state.user.kawaiiId}').then(() => App.toast('Copied! 📋', 'pink'))" class="btn-icon" style="width: 32px; height: 32px;">
-                            <i data-lucide="copy" style="width: 14px; color: #888;"></i>
+            </div>
+
+            <!-- 3. Sliders & edits -->
+            <div class="flex items-center gap-3 bg-gray-50/60 p-2 rounded-xl border border-white/50">
+                <i data-lucide="brush" class="w-4 h-4 text-pink-300 shrink-0"></i>
+                <input id="brush-size" type="range" min="2" max="40" value="5" class="flex-1 accent-pink-500 h-2 bg-pink-100 rounded-lg appearance-none cursor-pointer">
+
+                    <div class="w-[1px] h-6 bg-gray-200 shrink-0"></div>
+
+                    <div class="flex gap-1 shrink-0">
+                        <button id="btn-undo" class="p-2 text-gray-400 hover:text-pink-500 hover:bg-white rounded-lg transition-all active:scale-90">
+                            <i data-lucide="undo-2" class="w-5 h-5"></i>
+                        </button>
+                        <button id="btn-redo" class="p-2 text-gray-400 hover:text-blue-500 hover:bg-white rounded-lg transition-all active:scale-90">
+                            <i data-lucide="redo-2" class="w-5 h-5"></i>
                         </button>
                     </div>
+            </div>
 
-                    <button onclick="App.state.supabase.auth.signOut().then(() => location.reload())" class="btn-premium" style="background: #eee; color: #555; width: 100%; margin-top: 8px; box-shadow: none;">
+            <!-- 4. Actions Footer -->
+            <div class="flex items-center gap-3 mt-1">
+                <button id="clear-canvas" class="p-3 bg-red-50 text-red-400 rounded-full hover:bg-red-100 active:scale-90 transition-all shadow-sm group" title="Clear">
+                    <i data-lucide="trash-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                </button>
+                <button id="save-draft" class="p-3 bg-blue-50 text-blue-400 rounded-full hover:bg-blue-100 active:scale-90 transition-all shadow-sm group" title="Save">
+                    <i data-lucide="save" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                </button>
+                <button id="send-doodle" class="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-full font-black shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 text-base tracking-wide">
+                    <span>SEND MAGIC</span> <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- HIDDEN STAMP MODAL (Absolute Overlay) -->
+            <div id="stamp-modal" class="hidden absolute inset-0 bg-white/95 backdrop-blur-md rounded-[2rem] z-50 flex flex-col p-4 animate-fade-in">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                    <h3 class="font-bold text-gray-500 flex items-center gap-2">
+                        <span class="text-xl">✨</span> Choose a Stamp
+                    </h3>
+                    <button onclick="document.getElementById('stamp-modal').classList.add('hidden')" class="bg-gray-100 text-gray-500 p-1.5 rounded-full hover:bg-gray-200 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-5 gap-3 overflow-y-auto no-scrollbar pb-10 content-start">
+                    ${['🦄', '💖', '⭐', '🌸', '🎀', '🐱', '🐰', '🍄', '🍭', '⚡', '🔥', '🌈', '🍕', '🎉', '🦋', '🌵', '🍩', '🚀', '👽', '💎', '🎨', '🧸', '🎵', '👻', '💩'].map(emoji => `
+                                <button class="stamp-btn text-2xl hover:scale-125 active:scale-90 transition-transform p-2 bg-gray-50 rounded-xl border border-gray-100 shadow-sm aspect-square flex items-center justify-center" 
+                                    data-stamp="${emoji}"
+                                    onclick="document.getElementById('stamp-modal').classList.add('hidden')">
+                                    ${emoji}
+                                </button>
+                            `).join('')}
+                </div>
+            </div>
+        </div>
+    </div>
+`,
+        friends: () => `
+        <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
+                <div class="bg-white/60 p-4 rounded-bubbly shadow-sm">
+                    <h3 class="font-bold mb-3 flex items-center gap-2">
+                        <i data-lucide="search" class="w-4 h-4"></i> Find Friends
+                    </h3>
+                    <div class="flex gap-2">
+                        <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." class="flex-1 bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none">
+                        <button id="btn-search-friend" class="bg-pink-400 text-white p-2 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                            <i data-lucide="user-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="friend-list" class="flex flex-col gap-2">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+`,
+        profile: () => `
+    <div class="flex flex-col items-center gap-6 w-full max-w-sm animate-slide-up">
+                <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
+                    ${App.state.user.avatarUrl ?
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover">` :
+                `<i data-lucide="user" class="w-12 h-12 text-gray-300"></i>`
+            }
+                </div>
+                <div class="text-center">
+                    <p class="text-xl font-bold border-none outline-none py-1">${App.state.user.username}</p>
+                    <div class="flex items-center justify-center gap-3 mt-2">
+                        <p class="text-pink-500 font-bold text-sm tracking-wide bg-pink-50 px-3 py-1 rounded-lg border border-pink-100">${App.state.user.kawaiiId}</p>
+                        <button onclick="navigator.clipboard.writeText('${App.state.user.kawaiiId}').then(() => App.toast('Copied! 📋', 'pink'))" class="p-2 bg-pink-100 rounded-full hover:bg-pink-200 active:scale-95 transition-all shadow-sm">
+                            <i data-lucide="copy" class="w-4 h-4 text-pink-500"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
+                    <p class="text-[10px] font-medium mb-1">Signed in via Google ✨</p>
+                    <button onclick="App.signOut()" class="bg-white border-2 border-red-100 text-red-400 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all w-full">
                         Sign Out
                     </button>
-                    
-                     <!-- Hidden Admin Settings -->
-                    <div id="admin-settings" class="hidden" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
-                        <input id="sb-url" type="text" placeholder="URL" value="${App.state.config.url}" style="width: 100%; margin-bottom: 8px; padding: 8px; border: 1px solid #eee; border-radius: 8px;">
-                        <input id="sb-key" type="password" placeholder="Key" value="${App.state.config.key}" style="width: 100%; margin-bottom: 8px; padding: 8px; border: 1px solid #eee; border-radius: 8px;">
-                        <button onclick="App.handleSaveConfig()" class="btn-premium" style="font-size: 12px; padding: 8px;">Save Connections</button>
+                </div>
+
+                <!-- Hidden Technical Settings -->
+                <div id="admin-settings" class="hidden bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
+                    <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 border-b border-gray-100 pb-2">
+                        <i data-lucide="settings" class="w-4 h-4"></i> Account Connection
+                    </h3>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">CONNECTION URL</label>
+                        <input id="sb-url" type="text" value="${App.state.config.url}" placeholder="https://xyz.supabase.co" class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
                     </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">ACCESS KEY</label>
+                        <input id="sb-key" type="password" value="${App.state.config.key}" placeholder="eyJhbG..." class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
+                    </div>
+                    <button onclick="App.handleSaveConfig()" class="bg-pink-400 text-white px-8 py-2 rounded-full font-bold shadow-md hover:bg-pink-500 active:scale-95 transition-all mt-2">
+                        Save Setup
+                    </button>
                 </div>
             </div>
-        `,
+    `,
         history: () => `
-            <div class="layout-container">
-                <h2 style="font-size: 24px; font-weight: 800; margin-bottom: 16px; padding-left: 8px; color: #333;">History</h2>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; overflow-y: auto; padding-bottom: 20px;">
-                    ${App.state.history.length === 0 ? `<p style="grid-column: span 2; text-align: center; color: #999; margin-top: 40px;">No magic yet...</p>` :
+    <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
+                <header class="text-center mb-2">
+                    <h2 class="text-2xl font-black text-white drop-shadow-md">Magic History 📜</h2>
+                    <p class="text-white/70 text-xs italic">All your sent and received doodles ✨</p>
+                </header>
+                <div class="flex flex-col gap-4">
+                    <!-- Drafts Section -->
+                    ${(() => {
+                const drafts = App.state.drafts || [];
+                if (drafts.length === 0) return '';
+                return `
+                            <div class="bg-blue-50/50 p-4 rounded-bubbly border border-blue-100">
+                                <h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
+                                    <i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook
+                                </h3>
+                                <div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
+                                    ${drafts.map((d, i) => `
+                                        <div class="bg-white p-2 rounded-xl shadow-sm relative shrink-0 w-32 snap-start">
+                                            <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-lg bg-gray-50/50 border border-gray-100" />
+                                            <div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl backdrop-blur-[1px]">
+                                                <button onclick="App.editDoodleFromUrl('${d.image_data}')" class="bg-white/90 text-blue-500 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                                <button onclick="App.deleteDraft('${d.id}')" class="bg-white/90 text-red-400 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+            })()}
+
+                    <!-- History List -->
+                    ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
                 App.state.history.map(d => `
-                        <div class="card-premium" style="padding: 8px; border-radius: 16px; display: flex; flex-direction: column;">
-                            <img src="${d.image_data}" style="width: 100%; aspect-ratio: 1; object-fit: contain; background: white; border-radius: 12px; margin-bottom: 8px; border: 1px solid #eee;" />
-                            <div style="font-size: 10px; color: #888; text-align: right; margin-top: auto;">
-                                ${new Date(d.created_at).toLocaleDateString()}
+                        <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
+                            <div class="relative">
+                                <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
+                                <button onclick="App.editDoodle('${d.image_data}')" class="absolute top-2 right-2 bg-white/90 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="App.setWallpaper('${d.image_data}', '${d.id}')" class="absolute top-12 right-2 bg-white/90 text-blue-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
+                                <span>
+                                    ${(() => {
+                        const isSent = d.sender_id === App.state.session.user.id;
+                        // The other person's ID (receiver if sent, sender if received)
+                        const otherId = isSent ? d.receiver_id : d.sender_id;
+                        // Use the new Cache first, then Friend list, then generic fallback
+                        const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
+                        const friend = (Social.friends || []).find(f => f.id === otherId);
+
+                        let name = cacheName || (friend ? friend.username : 'Unknown');
+                        if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...'; // Short ID fallback
+
+                        // Multi-recipient formatting
+                        if (isSent && d.recipients && d.recipients.length > 0) {
+                            const names = d.recipients.map(rid => {
+                                const cName = App.state.userCache ? App.state.userCache[rid] : null;
+                                const f = (Social.friends || []).find(fr => fr.id === rid);
+                                return cName || (f ? f.username : rid.substring(0, 5) + '..');
+                            });
+                            // Join all names
+                            return `TO: ${names.join(', ')} 📤`;
+                        }
+
+                        return isSent ? `TO: ${name} 📤` : `
+                                            <div class="flex items-center gap-1">
+                                                <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                                    ${(() => {
+                                const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
+                                return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
+                            })()}
+                                                </div>
+                                                FROM: ${name} 📥
+                                            </div>`;
+                    })()}
+                                </span>
+                                <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
                             </div>
                         </div>
                     `).join('')}
                 </div>
             </div>
+            <!-- Spacer for floating nav -->
+    <div class="h-32 w-full"></div>
         `
+    },
+
+    // --- Actions ---
+    editDoodle(imageData) {
+        this.state.pendingDoodle = imageData;
+        this.toast('Opening studio... 🎨', 'pink');
+        this.setView('draw');
+    },
+
+    editDoodleFromUrl(url) {
+        this.editDoodle(url);
+    },
+
+    async saveDraft(imageData) {
+        if (!this.state.supabase || !this.state.session) {
+            this.toast('Login to save drafts! ☁️', 'blue');
+            return;
+        }
+        try {
+            const { error } = await this.state.supabase
+                .from('drafts')
+                .insert({
+                    user_id: this.state.session.user.id,
+                    image_data: imageData
+                });
+
+            if (error) throw error;
+            if (error) throw error;
+            this.toast('Sketch saved! ✨', 'pink');
+            this.loadHistory(); // Refresh
+        } catch (e) {
+            console.error(e);
+            this.toast('Failed to save sketch 😭', 'blue');
+        }
+    },
+
+    async deleteDraft(id) {
+        this.confirmKawaii({
+            title: "Discard Sketch? 🗑️",
+            message: "Are you sure you want to throw this magic away?",
+            okText: "Discard 👋",
+            onConfirm: async () => {
+                try {
+                    const { error } = await this.state.supabase
+                        .from('drafts')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    this.toast('Sketch discarded into the skye 👋', 'blue');
+                    this.loadHistory();
+                } catch (e) {
+                    console.error(e);
+                    this.toast('Delete failed', 'blue');
+                }
+            }
+        });
     },
 
     // Elite Haptics Helper
@@ -787,75 +1419,102 @@ const App = {
         if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
     },
 
-    // --- Elite Tier Singleton Toast ---
+    // Fix for zoomed-in screens / high DPI
+    fixZoomedLayout() {
+        const resetScale = () => {
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+            }
+        };
+        window.addEventListener('resize', resetScale);
+        resetScale();
+    },
+
+    confirmKawaii({ title, message, okText, onConfirm }) {
+        const modal = document.getElementById('confirm-modal');
+        if (!modal) return;
+
+        document.getElementById('confirm-title').innerText = title || "Magic Request?";
+        document.getElementById('confirm-message').innerText = message || "";
+        const okBtn = document.getElementById('confirm-ok');
+        okBtn.innerText = okText || "Yes! ✨";
+
+        modal.classList.remove('hidden');
+
+        const close = () => modal.classList.add('hidden');
+
+        okBtn.onclick = () => {
+            close();
+            if (onConfirm) onConfirm();
+        };
+
+        document.getElementById('confirm-cancel').onclick = close;
+    },
+
     toast(message, type = 'info') {
-        let container = document.getElementById('toast-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toast-container';
-            container.className = 'toast-container';
-            document.body.appendChild(container);
-        }
+        const container = document.getElementById('toasts');
+        const existing = container.querySelector('.toast-enter');
 
-        const existing = container.querySelector('.toast-pill');
+        // Smart Singleton: If same message, just pulse it!
+        if (existing && existing.innerText.includes(message)) {
+            existing.classList.remove('toast-pulse');
+            void existing.offsetWidth; // Trigger reflow
+            existing.classList.add('toast-pulse');
 
-        // Pulse logic for Singleton
-        if (existing) {
-            const textSpan = existing.querySelector('span');
-            if (textSpan) textSpan.innerText = message;
-
-            // Trigger reflow for pulse animation
-            existing.classList.remove('pulse-animation');
-            void existing.offsetWidth; // Force reflow
-            existing.classList.add('pulse-animation');
-
-            // Reset timeout
+            // Extend life
             clearTimeout(existing.dismissTimeout);
             existing.dismissTimeout = setTimeout(() => {
                 existing.style.opacity = '0';
-                existing.style.transform = 'translateY(-20px)';
+                existing.style.transform = 'translateY(-10px) scale(0.95)';
                 setTimeout(() => existing.remove(), 300);
-            }, 3000);
+            }, 2500);
             return;
         }
 
-        // Create new Pill
+        // Remove old if different message
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
+        }
+
         const toast = document.createElement('div');
-        toast.className = 'toast-pill';
+        // Pill shape, centered, subtle blur
+        toast.className = `toast-enter px-6 py-3 rounded-full shadow-2xl mb-4 font-bold flex items-center gap-3 text-white z-[100] backdrop-blur-sm border border-white/20`;
 
-        // Icon based on type
-        const iconName = type === 'pink' || type === 'success' ? 'sparkles' : 'info';
-        const iconColor = type === 'pink' ? '#FF69B4' : '#4A90E2';
+        // Elite Color Palette (Vibrant & Clean)
+        if (type === 'pink') {
+            toast.classList.add('bg-pink-500/90');
+            this.haptic('success');
+        } else if (type === 'blue') {
+            toast.classList.add('bg-indigo-500/90');
+            this.haptic('medium');
+        } else {
+            toast.classList.add('bg-gray-800/90');
+        }
 
-        toast.innerHTML = `
-            <i data-lucide="${iconName}" style="color: ${iconColor}; width: 18px; height: 18px;"></i>
-            <span class="toast-message">${message}</span>
-        `;
-
+        toast.innerHTML = `<i data-lucide="${type === 'pink' ? 'sparkles' : 'info'}" class="w-4 h-4 text-white/90"></i> <span class="tracking-wide text-sm">${message}</span>`;
         container.appendChild(toast);
+
         if (window.lucide) lucide.createIcons();
 
         toast.dismissTimeout = setTimeout(() => {
             toast.style.opacity = '0';
-            toast.style.transform = 'translateY(-20px)';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
+            toast.style.transform = 'translateY(-10px) scale(0.95)';
+            toast.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            setTimeout(() => {
+                if (toast.parentNode === container) container.removeChild(toast);
+            }, 400);
+        }, 2500);
     },
 
     createSparkle(x, y) {
-        // High-end particle logic could go here, keeping simple for now to focus on UI
         const s = document.createElement('div');
-        s.style.position = 'fixed';
-        s.style.left = x + 'px';
-        s.style.top = y + 'px';
-        s.style.width = '6px';
-        s.style.height = '6px';
-        s.style.backgroundColor = '#FFD1DC';
-        s.style.borderRadius = '50%';
-        s.style.pointerEvents = 'none';
-        s.className = 'view-transition'; // Reuse fade animation
+        s.className = 'sparkle-particle';
+        s.style.left = `${x - 7}px`;
+        s.style.top = `${y - 7}px`;
+        s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', 'white'][Math.floor(Math.random() * 4)];
         document.body.appendChild(s);
-        setTimeout(() => s.remove(), 500);
+        setTimeout(() => s.remove(), 800);
     },
 
     async openFriendPicker(callback) {
@@ -881,21 +1540,24 @@ const App = {
                 const isPending = f.status === 'pending';
                 const canSelect = !isPending || f.id === 'kawaii-6789';
                 return `
-            <button onclick="${canSelect ? `App.handlePickerSelect('${f.id}', '${f.username}')` : ''}" 
-                class="flex items-center gap-4 w-full p-3 rounded-2xl border-2 border-transparent ${canSelect ? 'hover:border-pink-300 hover:bg-pink-50' : 'opacity-50 cursor-not-allowed bg-gray-50'} transition-all text-left">
-                <div class="w-10 h-10 ${canSelect ? 'bg-pink-100 text-pink-500' : 'bg-gray-200 text-gray-400'} rounded-full flex items-center justify-center">
-                    <i data-lucide="user" class="w-5 h-5"></i>
-                </div>
-                <div class="flex-1">
-                    <p class="font-bold text-gray-700">${f.username}</p>
-                    <p class="text-[10px] ${canSelect ? 'text-pink-400' : 'text-gray-400'}">${f.id} ${isPending ? '(Pending ⏳)' : ''}</p>
-                </div>
-                ${canSelect ? `<i data-lucide="send" class="text-pink-300 w-5 h-5"></i>` : ''}
-            </button>
-        `}).join('');
+                <button onclick="${canSelect ? `App.handlePickerSelect('${f.id}', '${f.username}')` : ''}"
+                        class="flex items-center gap-4 w-full p-3 rounded-2xl border-2 border-transparent ${canSelect ? 'hover:border-pink-300 hover:bg-pink-50' : 'opacity-50 cursor-not-allowed bg-gray-50'} transition-all text-left">
+                    <div class="w-10 h-10 ${canSelect ? 'bg-pink-100 text-pink-500' : 'bg-gray-200 text-gray-400'} rounded-full flex items-center justify-center overflow-hidden">
+                        ${(() => {
+                        const av = App.state.avatarCache ? App.state.avatarCache[f.id] : null;
+                        return av ? `<img src="${av}" class="w-full h-full object-cover">` : `<i data-lucide="user" class="w-5 h-5"></i>`;
+                    })()} 
+                    </div>
+                    <div class="flex-1">
+                        <p class="font-bold text-gray-700">${f.username}</p>
+                        <p class="text-[10px] ${canSelect ? 'text-pink-400' : 'text-gray-400'}">${f.id} ${isPending ? '(Pending ⏳)' : ''}</p>
+                    </div>
+                    ${canSelect ? `<i data-lucide="send" class="text-pink-300 w-5 h-5"></i>` : ''}
+                </button>
+    `}).join('');
 
         if (list.innerHTML === '') {
-            list.innerHTML = `<p class="text-center text-gray-400 italic py-4">No friends found... 🥺</p>`;
+            list.innerHTML = `< p class="text-center text-gray-400 italic py-4" > No friends found... 🥺</p > `;
         }
 
         if (window.lucide) lucide.createIcons();
@@ -913,7 +1575,7 @@ const App = {
             this.state.activeRecipients.push(id);
         }
 
-        this.toast(`Selected ${username}! 🎯`, 'pink');
+        this.toast(`Selected ${username} ! 🎯`, 'pink');
         // Update UI if needed
         if (window.Social) Social.renderRecipientBubbles();
 
@@ -951,6 +1613,11 @@ window.handleSearchFriend = () => {
         App.toast('Social system offline! 🚫', 'blue');
     }
     input.value = '';
+};
+
+App.toggleReleaseNotes = () => {
+    const modal = document.getElementById('release-notes-modal');
+    if (modal) modal.classList.remove('hidden');
 };
 
 window.addEventListener('DOMContentLoaded', () => {

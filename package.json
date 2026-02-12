@@ -4,13 +4,15 @@
     "description": "Premium Kawaii Drawing App",
     "private": true,
     "scripts": {
-        "build": "echo 'No bundler needed'",
+        "build": "node scripts/build.js",
+        "sync": "npm run build && npx cap sync android && node scripts/patch-android.js",
         "test": "echo 'No tests yet'"
     },
     "dependencies": {
         "@capacitor/android": "^6.0.0",
         "@capacitor/app": "^6.0.0",
         "@capacitor/core": "^6.0.0",
+        "@capacitor/push-notifications": "^6.0.0",
         "@capacitor/status-bar": "^6.0.0",
         "@codetrix-studio/capacitor-google-auth": "^3.3.6",
         "cordova-plugin-navigationbar": "^1.0.4",

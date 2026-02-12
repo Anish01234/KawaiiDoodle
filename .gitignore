@@ -1,11 +1,45 @@
+# Dependencies
 node_modules/
 dist/
-.cache/
-.DS_Store
-*.log
-.env
+www/
+
+# Android
 android/app/build/
 android/.gradle/
 android/local.properties
-android/captures/
+android/app/release-key.keystore
+android/app/google-services.json
+
+# Web
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# IDE
 .vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Capacitor
+capacitor.js
+www/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+
+# Project specific
+scripts/set-secrets.js
+supabase_drafts.sql
+*.json
+!package.json
+!package-lock.json
+!capacitor.config.json
+!manifest.json
+service-account.json
+client_secret_*.json
+google-services.json

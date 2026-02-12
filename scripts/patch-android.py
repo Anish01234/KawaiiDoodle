@@ -105,7 +105,7 @@ if __name__ == "__main__":
             content = f.read()
         if 'server_client_id' not in content:
             # Insert before </resources>
-            content = content.replace('</resources>', '    <string name="server_client_id">122450948192-kpqrglufceoa8d1554n9nq2ca0chk6iu.apps.googleusercontent.com</string>\n</resources>')
+            content = content.replace('</resources>', '    <string name="server_client_id">338129743756-1u308evrhbor1sn79u8u7ceqlh8acvos.apps.googleusercontent.com</string>\n</resources>')
             with open(strings_path, 'w') as f:
                 f.write(content)
             print("✅ Patched strings.xml (Google Auth)")
