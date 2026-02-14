@@ -12,6 +12,14 @@ const Social = {
 
     async searchFriend(id) {
         if (!id) return;
+
+        // --- EASTER EGG TRIGGER ---
+        const eggTerm = id.toLowerCase().trim();
+        if (eggTerm === 'disco' || eggTerm === 'gravity' || eggTerm === 'chaos') {
+            App.triggerEasterEgg(eggTerm);
+            return;
+        }
+
         if (id === App.state.user.kawaiiId) {
             App.toast("You can't add yourself! 😹", 'blue');
             return;

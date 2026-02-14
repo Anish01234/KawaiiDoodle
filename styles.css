@@ -241,3 +241,72 @@ img {
 .animate-slide-up {
     animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* --- EASTER EGGS --- */
+/* DISCO MODE */
+@keyframes disco-bg {
+    0% {
+        filter: hue-rotate(0deg);
+    }
+
+    100% {
+        filter: hue-rotate(360deg);
+    }
+}
+
+@keyframes disco-bounce {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1) rotate(5deg);
+    }
+}
+
+body.disco-mode {
+    animation: disco-bg 2s linear infinite !important;
+    background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3) !important;
+    background-size: 400% 400% !important;
+}
+
+body.disco-mode #app * {
+    /* Controlled Chaos */
+    animation: disco-bounce 0.5s ease-in-out infinite !important;
+}
+
+/* ZERO GRAVITY MODE */
+@keyframes float-crazy {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    25% {
+        transform: translate(10px, -20px) rotate(5deg);
+    }
+
+    50% {
+        transform: translate(-5px, 10px) rotate(-5deg);
+    }
+
+    75% {
+        transform: translate(-15px, -15px) rotate(2deg);
+    }
+
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+body.zero-gravity-mode #app {
+    transition: transform 1s ease;
+    transform: rotate(180deg) !important;
+    filter: invert(1);
+}
+
+body.zero-gravity-mode * {
+    animation: float-crazy 3s ease-in-out infinite !important;
+    transition: all 1s ease;
+}

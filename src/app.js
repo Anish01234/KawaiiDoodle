@@ -80,6 +80,33 @@ const App = {
         this.magicTimeout = setTimeout(() => this.state.magicClickCount = 0, 2000);
     },
 
+    triggerEasterEgg(type) {
+        this.toast(`Secret Found: ${type.toUpperCase()} MODE! 🥚✨`, 'pink');
+        this.haptic('heavy');
+
+        if (type === 'disco') {
+            document.body.classList.add('disco-mode');
+            // Play sound? (Optional)
+        } else if (type === 'gravity') {
+            document.body.classList.add('zero-gravity-mode');
+        } else if (type === 'chaos') {
+            document.body.classList.add('disco-mode', 'zero-gravity-mode');
+        }
+
+        // Auto-disable after 10 seconds to create urgency
+        setTimeout(() => {
+            document.body.classList.remove('disco-mode', 'zero-gravity-mode');
+            this.toast('Matrix stabilizing... 🌀', 'blue');
+        }, 8000);
+
+        // Spawn massive sparkles
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                this.createSparkle(Math.random() * window.innerWidth, Math.random() * window.innerHeight);
+            }, i * 50);
+        }
+    },
+
     async checkForUpdates() {
         if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
 
@@ -91,10 +118,23 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.8.1'; // Updated manually
+            const currentVersion = '2.8.7'; // Updated for verification
+            console.log("🚀 Verification Version 2.8.7 Loaded!");
 
-            // Simple version check (assuming strictly increasing semver)
-            if (latestVersion && latestVersion !== currentVersion && latestVersion > currentVersion) {
+            // Robust Semver Comparison
+            const isNewer = (v1, v2) => {
+                const parts1 = v1.split('.').map(Number);
+                const parts2 = v2.split('.').map(Number);
+                for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+                    const n1 = parts1[i] || 0;
+                    const n2 = parts2[i] || 0;
+                    if (n1 > n2) return true;
+                    if (n1 < n2) return false;
+                }
+                return false;
+            };
+
+            if (latestVersion && latestVersion !== currentVersion && isNewer(latestVersion, currentVersion)) {
                 console.log(`Update available: ${latestVersion}`);
                 this.confirmKawaii({
                     title: "New Magic Found! 🌟",
@@ -116,21 +156,31 @@ const App = {
         this.toast("Downloading magic update... 📦", "pink");
 
         try {
-            const { Filesystem, Directory } = window.Capacitor.Plugins;
-            // Native File Opener isn't exposed properly via just generic Plugins usually, 
-            // but we use cordova-plugin-file-opener2 accessed via window.cordova.plugins.fileOpener2
+            // Robust Plugin Access
+            // We use the global Capacitor object to access plugins if imports fail
+            const Filesystem = window.Capacitor.Plugins.Filesystem;
+
+            if (!Filesystem) {
+                // FALLBACK: If plugin is strictly missing, we MUST use browser
+                console.warn("Filesystem plugin missing. Falling back to browser.");
+                window.open(apkAsset.browser_download_url, '_system');
+                return;
+            }
 
             const path = `update.apk`;
             const url = apkAsset.browser_download_url;
 
+            console.log(`⬇️ Downloading ${url} to ${path}...`);
+
             // 1. Download File
-            // Capacitor Filesystem downloadFile is the way
+            // Using 'CACHE' directory is the standard reliable way
             const downloadResult = await Filesystem.downloadFile({
                 path: path,
-                directory: Directory.Cache,
+                directory: 'CACHE',
                 url: url
             });
 
+            console.log("✅ Download complete:", downloadResult);
             const fileUri = downloadResult.path;
 
             // 2. Open File
@@ -139,23 +189,26 @@ const App = {
             if (window.cordova && window.cordova.plugins && window.cordova.plugins.fileOpener2) {
                 window.cordova.plugins.fileOpener2.open(
                     fileUri,
-                    'application/vnd.android.package-archive',
-                    {
-                        error: (e) => {
-                            console.error('FileOpen Error:', e);
-                            this.toast("Install failed 😭. Please update manually.", "blue");
-                        },
-                        success: () => console.log('Installer opened!')
-                    }
+                    'application/vnd.android.package-archive', {
+                    error: (e) => {
+                        console.error('FileOpen Error:', e);
+                        this.toast("Install failed 😭. Please update manually.", "blue");
+                        // Last resort fallback
+                        setTimeout(() => window.open(url, '_system'), 2000);
+                    },
+                    success: () => console.log('Installer opened!')
+                }
                 );
             } else {
                 console.warn("FileOpener2 not found");
                 this.toast("Installer plugin missing! 😭", "blue");
+                window.open(url, '_system');
             }
 
         } catch (e) {
             console.error("Update download failed:", e);
             this.toast("Update failed 😭", "blue");
+            window.open(apkAsset.browser_download_url, '_system');
         }
     },
 
