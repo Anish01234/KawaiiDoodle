@@ -60,8 +60,8 @@ jobs:
           echo "Listing android directory..."
           ls -R
           
-          # Create a keystore
-          keytool -genkey -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"
+          # Create the keystore that build.gradle expects
+          keytool -genkey -v -keystore app/release-key.keystore -alias kawaii -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"
           
           # Build APK
           ./gradlew assembleDebug --stacktrace
@@ -80,15 +80,21 @@ jobs:
           
           APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
           if [ ! -f "$APK_PATH" ]; then
-            echo "Error: APK not found at $APK_PATH"
+            # Check if it's named differently due to build type config
+            APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+            echo "Falling back to found APK: $APK_PATH"
+          fi
+          
+          if [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then
+            echo "Error: No APK found after build!"
             exit 1
           fi
           
           # Align the APK
           "$ZIPALIGN" -v -p 4 "$APK_PATH" app/build/outputs/apk/debug/app-debug-aligned.apk
 
-          # Sign using apksigner
-          "$APKSIGNER" sign --ks my-release-key.keystore --ks-pass pass:password --key-pass pass:password --out app/build/outputs/apk/debug/app-debug-signed.apk app/build/outputs/apk/debug/app-debug-aligned.apk
+          # Sign using apksigner with correct credentials
+          "$APKSIGNER" sign --ks app/release-key.keystore --ks-pass pass:password123 --key-pass pass:password123 --out app/build/outputs/apk/debug/app-debug-signed.apk app/build/outputs/apk/debug/app-debug-aligned.apk
 
           # Verify Signature
           "$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/app-debug-signed.apk
