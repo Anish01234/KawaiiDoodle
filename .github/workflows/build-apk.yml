@@ -40,14 +40,16 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
+      - name: Build Web Assets
+        run: npm run build
+
       - name: Initialize Capacitor Android
         run: |
-          mkdir -p www
-          cp index.html www/
-          cp -r src www/
-          cp -r assets www/ || true
           npx cap add android || true
           npx cap sync android
+
+      - name: Make Gradlew Executable
+        run: chmod +x android/gradlew
 
       - name: Patch Android Project (Deep Links & Fullscreen)
         run: node scripts/patch-android.js
