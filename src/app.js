@@ -22,7 +22,8 @@ const App = {
         },
         magicClickCount: 0,
         notificationsEnabled: false,
-        bootLogs: []
+        bootLogs: [],
+        previousView: null
     },
 
     enableDebugConsole() {
@@ -118,8 +119,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.8.7'; // Updated for verification
-            console.log("🚀 Verification Version 2.8.7 Loaded!");
+            const currentVersion = '2.8.9'; // Fixed Fade & Update Logic
+            console.log("🚀 Version 2.8.8: Testing Native Installer + Permissions");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -142,6 +143,8 @@ const App = {
                     okText: "Update Now 🚀",
                     onConfirm: () => this.downloadAndInstallUpdate(data.assets)
                 });
+            } else {
+                console.log("✅ Custom check: App is up to date!");
             }
         } catch (e) {
             console.warn("Update check failed:", e);
@@ -1158,9 +1161,11 @@ const App = {
         }
 
         // Add animation class to new content
-        if (content.firstElementChild) {
+        // Add animation class to new content ONLY if view changed
+        if (content.firstElementChild && this.state.view !== this.state.previousView) {
             content.firstElementChild.classList.add('animate-slide-up');
         }
+        this.state.previousView = this.state.view;
         if (window.lucide) lucide.createIcons();
     },
 
@@ -1239,7 +1244,7 @@ const App = {
         home: () => `
             <div class="flex flex-col items-center gap-6 p-4 w-full max-w-md mx-auto animate-slide-up">
                 <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transform hover:scale-105 transition-transform duration-500">
-                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain" />` : `
+                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" />` : `
                     <div class="text-center p-4">
                         <i data-lucide="image" class="w-12 h-12 mx-auto text-pink-300 mb-2"></i>
                         <p class="font-bold text-pink-400 text-sm">Waiting for a doodle...</p>
