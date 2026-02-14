@@ -91,7 +91,7 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.8.0'; // Updated manually
+            const currentVersion = '2.8.1'; // Updated manually
 
             // Simple version check (assuming strictly increasing semver)
             if (latestVersion && latestVersion !== currentVersion && latestVersion > currentVersion) {
@@ -586,14 +586,14 @@ const App = {
         this.loadHistory();
 
         // 🔄 Polling Fallback: Check for new magic every 30s
-        // This ensures updates happen even if the socket connection drops silently.
-        setInterval(() => {
-            console.log("⏱️ Polling: Checking for new doodles...");
-            this.loadHistory();
+        // FIX: Only render if data actually changed to prevent blinking
+        setInterval(async () => {
+            // console.log("⏱️ Polling: Checking for new doodles..."); // Reduce log spam
+            await this.loadHistory(true); // Pass 'silent' flag
         }, 30000);
     },
 
-    async loadHistory() {
+    async loadHistory(silent = false) {
         if (!this.state.supabase || !this.state.session) return;
         try {
             // 1. Load History (Doodles)
@@ -602,7 +602,7 @@ const App = {
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                 .order('created_at', { ascending: false })
-                .limit(50); // Optimization: Only load recent magic! ✨
+                .limit(50); // Optimization: Only load recent magic! ✨ 
 
             if (doodleError) throw doodleError;
 
@@ -669,21 +669,30 @@ const App = {
                 }
             });
 
-            this.state.history = groupedHistory;
+            // CHECK FOR CHANGES TO PREVENT BLINKING
+            const currentHash = JSON.stringify(this.state.history.map(h => h.id));
+            const newHash = JSON.stringify(groupedHistory.map(h => h.id));
 
-            // --- Notification Count Logic ---
+            // Also check unread count change
+            const currentUnread = this.state.unreadCount;
             // Count doodles where I am receiver AND is_read is explicitly false
-            const unread = doodles.filter(d =>
+            const newUnread = doodles.filter(d =>
                 d.receiver_id === this.state.session.user.id &&
                 d.is_read === false
             ).length;
 
-            this.state.unreadCount = unread;
+            if (silent && currentHash === newHash && currentUnread === newUnread) {
+                // No changes, no blink!
+                return;
+            }
+
+            this.state.history = groupedHistory;
+            this.state.unreadCount = newUnread;
 
             // Update App Badge (Plugin)
             if (window.Capacitor && window.Capacitor.Plugins.Badge) {
                 try {
-                    await window.Capacitor.Plugins.Badge.set({ count: unread });
+                    await window.Capacitor.Plugins.Badge.set({ count: newUnread });
                 } catch (e) { /* ignore badge error */ }
             }
 
