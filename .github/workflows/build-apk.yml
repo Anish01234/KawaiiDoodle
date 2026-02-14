@@ -54,37 +54,44 @@ jobs:
       - name: Patch Android Project (Deep Links & Fullscreen)
         run: node scripts/patch-android.js
 
-      - name: Build APK with Signing Config
+      - name: Build APK
         run: |
           cd android
+          echo "Listing android directory..."
+          ls -R
+          
           # Create a keystore
           keytool -genkey -v -keystore my-release-key.keystore -alias my-key-alias -keyalg RSA -keysize 2048 -validity 10000 -storepass password -keypass password -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"
           
-          # Print SHA-1 Fingerprint
-          echo "::group::🔑 SHA-1 FINGERPRINT FOR GOOGLE CLOUD"
-          keytool -list -v -keystore my-release-key.keystore -alias my-key-alias -storepass password | grep "SHA1:"
-          echo "::endgroup::"
-
+          # Build APK
+          ./gradlew assembleDebug --stacktrace
           
-          # Build APK (Default Debug Signing)
-          ./gradlew assembleDebug
-
           # Find tools
           APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -r | head -n 1)
           ZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | sort -r | head -n 1)
+          
           echo "Found apksigner at: $APKSIGNER"
           echo "Found zipalign at: $ZIPALIGN"
           
-          # Align the APK (Important for apksigner)
-          "$ZIPALIGN" -v -p 4 app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/app-debug-aligned.apk
+          if [ -z "$APKSIGNER" ] || [ -z "$ZIPALIGN" ]; then
+            echo "Error: Signing tools not found!"
+            exit 1
+          fi
+          
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: APK not found at $APK_PATH"
+            exit 1
+          fi
+          
+          # Align the APK
+          "$ZIPALIGN" -v -p 4 "$APK_PATH" app/build/outputs/apk/debug/app-debug-aligned.apk
 
-          # Sign using apksigner (Adds v2, v3 signatures automatically)
+          # Sign using apksigner
           "$APKSIGNER" sign --ks my-release-key.keystore --ks-pass pass:password --key-pass pass:password --out app/build/outputs/apk/debug/app-debug-signed.apk app/build/outputs/apk/debug/app-debug-aligned.apk
 
-          # Verify Signature and Print SHA-1
-          echo "::group::🔍 VERIFYING APK SIGNATURE"
+          # Verify Signature
           "$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/app-debug-signed.apk
-          echo "::endgroup::"
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
