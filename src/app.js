@@ -14,6 +14,7 @@ const App = {
         lastDoodle: null,
         history: [],
         activeRecipients: [],
+        unreadCount: 0,
         supabase: null,
         config: {
             url: window.CONFIG?.SUPABASE_URL || localStorage.getItem('sb-url') || '',
@@ -79,8 +80,88 @@ const App = {
         this.magicTimeout = setTimeout(() => this.state.magicClickCount = 0, 2000);
     },
 
+    async checkForUpdates() {
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+
+        try {
+            console.log("🔄 Checking for updates...");
+            // Use specific repo
+            const response = await fetch('https://api.github.com/repos/Anish01234/KawaiiDoodle/releases/latest');
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const latestVersion = data.tag_name?.replace('v', '');
+            const currentVersion = '2.8.0'; // Updated manually
+
+            // Simple version check (assuming strictly increasing semver)
+            if (latestVersion && latestVersion !== currentVersion && latestVersion > currentVersion) {
+                console.log(`Update available: ${latestVersion}`);
+                this.confirmKawaii({
+                    title: "New Magic Found! 🌟",
+                    message: `A new version (${latestVersion}) is ready! Update to see the latest magic? ✨`,
+                    okText: "Update Now 🚀",
+                    onConfirm: () => this.downloadAndInstallUpdate(data.assets)
+                });
+            }
+        } catch (e) {
+            console.warn("Update check failed:", e);
+        }
+    },
+
+    async downloadAndInstallUpdate(assets) {
+        if (!assets || !assets.length) return;
+        const apkAsset = assets.find(a => a.name.endsWith('.apk'));
+        if (!apkAsset) return;
+
+        this.toast("Downloading magic update... 📦", "pink");
+
+        try {
+            const { Filesystem, Directory } = window.Capacitor.Plugins;
+            // Native File Opener isn't exposed properly via just generic Plugins usually, 
+            // but we use cordova-plugin-file-opener2 accessed via window.cordova.plugins.fileOpener2
+
+            const path = `update.apk`;
+            const url = apkAsset.browser_download_url;
+
+            // 1. Download File
+            // Capacitor Filesystem downloadFile is the way
+            const downloadResult = await Filesystem.downloadFile({
+                path: path,
+                directory: Directory.Cache,
+                url: url
+            });
+
+            const fileUri = downloadResult.path;
+
+            // 2. Open File
+            this.toast("Installing... ✨", "pink");
+
+            if (window.cordova && window.cordova.plugins && window.cordova.plugins.fileOpener2) {
+                window.cordova.plugins.fileOpener2.open(
+                    fileUri,
+                    'application/vnd.android.package-archive',
+                    {
+                        error: (e) => {
+                            console.error('FileOpen Error:', e);
+                            this.toast("Install failed 😭. Please update manually.", "blue");
+                        },
+                        success: () => console.log('Installer opened!')
+                    }
+                );
+            } else {
+                console.warn("FileOpener2 not found");
+                this.toast("Installer plugin missing! 😭", "blue");
+            }
+
+        } catch (e) {
+            console.error("Update download failed:", e);
+            this.toast("Update failed 😭", "blue");
+        }
+    },
+
     async init() {
         this.enableDebugConsole();
+        this.checkForUpdates();
         this.logBoot("✨ Kawaii App Initializing...");
         this.logBoot(`Capacitor: ${window.Capacitor ? 'LOADED' : 'MISSING'}`);
         if (window.Capacitor) {
@@ -590,13 +671,52 @@ const App = {
 
             this.state.history = groupedHistory;
 
-            if (doodles.length > 0) {
+            // --- Notification Count Logic ---
+            // Count doodles where I am receiver AND is_read is explicitly false
+            const unread = doodles.filter(d =>
+                d.receiver_id === this.state.session.user.id &&
+                d.is_read === false
+            ).length;
+
+            this.state.unreadCount = unread;
+
+            // Update App Badge (Plugin)
+            if (window.Capacitor && window.Capacitor.Plugins.Badge) {
+                try {
+                    await window.Capacitor.Plugins.Badge.set({ count: unread });
+                } catch (e) { /* ignore badge error */ }
+            }
+
+            if (this.state.history.length > 0) {
                 this.state.lastDoodle = doodles[0].image_data;
                 this.setSmartWallpaper(doodles[0]);
             }
             if (this.state.view === 'home' || this.state.view === 'history') this.renderView();
         } catch (e) {
             console.error("History load failed:", e);
+        }
+    },
+
+    async markAllRead() {
+        if (!this.state.supabase || !this.state.session) return;
+        if (this.state.unreadCount === 0) return;
+
+        // Optimistic Update
+        this.state.unreadCount = 0;
+        this.renderView();
+        if (window.Capacitor && window.Capacitor.Plugins.Badge) {
+            window.Capacitor.Plugins.Badge.clear().catch(() => { });
+        }
+
+        try {
+            await this.state.supabase
+                .from('doodles')
+                .update({ is_read: true })
+                .eq('receiver_id', this.state.session.user.id)
+                .eq('is_read', false);
+            console.log("✅ Marked all as read");
+        } catch (e) {
+            console.warn("Failed to mark read:", e);
         }
     },
 
@@ -916,7 +1036,10 @@ const App = {
                     };
                 }
             }
-            if (viewName === 'history') this.loadHistory();
+            if (viewName === 'history') {
+                this.loadHistory();
+                this.markAllRead();
+            }
         }, 0);
     },
 
@@ -1063,9 +1186,9 @@ const App = {
                 <div class="flex flex-col items-center gap-3">
                     <div class="w-16 h-16 rounded-full border-4 border-white/50 shadow-lg overflow-hidden bg-pink-100 flex-shrink-0">
                         ${App.state.user.avatarUrl ?
-                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover">` :
-                `<div class="w-full h-full flex items-center justify-center"><i data-lucide="user" class="w-8 h-8 text-pink-300"></i></div>`
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
             }
+                        <div class="w-full h-full flex items-center justify-center ${App.state.user.avatarUrl ? 'hidden' : ''}"><i data-lucide="user" class="w-8 h-8 text-pink-300"></i></div>
                     </div>
                     <div class="text-center">
                         <h2 class="text-2xl font-bold text-white drop-shadow-md">Stay Kawaii, ${App.state.user.username.split(' ')[0]}! ✨</h2>
@@ -1075,8 +1198,12 @@ const App = {
                     <button onclick="App.setView('draw')" class="btn-bubbly btn-primary hover:scale-105 active:scale-95 shrink-0">
                         <i data-lucide="palette"></i> Doodle! 🎨
                     </button>
-                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105 active:scale-95 shrink-0">
+                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105 active:scale-95 shrink-0 relative">
                         <i data-lucide="history"></i> History 📜
+                        ${App.state.unreadCount > 0 ? `
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+                            ${App.state.unreadCount}
+                        </span>` : ''}
                     </button>
                     ${!App.state.notificationsEnabled ? `
                     <!-- Unified Signal Activation -->
@@ -1217,11 +1344,11 @@ const App = {
 `,
         profile: () => `
     <div class="flex flex-col items-center gap-6 w-full max-w-sm animate-slide-up">
-                <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden">
+                <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden shrink-0">
                     ${App.state.user.avatarUrl ?
-                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover">` :
-                `<i data-lucide="user" class="w-12 h-12 text-gray-300"></i>`
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
             }
+                    <i data-lucide="user" class="w-12 h-12 text-gray-300 ${App.state.user.avatarUrl ? 'hidden' : ''}"></i>
                 </div>
                 <div class="text-center">
                     <p class="text-xl font-bold border-none outline-none py-1">${App.state.user.username}</p>

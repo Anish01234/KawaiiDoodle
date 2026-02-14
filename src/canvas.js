@@ -255,9 +255,7 @@ window.initCanvas = function () {
     }
 
     function saveState() {
-        // Limit stack size to proper amount (e.g., 20)
-        if (state.undoStack.length > 20) state.undoStack.shift();
-
+        // No limit as requested by user
         state.undoStack.push(canvas.toDataURL());
         state.redoStack = []; // Clear redo on new action
         updateUndoUI();
@@ -501,110 +499,89 @@ window.initCanvas = function () {
     });
 
     document.getElementById('send-doodle').addEventListener('click', async () => {
+        const btn = document.getElementById('send-doodle');
+        const originalText = btn.innerHTML;
         const snapshot = canvas.toDataURL('image/png');
+        const sb = App.state.supabase;
 
-        // Helper function for single send (No UI updates inside)
-        const sendLogic = async (targetId) => {
-            const sb = App.state.supabase;
-            if (!sb) return; // Skip if no cloud
-
-            const user = (await sb.auth.getUser()).data.user;
-
-            // 1. Find destination UUID & FCM Token from kawaii_id
-            const { data: target, error: targetError } = await sb
-                .from('profiles')
-                .select('id, fcm_token') // Fetch token too!
-                .eq('kawaii_id', targetId)
-                .single();
-
-            if (targetError || !target) throw new Error(`Friend ${targetId} not found!`);
-
-            // 2. Insert Doodle
-            const { data: doodleData, error } = await sb
-                .from('doodles')
-                .insert({
-                    sender_id: user.id,
-                    receiver_id: target.id,
-                    image_data: snapshot
-                })
-                .select('id')
-                .single();
-
-            if (error) throw error;
-
-            // 3. Trigger Push Notification (Wake up friend!)
-            if (target.fcm_token) {
-                // AUTH REQUIRED: You must put your Firebase Server Key here!
-                const SERVER_KEY = 'AIzaSyALRaXqvJZk7Xogiwmqgnlgx0KhKjlHtZ8';
-
-                if (SERVER_KEY === 'YOUR_FIREBASE_SERVER_KEY') {
-                    console.warn("⚠️ Push skipped: Please add your Firebase Server Key in canvas.js");
-                } else {
-                    try {
-                        console.log("🚀 Invoking Supabase Edge Function: 'push'...");
-                        const { data: funcData, error: funcError } = await App.state.supabase.functions.invoke('push', {
-                            body: {
-                                to: target.fcm_token,
-                                title: 'New Magic! ✨',
-                                body: `You received a doodle from ${App.state.user.username}!`,
-                                data: {
-                                    type: 'doodle',
-                                    sender: App.state.user.username,
-                                    doodle_id: doodleData?.id, // Added ID!
-                                    click_action: 'FCM_PLUGIN_ACTIVITY'
-                                }
-                            }
-                        });
-
-                        if (funcError) {
-                            console.error("❌ Edge Function Error:", funcError);
-                            App.toast('Push Server Error ☁️', 'blue');
-                        } else {
-                            console.log("✅ Edge Function Result:", funcData);
-                            App.toast('Notification sent! 🚀', 'pink');
-                        }
-                    } catch (pushErr) {
-                        console.error("Push invocation failed:", pushErr);
-                    }
-                }
-            }
-        };
-
-        if (App.state.activeRecipients.length > 0) {
-            App.toast(`Sending to ${App.state.activeRecipients.length} friends... 🚀`, 'pink');
-
-            try {
-                // Execute all sends in parallel
-                await Promise.all(App.state.activeRecipients.map(id => sendLogic(id)));
-
-                // Success!
-                App.toast('Doodles sent with magic! 💖', 'pink');
-
-                // Success!
-                App.toast('Doodles sent with magic! 💖', 'pink');
-
-                // Cleanup
-                App.state.activeRecipients = [];
-                App.setView('home');
-                App.loadHistory();
-
-            } catch (e) {
-                console.error(e);
-                App.toast(`Send failed: ${e.message} 😭`, 'blue');
-            }
-        } else {
-            // Saving local only? Or just require recipient?
-            if (!App.state.supabase) {
+        if (!App.state.activeRecipients || App.state.activeRecipients.length === 0) {
+            if (!sb) {
                 App.state.lastDoodle = snapshot;
                 App.toast('Local doodle saved! 🎨', 'pink');
                 App.setView('home');
                 return;
             }
-
             App.toast('Select friends from the list above! 👆', 'blue');
             const bubbles = document.getElementById('friend-bubbles');
             if (bubbles) bubbles.classList.add('animate-bounce');
             setTimeout(() => bubbles?.classList.remove('animate-bounce'), 1000);
+            return;
+        }
+
+        // 1. Enter Loading State
+        btn.disabled = true;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> GENERATING MAGIC...`;
+        if (window.lucide) lucide.createIcons();
+
+        try {
+            App.toast(`Sending to ${App.state.activeRecipients.length} friends... 🚀`, 'pink');
+
+            // 2. Fetch User & Targets in ONE batch
+            const user = (await sb.auth.getUser()).data.user;
+            const { data: targets, error: targetError } = await sb
+                .from('profiles')
+                .select('id, kawaii_id, fcm_token')
+                .in('kawaii_id', App.state.activeRecipients);
+
+            if (targetError) throw targetError;
+            if (!targets || targets.length === 0) throw new Error("No friends found!");
+
+            // 3. Prepare Batch Insert
+            const doodlesToInsert = targets.map(target => ({
+                sender_id: user.id,
+                receiver_id: target.id,
+                image_data: snapshot
+            }));
+
+            const { data: insertedDoodles, error: insertError } = await sb
+                .from('doodles')
+                .insert(doodlesToInsert)
+                .select('id, receiver_id');
+
+            if (insertError) throw insertError;
+
+            // 4. Fire-and-forget push notifications (don't block UI)
+            targets.forEach(target => {
+                if (target.fcm_token) {
+                    const doodleId = insertedDoodles.find(d => d.receiver_id === target.id)?.id;
+                    App.state.supabase.functions.invoke('push', {
+                        body: {
+                            to: target.fcm_token,
+                            title: 'New Magic! ✨',
+                            body: `You received a doodle from ${App.state.user.username}!`,
+                            data: {
+                                type: 'doodle',
+                                sender: App.state.user.username,
+                                doodle_id: doodleId,
+                                click_action: 'FCM_PLUGIN_ACTIVITY'
+                            }
+                        }
+                    }).catch(e => console.error("Push fail:", e));
+                }
+            });
+
+            // 5. Success Flow
+            App.toast('Doodles sent with magic! 💖', 'pink');
+            App.state.activeRecipients = [];
+            App.setView('home');
+            App.loadHistory();
+
+        } catch (e) {
+            console.error("Send Failure:", e);
+            App.toast(`Send failed: ${e.message} 😭`, 'blue');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            if (window.lucide) lucide.createIcons();
         }
     });
 

@@ -304,8 +304,14 @@ const Social = {
             return `
                 <div id="friend-row-${f.id}" class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 border-transparent animate-float" style="animation-delay: ${Math.random()}s">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white transition-colors overflow-hidden">
-                            ${f.avatar_url ? `<img src="${f.avatar_url}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-5 h-5 text-pink-400"></i>'}
+                        <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white transition-colors overflow-hidden shrink-0">
+                            ${f.avatar_url ? `<img src="${f.avatar_url}" 
+                                class="w-full h-full object-cover" 
+                                referrerpolicy="no-referrer"
+                                onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''}
+                            <div class="${f.avatar_url ? 'hidden' : ''} w-full h-full flex items-center justify-center">
+                                <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
+                            </div>
                         </div>
                         <div>
                             <p class="font-bold text-sm text-gray-700">${f.username}</p>
@@ -365,9 +371,11 @@ const Social = {
                 <button onclick="Social.toggleRecipient('${f.id}')" 
                         class="flex flex-col items-center gap-1 transition-all ${isActive ? 'scale-110' : 'opacity-100'}"
                         style="${isActive ? '' : 'filter: grayscale(0.5) opacity(0.7);'}">
+                    <div class="relative flex flex-col items-center">
                     <div class="w-10 h-10 rounded-full border-2 ${isActive ? 'border-pink-500 bg-pink-100' : 'border-gray-200 bg-white'} flex items-center justify-center overflow-hidden shadow-sm">
                         ${f.avatar_url ?
-                    `<img src="${f.avatar_url}" class="w-full h-full object-cover">` :
+                    `<img src="${f.avatar_url}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">
+                     <span class="text-xs font-bold ${isActive ? 'text-pink-500' : 'text-gray-400'} hidden">${f.username[0].toUpperCase()}</span>` :
                     `<span class="text-xs font-bold ${isActive ? 'text-pink-500' : 'text-gray-400'}">${f.username[0].toUpperCase()}</span>`
                 }
                     </div>

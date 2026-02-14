@@ -43,6 +43,30 @@ async function importPrivateKey(pem: string) {
     );
 }
 
+// Retry fetch wrapper
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, backoff = 1000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (response.ok) return response;
+
+            // If strict 4xx or 5xx, we might want to retry
+            const status = response.status;
+            if (status >= 500 || status === 429) {
+                console.warn(`Attempt ${i + 1} failed with ${status}. Retrying in ${backoff}ms...`);
+            } else {
+                // Not retryable (e.g., 400 Bad Request, 401 Unauthorized)
+                return response;
+            }
+        } catch (err) {
+            console.warn(`Attempt ${i + 1} failed with network error: ${err.message}. Retrying in ${backoff}ms...`);
+        }
+        await new Promise(resolve => setTimeout(resolve, backoff));
+        backoff *= 2; // Exponential backoff
+    }
+    throw new Error(`Failed to fetch ${url} after ${retries} attempts`);
+}
+
 serve(async (req) => {
     // Handle CORS preflight requests
     if (req.method === "OPTIONS") {
@@ -94,11 +118,11 @@ serve(async (req) => {
                 exp: Math.floor(Date.now() / 1000) + 3600,
                 scope: "https://www.googleapis.com/auth/firebase.messaging"
             },
-            privateKey // Now it's a CryptoKey!
+            privateKey
         );
 
         // 3. Get Google Access Token
-        const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+        const tokenResponse = await fetchWithRetry("https://oauth2.googleapis.com/token", {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: `grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=${jwt}`
@@ -113,7 +137,7 @@ serve(async (req) => {
         const accessToken = tokens.access_token;
 
         // 4. Send Push (FCM V1 API)
-        const fcmResponse = await fetch(
+        const fcmResponse = await fetchWithRetry(
             `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`,
             {
                 method: "POST",
@@ -124,18 +148,30 @@ serve(async (req) => {
                 body: JSON.stringify({
                     message: {
                         token: to,
-                        // REMOVED top-level notification to force background execution!
+                        // Always include data payload for background handling
                         data: {
                             ...data,
                             doodle_id: data.doodle_id?.toString() || "",
                             type: "doodle",
                             sender: data.sender || "Someone",
-                            title: title || "New Magic! ✨", // Put in data
-                            body: body || "You received a doodle!" // Put in data
+                            title: title || "New Magic! ✨",
+                            body: body || "You received a doodle!"
+                        },
+                        // Explicit notification block ensures it shows up even if app is killed (on some devices)
+                        // But also handling data-only logic in client is key.
+                        // We include a minimal notification for guaranteed delivery visibility.
+                        notification: {
+                            title: title || "New Magic! ✨",
+                            body: body || "You received a doodle!",
                         },
                         android: {
-                            priority: "HIGH", // Correct V1 uppercase value
-                            ttl: "0s" // Deliver immediately
+                            priority: "HIGH",
+                            ttl: "0s",
+                            notification: {
+                                icon: "ic_stat_icon", // Ensure you have this icon resource!
+                                color: "#FF69B4",     // Pink color
+                                click_action: "FLUTTER_NOTIFICATION_CLICK" // Or your intent filter
+                            }
                         }
                     }
                 })
@@ -151,6 +187,8 @@ serve(async (req) => {
                 headers: { ...corsHeaders, "Content-Type": "application/json" }
             });
         }
+
+        console.log("✅ FCM Success:", JSON.stringify(result));
 
         return new Response(JSON.stringify(result), {
             headers: { ...corsHeaders, "Content-Type": "application/json" }
