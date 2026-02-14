@@ -48,7 +48,7 @@ jobs:
           npx cap sync android
 
       - name: Patch Android Project (Deep Links & Fullscreen)
-        run: python3 scripts/patch-android.py
+        run: node scripts/patch-android.js
 
       - name: Build APK with Signing Config
         run: |
