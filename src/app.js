@@ -34,9 +34,26 @@ const App = {
         const originalError = console.error;
         const originalWarn = console.warn;
 
+        // Restore previous logs if any
+        try {
+            const saved = localStorage.getItem('kawaii_crash_logs');
+            if (saved) App.state.bootLogs = JSON.parse(saved);
+        } catch (e) { console.warn("Log restore failed", e); }
+
         const append = (type, args) => {
             const msg = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
-            App.state.bootLogs.push(`[${type}] ${msg}`);
+            const line = `[${new Date().toISOString().split('T')[1].split('.')[0]}] [${type}] ${msg}`;
+
+            App.state.bootLogs.push(line);
+
+            // Persistent Storage Logic (Rolling Buffer of 300 lines)
+            if (App.state.bootLogs.length > 300) {
+                App.state.bootLogs = App.state.bootLogs.slice(-300);
+            }
+            try {
+                localStorage.setItem('kawaii_crash_logs', JSON.stringify(App.state.bootLogs));
+            } catch (e) { /* Storage full or error */ }
+
             // Also update UI if visible
             const logEl = document.getElementById('boot-log-content');
             if (logEl) {
@@ -49,7 +66,7 @@ const App = {
         console.error = (...args) => { originalError.apply(console, args); append('error', args); };
         console.warn = (...args) => { originalWarn.apply(console, args); append('warn', args); };
 
-        console.log("🐞 Debug Console Active!");
+        console.log("🐞 Debug Console Active (Persistent Mode)");
     },
 
     logBoot(msg) {
@@ -119,8 +136,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.10';
-            console.log("🚀 Version 2.9.10: Disabling Custom FCM Service");
+            const currentVersion = '2.9.11';
+            console.log("🚀 Version 2.9.11: Persistent Crash Logging");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -152,11 +169,17 @@ const App = {
     },
 
     async downloadCrashLogs() {
-        const logs = this.state.bootLogs.join('\n');
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `kawaii-logs-${timestamp}.txt`;
+        // Prefer persistent logs if available, fallback to memory
+        let logs = App.state.bootLogs.join('\n');
+        try {
+            const saved = localStorage.getItem('kawaii_crash_logs');
+            if (saved) logs = JSON.parse(saved).join('\n');
+        } catch (e) { console.warn("Failed to read saved logs", e); }
 
-        this.toast('Preparing logs... 🐞', 'blue');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `kawaii-crash-logs-${timestamp}.txt`;
+
+        this.toast('Preparing persistent logs... 🐞', 'blue');
 
         // 1. Try Native Share (Best for Android)
         if (window.Capacitor && window.Capacitor.Plugins.Share) {
@@ -1252,7 +1275,7 @@ const App = {
 
                 <div class="text-center">
                     <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
-                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.9.10 (Build: ${new Date().toLocaleTimeString()})</p>
+                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.9.11 (Build: ${new Date().toLocaleTimeString()})</p>
                     
                     <!-- Crash Log Tool -->
                     <button onclick="App.downloadCrashLogs()" class="mt-4 text-[10px] text-white/40 hover:text-white underline p-2">
