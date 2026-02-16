@@ -147,8 +147,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.17';
-            console.log("🚀 Version 2.9.17: Safe Push Init");
+            const currentVersion = '2.9.18';
+            console.log("🚀 Version 2.9.18: Isolated Crash - Disabled GoogleAuth Pre-init");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -465,14 +465,17 @@ const App = {
                     try {
                         this.initPush();
                     } catch (e) { console.error("Push Init Failed:", e); }
-                    // Pre-initialize Google Auth for snappier login
+
+                    // Pre-initialize Google Auth (Commented out to isolate crash - suspected conflict)
+                    /*
                     const { GoogleAuth } = window.Capacitor.Plugins;
                     if (GoogleAuth) {
                         GoogleAuth.initialize({
                             clientId: '338129743756-1u308evrhbor1sn79u8u7ceqlh8acvos.apps.googleusercontent.com',
                         }).catch(e => console.log("GoogleAuth Init deferred:", e));
                     }
-                }, 2000);
+                    */
+                }, 5000);
             }
 
         } catch (e) {
