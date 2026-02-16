@@ -147,8 +147,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.14';
-            console.log("🚀 Version 2.9.14: Diagnostic Logging & Memory Trace");
+            const currentVersion = '2.9.15';
+            console.log("🚀 Version 2.9.15: Critical Push Crash Fix");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -600,7 +600,12 @@ const App = {
         this.state.notificationsEnabled = true;
 
         // Register
-        await PushNotifications.register();
+        try {
+            await PushNotifications.register();
+        } catch (e) {
+            console.error("Push Native Register Failed:", e);
+            // Don't toast here as it might be a silent failure or race condition
+        }
 
         // On success
         PushNotifications.addListener('registration', async (token) => {
