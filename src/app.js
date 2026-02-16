@@ -147,8 +147,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.16';
-            console.log("🚀 Version 2.9.16: Removed Push Conflicts");
+            const currentVersion = '2.9.17';
+            console.log("🚀 Version 2.9.17: Safe Push Init");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -462,7 +462,9 @@ const App = {
             // 3. Initialize Push (FCM) & Google Auth
             if (window.Capacitor.isNativePlatform()) {
                 setTimeout(() => {
-                    this.initPush();
+                    try {
+                        this.initPush();
+                    } catch (e) { console.error("Push Init Failed:", e); }
                     // Pre-initialize Google Auth for snappier login
                     const { GoogleAuth } = window.Capacitor.Plugins;
                     if (GoogleAuth) {
