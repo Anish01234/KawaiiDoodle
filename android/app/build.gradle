@@ -8,8 +8,8 @@ android {
         applicationId "io.kawaii.doodle"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 24
-        versionName "2.9.15"
+        versionCode 25
+        versionName "2.9.16"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -61,7 +61,7 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
     implementation "androidx.core:core-ktx:1.12.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
-    implementation "com.google.firebase:firebase-messaging:23.4.1"
+    // implementation "com.google.firebase:firebase-messaging:23.4.1" (Removed to prevent conflict)
     implementation "androidx.work:work-runtime-ktx:2.8.1"
 }
 

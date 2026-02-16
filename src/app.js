@@ -147,8 +147,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.15';
-            console.log("🚀 Version 2.9.15: Critical Push Crash Fix");
+            const currentVersion = '2.9.16';
+            console.log("🚀 Version 2.9.16: Removed Push Conflicts");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
