@@ -61,6 +61,7 @@ dependencies {
     implementation "androidx.core:core-ktx:1.12.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
     implementation "androidx.core:core-splashscreen:${rootProject.ext.coreSplashScreenVersion}"
+    implementation "androidx.work:work-runtime-ktx:2.9.0"
 }
 
 apply from: 'capacitor.build.gradle'
