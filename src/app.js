@@ -66,7 +66,18 @@ const App = {
         console.error = (...args) => { originalError.apply(console, args); append('error', args); };
         console.warn = (...args) => { originalWarn.apply(console, args); append('warn', args); };
 
-        console.log("🐞 Debug Console Active (Persistent Mode)");
+        // Global Error Handlers
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            const errorMsg = `🔥 Global Error: ${msg} at ${lineNo}:${columnNo}`;
+            console.error(errorMsg, error ? error.stack : '');
+            return false;
+        };
+
+        window.addEventListener('unhandledrejection', event => {
+            console.error(`🔥 Unhandled Rejection: ${event.reason}`);
+        });
+
+        console.log("🐞 Debug Console Active (Persistent Mode + Global Catch)");
     },
 
     logBoot(msg) {
@@ -136,8 +147,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.13';
-            console.log("🚀 Version 2.9.13: Critical History Crash Fixes");
+            const currentVersion = '2.9.14';
+            console.log("🚀 Version 2.9.14: Diagnostic Logging & Memory Trace");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -728,12 +739,21 @@ const App = {
         if (!this.state.supabase || !this.state.session) return;
         try {
             // 1. Load History (Doodles)
+            if (performance && performance.memory) {
+                console.log(`🧠 Memory Start: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)}MB / ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)}MB`);
+            }
+
             let { data: doodles, error: doodleError } = await this.state.supabase
                 .from('doodles')
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                 .order('created_at', { ascending: false })
-                .limit(5); // Optimization: Load recent magic! ✨ (Reduced to 5 for max stability)
+                .limit(20); // Test: Increasing back to 20 with logging
+
+            if (doodles) {
+                const sizeBytes = JSON.stringify(doodles).length;
+                console.log(`📦 History Packet Size: ${(sizeBytes / 1024).toFixed(2)} KB for ${doodles.length} items`);
+            }
 
             if (doodleError) {
                 console.warn("History fetch (5) failed, retrying with single item...", doodleError);
