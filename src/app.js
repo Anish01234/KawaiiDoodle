@@ -119,8 +119,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.9';
-            console.log("🚀 Version 2.9.9: Added Debug Log Downloader");
+            const currentVersion = '2.9.10';
+            console.log("🚀 Version 2.9.10: Disabling Custom FCM Service");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -1252,7 +1252,7 @@ const App = {
 
                 <div class="text-center">
                     <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
-                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.9.9 (Build: ${new Date().toLocaleTimeString()})</p>
+                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.9.10 (Build: ${new Date().toLocaleTimeString()})</p>
                     
                     <!-- Crash Log Tool -->
                     <button onclick="App.downloadCrashLogs()" class="mt-4 text-[10px] text-white/40 hover:text-white underline p-2">
