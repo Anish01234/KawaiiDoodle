@@ -119,8 +119,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.6'; // Fixed Fade & Update Logic
-            console.log("🚀 Version 2.9.6: Testing Native Installer + Permissions");
+            const currentVersion = '2.9.8';
+            console.log("🚀 Version 2.9.8: Fixed Version Check Logic");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
