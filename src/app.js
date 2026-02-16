@@ -136,8 +136,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.12';
-            console.log("🚀 Version 2.9.12: Persistent Crash Logging & Memory Fix");
+            const currentVersion = '2.9.13';
+            console.log("🚀 Version 2.9.13: Critical History Crash Fixes");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -733,21 +733,21 @@ const App = {
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                 .order('created_at', { ascending: false })
-                .limit(20); // Optimization: Load recent magic! ✨ (Reduced from 50 to 20 for stability)
+                .limit(5); // Optimization: Load recent magic! ✨ (Reduced to 5 for max stability)
 
             if (doodleError) {
-                console.warn("History fetch (20) failed, retrying with smaller batch...", doodleError);
-                // Fallback: Try loading just 5 if 20 failed (likely Memory/Network issue)
+                console.warn("History fetch (5) failed, retrying with single item...", doodleError);
+                // Fallback: Try loading just 1 if 5 failed (Critical Memory Mode)
                 const { data: retryData, error: retryError } = await this.state.supabase
                     .from('doodles')
                     .select('*')
                     .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                     .order('created_at', { ascending: false })
-                    .limit(5);
+                    .limit(1);
 
                 if (retryError) throw retryError;
                 doodles = retryData;
-                this.toast("Optimized mode active 🧠", "blue");
+                this.toast("Low memory mode active 💾", "blue");
             }
 
             // 2. Load Drafts (from Cloud)
@@ -755,7 +755,8 @@ const App = {
                 .from('drafts')
                 .select('*')
                 .eq('user_id', this.state.session.user.id)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(5); // Optimization: Limit drafts to prevent OOM
 
             if (draftError) console.warn("Drafts load error:", draftError);
             this.state.drafts = drafts || [];
