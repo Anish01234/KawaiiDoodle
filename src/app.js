@@ -136,8 +136,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.11';
-            console.log("🚀 Version 2.9.11: Persistent Crash Logging");
+            const currentVersion = '2.9.12';
+            console.log("🚀 Version 2.9.12: Persistent Crash Logging & Memory Fix");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -728,14 +728,27 @@ const App = {
         if (!this.state.supabase || !this.state.session) return;
         try {
             // 1. Load History (Doodles)
-            const { data: doodles, error: doodleError } = await this.state.supabase
+            let { data: doodles, error: doodleError } = await this.state.supabase
                 .from('doodles')
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                 .order('created_at', { ascending: false })
-                .limit(50); // Optimization: Only load recent magic! ✨ 
+                .limit(20); // Optimization: Load recent magic! ✨ (Reduced from 50 to 20 for stability)
 
-            if (doodleError) throw doodleError;
+            if (doodleError) {
+                console.warn("History fetch (20) failed, retrying with smaller batch...", doodleError);
+                // Fallback: Try loading just 5 if 20 failed (likely Memory/Network issue)
+                const { data: retryData, error: retryError } = await this.state.supabase
+                    .from('doodles')
+                    .select('*')
+                    .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
+                if (retryError) throw retryError;
+                doodles = retryData;
+                this.toast("Optimized mode active 🧠", "blue");
+            }
 
             // 2. Load Drafts (from Cloud)
             const { data: drafts, error: draftError } = await this.state.supabase
