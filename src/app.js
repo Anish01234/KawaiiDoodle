@@ -119,8 +119,8 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.8';
-            console.log("🚀 Version 2.9.8: Fixed Version Check Logic");
+            const currentVersion = '2.9.9';
+            console.log("🚀 Version 2.9.9: Added Debug Log Downloader");
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -148,6 +148,58 @@ const App = {
             }
         } catch (e) {
             console.warn("Update check failed:", e);
+        }
+    },
+
+    async downloadCrashLogs() {
+        const logs = this.state.bootLogs.join('\n');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `kawaii-logs-${timestamp}.txt`;
+
+        this.toast('Preparing logs... 🐞', 'blue');
+
+        // 1. Try Native Share (Best for Android)
+        if (window.Capacitor && window.Capacitor.Plugins.Share) {
+            try {
+                // Determine directory - Cache is reliable
+                const Filesystem = window.Capacitor.Plugins.Filesystem;
+                const path = `logs/${filename}`;
+
+                // Write file first
+                await Filesystem.writeFile({
+                    path: path,
+                    data: logs,
+                    directory: 'CACHE',
+                    encoding: 'utf8'
+                });
+
+                // Get URI
+                const uriResult = await Filesystem.getUri({
+                    path: path,
+                    directory: 'CACHE'
+                });
+
+                await window.Capacitor.Plugins.Share.share({
+                    title: 'Kawaii Doodle Logs',
+                    text: 'Here are my crash logs! 🐞',
+                    url: uriResult.uri,
+                    dialogTitle: 'Share Logs'
+                });
+                return;
+            } catch (e) {
+                console.error("Share failed:", e);
+                // Fallthrough to clipboard
+            }
+        }
+
+        // 2. Fallback: Clipboard (Universal)
+        try {
+            await navigator.clipboard.writeText(logs);
+            this.toast('Logs copied to clipboard! 📋', 'pink');
+            alert("Logs copied to clipboard! You can paste them now.");
+        } catch (e) {
+            this.toast('Could not copy logs 😭', 'blue');
+            console.error(e);
         }
     },
 
@@ -1200,7 +1252,12 @@ const App = {
 
                 <div class="text-center">
                     <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
-                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.6 (Build: ${new Date().toLocaleTimeString()})</p>
+                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.9.9 (Build: ${new Date().toLocaleTimeString()})</p>
+                    
+                    <!-- Crash Log Tool -->
+                    <button onclick="App.downloadCrashLogs()" class="mt-4 text-[10px] text-white/40 hover:text-white underline p-2">
+                        🐞 Debug: Copy/Share Logs
+                    </button>
                 </div>
             </div>
 
