@@ -75,7 +75,13 @@ jobs:
           ls -R
           
           # Create the keystore that build.gradle expects
-          keytool -genkey -v -keystore app/release-key.keystore -alias kawaii -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"
+          # Check if keystore exists (e.g., committed to repo), otherwise generate a new ephemeral one
+          if [ ! -f "app/release-key.keystore" ]; then
+              echo "⚠️ Keystore not found! Generating a new ephemeral key (Updates will require uninstalling old app)..."
+              keytool -genkey -v -keystore app/release-key.keystore -alias kawaii -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"
+          else
+              echo "✅ Found existing keystore! Using for consistent signing."
+          fi
           
           # Build APK
           ./gradlew assembleDebug --stacktrace
