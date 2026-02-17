@@ -531,26 +531,11 @@ const App = {
             this.initPush();
             this.renderView();
         } else {
-            // Only if NATIVE prompt is denied do we show our custom help
-            this.confirmKawaii({
-                title: "Magic Blocked! 🔕",
-                message: "Notifications are blocked. Open settings to enable magic?",
-                okText: "Open Settings ⚙️",
-                onConfirm: async () => {
-                    try {
-                        const Cap = window.Capacitor;
-                        const appPlugin = Cap?.Plugins?.App;
-                        const opener = appPlugin?.openAppSettings || appPlugin?.openSettings;
-                        if (typeof opener === 'function') {
-                            await opener.call(appPlugin);
-                        } else {
-                            this.showPermissionGuide();
-                        }
-                    } catch (e) {
-                        this.showPermissionGuide();
-                    }
-                }
-            });
+            // User feedback: Remove "useless" modal.
+            // If native prompt fails/is denied, we do nothing or just log it.
+            console.log("Magic blocked by OS or User.");
+            // Optional: sleek toast if you really want feedback, but user asked to remove the popup.
+            // this.toast("Magic blocked 😔", "blue"); 
         }
     },
 

@@ -310,7 +310,7 @@ const Social = {
 
         list.innerHTML = this.friends.map(f => {
             return `
-                <div id="friend-row-${f.id}" class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 border-transparent animate-float" style="animation-delay: ${Math.random()}s">
+                <div id="friend-row-${f.id}" class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 border-transparent animate-slide-up">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white transition-colors overflow-hidden shrink-0">
                             ${f.avatar_url ? `<img src="${f.avatar_url}" 

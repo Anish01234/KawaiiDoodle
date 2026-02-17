@@ -491,12 +491,14 @@ window.initCanvas = function () {
     const eraserBtn = document.getElementById('btn-eraser-tool');
     if (eraserBtn) {
         eraserBtn.addEventListener('click', () => {
+            const icon = eraserBtn.querySelector('svg') || eraserBtn.querySelector('i');
             if (state.mode === 'eraser') {
                 setPenMode();
             } else {
                 state.mode = 'eraser';
-                resetToolUI();
+                resetToolUI(); // Clear fill or other tools
                 eraserBtn.classList.add('bg-pink-100', 'text-pink-500', 'border-pink-300');
+                if (icon) icon.classList.add('text-pink-500');
                 App.toast('Eraser Active! 🧼', 'info');
             }
         });
@@ -518,6 +520,8 @@ window.initCanvas = function () {
         // Reset Eraser UI
         if (eraserBtn) {
             eraserBtn.classList.remove('bg-pink-100', 'text-pink-500', 'border-pink-300');
+            const icon = eraserBtn.querySelector('svg') || eraserBtn.querySelector('i');
+            if (icon) icon.classList.remove('text-pink-500'); // Ensure icon color resets too if we added it
         }
     }
 
