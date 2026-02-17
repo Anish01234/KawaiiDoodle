@@ -8,8 +8,8 @@ android {
         applicationId "io.kawaii.doodle"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 29
-        versionName "2.9.20"
+        versionCode 30
+        versionName "2.9.21"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -61,7 +61,6 @@ dependencies {
     implementation "androidx.core:core-ktx:1.12.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.9.22"
     implementation "androidx.core:core-splashscreen:${rootProject.ext.coreSplashScreenVersion}"
-    implementation "androidx.work:work-runtime-ktx:2.9.0"
 }
 
 apply from: 'capacitor.build.gradle'
