@@ -480,22 +480,12 @@ const App = {
             this.finalizeInit();
 
             // 3. Initialize Push (FCM) & Google Auth
+            // 3. Initialize Push (FCM) & Google Auth
             if (window.Capacitor.isNativePlatform()) {
-                setTimeout(() => {
-                    try {
-                        this.initPush();
-                    } catch (e) { console.error("Push Init Failed:", e); }
-
-                    // Pre-initialize Google Auth (Commented out to isolate crash - suspected conflict)
-                    /*
-                    const { GoogleAuth } = window.Capacitor.Plugins;
-                    if (GoogleAuth) {
-                        GoogleAuth.initialize({
-                            clientId: '338129743756-1u308evrhbor1sn79u8u7ceqlh8acvos.apps.googleusercontent.com',
-                        }).catch(e => console.log("GoogleAuth Init deferred:", e));
-                    }
-                    */
-                }, 5000);
+                // Initialize immediately to catch launch intents!
+                try {
+                    this.initPush();
+                } catch (e) { console.error("Push Init Failed:", e); }
             }
 
         } catch (e) {
