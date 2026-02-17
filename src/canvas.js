@@ -56,7 +56,7 @@ window.initCanvas = function () {
     const saveBtn = document.getElementById('save-draft');
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
-            const data = canvas.toDataURL();
+            const data = getCanvasData(); // Use flattened data
             App.saveDraft(data);
             // const drafts = JSON.parse(localStorage.getItem('kawaii-drafts') || '[]');
             // drafts.unshift({ id: Date.now(), image_data: data, created_at: new Date().toISOString() });
@@ -487,6 +487,25 @@ window.initCanvas = function () {
         });
     }
 
+    // --- Helper to flatten transparency to white ---
+    function getCanvasData() {
+        // Create a temp canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const tCtx = tempCanvas.getContext('2d');
+
+        // 1. Fill with white
+        tCtx.fillStyle = '#FFFFFF';
+        tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // 2. Draw original canvas on top
+        tCtx.drawImage(canvas, 0, 0);
+
+        // 3. Export
+        return tempCanvas.toDataURL('image/jpeg', 0.9); // JPEG is smaller & no transparency
+    }
+
     // Eraser Button
     const eraserBtn = document.getElementById('btn-eraser-tool');
     if (eraserBtn) {
@@ -553,7 +572,7 @@ window.initCanvas = function () {
     document.getElementById('send-doodle').addEventListener('click', async () => {
         const btn = document.getElementById('send-doodle');
         const originalText = btn.innerHTML;
-        const snapshot = canvas.toDataURL('image/png');
+        const snapshot = getCanvasData(); // Use flattened data (Fixes transparency/pink lockscreen)
         const sb = App.state.supabase;
 
         if (!App.state.activeRecipients || App.state.activeRecipients.length === 0) {
