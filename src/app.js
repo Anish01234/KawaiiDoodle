@@ -147,8 +147,16 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.22';
-            console.log("🚀 Version 2.9.18: Isolated Crash - Disabled GoogleAuth Pre-init");
+
+            // Get current version dynamically
+            let currentVersion = '0.0.0';
+            try {
+                const { App: CapApp } = window.Capacitor.Plugins;
+                const info = await CapApp.getInfo();
+                currentVersion = info.version;
+            } catch (e) { console.warn("Could not get native version", e); }
+
+            console.log(`🚀 Checking updates: Installed=${currentVersion}, Remote=${latestVersion}`);
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -176,6 +184,20 @@ const App = {
             }
         } catch (e) {
             console.warn("Update check failed:", e);
+        }
+    },
+
+    async getAppVersion() {
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return 'Web Dev Mode';
+        try {
+            // Retrieve info using Capacitor App Plugin
+            const { App: CapApp } = window.Capacitor.Plugins;
+            const info = await CapApp.getInfo();
+            // Format: v2.9.22 (Build: 31)
+            return `v${info.version} (Build: ${info.build})`;
+        } catch (e) {
+            console.error("Version check failed", e);
+            return 'v?.?.? (Unknown)';
         }
     },
 
@@ -1254,6 +1276,15 @@ const App = {
                 content.innerHTML = this.templates.landing();
                 header.style.display = 'none';
                 nav.style.display = 'none';
+
+                // Fetch and display version
+                this.getAppVersion().then(v => {
+                    const label = document.getElementById('app-version-label');
+                    if (label) label.textContent = v;
+
+                    const modalLabel = document.getElementById('modal-version-label');
+                    if (modalLabel) modalLabel.textContent = `Version ${v} - The Magic Update! 🦄`;
+                });
                 break;
             case 'setup':
                 content.innerHTML = this.templates.setup();
@@ -1319,7 +1350,7 @@ const App = {
 
                 <div class="text-center">
                     <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
-                    <p class="text-[10px] text-white/50 mt-2 font-mono">v2.9.11 (Build: ${new Date().toLocaleTimeString()})</p>
+                    <p id="app-version-label" class="text-[10px] text-white/50 mt-2 font-mono">Loading version...</p>
                     
                     <!-- Crash Log Tool -->
                     <button onclick="App.downloadCrashLogs()" class="mt-4 text-[10px] text-white/40 hover:text-white underline p-2">
@@ -1340,7 +1371,7 @@ const App = {
                                 <i data-lucide="x" class="w-5 h-5"></i>
                             </button>
                         </h3>
-                        <p class="text-xs text-pink-300 font-bold mt-1">Version 2.6 - The Wallpaper Update! 🦄</p>
+                        <p id="modal-version-label" class="text-xs text-pink-300 font-bold mt-1">Loading...</p>
                     </div>
 
                     <!-- Scrollable Content -->
