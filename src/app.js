@@ -147,7 +147,7 @@ const App = {
 
             const data = await response.json();
             const latestVersion = data.tag_name?.replace('v', '');
-            const currentVersion = '2.9.21';
+            const currentVersion = '2.9.22';
             console.log("🚀 Version 2.9.18: Isolated Crash - Disabled GoogleAuth Pre-init");
 
             // Robust Semver Comparison
