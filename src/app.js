@@ -173,12 +173,10 @@ const App = {
 
             if (latestVersion && latestVersion !== currentVersion && isNewer(latestVersion, currentVersion)) {
                 console.log(`Update available: ${latestVersion}`);
-                this.confirmKawaii({
-                    title: "New Magic Found! 🌟",
-                    message: `A new version (${latestVersion}) is ready! Update to see the latest magic? ✨`,
-                    okText: "Update Now 🚀",
-                    onConfirm: () => this.downloadAndInstallUpdate(data.assets)
-                });
+                this.state.updateAvailable = true; // Use this flag for UI button
+                this.state.latestRelease = data;
+                this.renderView();
+                this.toast(`New Magic Available: v${latestVersion}! 🚀`, 'pink');
             } else {
                 console.log("✅ Custom check: App is up to date!");
             }
@@ -520,50 +518,39 @@ const App = {
     },
 
     async requestPushPermission() {
-        const { PushNotifications, App: CapApp } = window.Capacitor.Plugins;
+        const { PushNotifications } = window.Capacitor.Plugins;
         if (!PushNotifications) return;
 
-        let status = await PushNotifications.checkPermissions();
+        // FORCE native prompt first! 🚀
+        // This attempts to show the screenshot 1 (System Dialog)
+        let status = await PushNotifications.requestPermissions();
 
-        if (status.receive === 'prompt') {
-            status = await PushNotifications.requestPermissions();
-        }
-
-        if (status.receive !== 'granted') {
-            // If explicitly denied, we must guide to settings
+        if (status.receive === 'granted') {
+            this.toast("Magic is active! 📡✨", "pink");
+            this.state.notificationsEnabled = true;
+            this.initPush();
+            this.renderView();
+        } else {
+            // Only if NATIVE prompt is denied do we show our custom help
             this.confirmKawaii({
                 title: "Magic Blocked! 🔕",
                 message: "Notifications are blocked. Open settings to enable magic?",
                 okText: "Open Settings ⚙️",
                 onConfirm: async () => {
-                    console.log("🚀 Magic Signal: Attempting to open app settings...");
                     try {
                         const Cap = window.Capacitor;
                         const appPlugin = Cap?.Plugins?.App;
-
-                        // Try multiple method names for robustness
                         const opener = appPlugin?.openAppSettings || appPlugin?.openSettings;
-
                         if (typeof opener === 'function') {
                             await opener.call(appPlugin);
                         } else {
-                            console.warn("⚠️ settings_method_missing");
                             this.showPermissionGuide();
                         }
                     } catch (e) {
-                        console.error("❌ settings_fail:", e);
                         this.showPermissionGuide();
                     }
                 }
             });
-        } else if (status.receive === 'granted') {
-            this.toast("Magic is already active! 📡✨", "pink");
-            this.state.notificationsEnabled = true;
-            this.renderView();
-        }
-        // If permission was granted (either initially or after prompt), proceed to initPush
-        if (status.receive === 'granted') {
-            this.initPush();
         }
     },
 
@@ -897,10 +884,80 @@ const App = {
                 this.state.lastDoodle = doodles[0].image_data;
                 this.setSmartWallpaper(doodles[0]);
             }
-            if (this.state.view === 'home' || this.state.view === 'history') this.renderView();
+
+            // INTELLIGENT RENDER: Only update history list if we are already seeing it
+            if (this.state.view === 'history') {
+                this.updateHistoryDOM();
+            } else if (this.state.view === 'home') {
+                this.renderView();
+            }
         } catch (e) {
             console.error("History load failed:", e);
         }
+    },
+
+    updateHistoryDOM() {
+        const container = document.getElementById('history-list-container');
+        if (!container) return; // Fallback if view changed safely
+
+        // Preserve Scroll
+        // const scrollPos = container.scrollTop; // If container scrolls
+        // const windowScroll = window.scrollY;
+
+        // Re-generate ONLY the list HTML
+        const newHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
+            this.state.history.map(d => `
+                <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
+                    <div class="relative">
+                        <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
+                        <button onclick="App.editDoodle('${d.image_data}')" class="absolute top-2 right-2 bg-white/90 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                            <i data-lucide="edit-2" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="App.setWallpaper('${d.image_data}', '${d.id}')" class="absolute top-12 right-2 bg-white/90 text-blue-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                            <i data-lucide="smartphone" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
+                        <span>
+                            ${(() => {
+                    const isSent = d.sender_id === App.state.session.user.id;
+                    const otherId = isSent ? d.receiver_id : d.sender_id;
+                    const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
+                    const friend = (Social.friends || []).find(f => f.id === otherId);
+
+                    let name = cacheName || (friend ? friend.username : 'Unknown');
+                    if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...';
+
+                    if (isSent && d.recipients && d.recipients.length > 0) {
+                        const names = d.recipients.map(rid => {
+                            const cName = App.state.userCache ? App.state.userCache[rid] : null;
+                            const f = (Social.friends || []).find(fr => fr.id === rid);
+                            return cName || (f ? f.username : rid.substring(0, 5) + '..');
+                        });
+                        return `TO: ${names.join(', ')} 📤`;
+                    }
+
+                    return isSent ? `TO: ${name} 📤` : `
+                                    <div class="flex items-center gap-1">
+                                        <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                            ${(() => {
+                            const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
+                            return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
+                        })()}
+                                        </div>
+                                        FROM: ${name} 📥
+                                    </div>`;
+                })()}
+                        </span>
+                        <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `).join('');
+
+        container.innerHTML = newHtml;
+
+        // Re-init icons for new content
+        if (window.lucide) lucide.createIcons();
     },
 
     async markAllRead() {
@@ -1484,6 +1541,9 @@ const App = {
                     <button id="btn-fill-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center hover:scale-110 transition-transform active:bg-pink-50 group">
                         <i data-lucide="paint-bucket" class="w-5 h-5 text-gray-400 group-hover:text-pink-400 transition-colors"></i>
                     </button>
+                    <button id="btn-eraser-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center hover:scale-110 transition-transform active:bg-pink-50 group">
+                        <i data-lucide="eraser" class="w-5 h-5 text-gray-400 group-hover:text-pink-400 transition-colors"></i>
+                    </button>
                     <button id="btn-custom-color" class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
                         <i data-lucide="plus" class="w-5 h-5 text-white"></i>
                     </button>
@@ -1644,6 +1704,7 @@ const App = {
             })()}
 
                     <!-- History List -->
+                    <div id="history-list-container" class="flex flex-col gap-4">
                     ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
                 App.state.history.map(d => `
                         <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
@@ -1696,6 +1757,7 @@ const App = {
                             </div>
                         </div>
                     `).join('')}
+                    </div>
                 </div>
             </div>
             <!-- Spacer for floating nav -->

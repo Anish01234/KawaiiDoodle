@@ -250,6 +250,10 @@ window.initCanvas = function () {
         // Don't auto-switch if we are in fill mode
         if (state.mode !== 'fill') {
             state.mode = 'pen';
+            ctx.globalCompositeOperation = 'source-over';
+            // Visual reset for eraser if it was active
+            const eraserBtn = document.getElementById('btn-eraser-tool');
+            if (eraserBtn) eraserBtn.classList.remove('bg-pink-100', 'text-pink-500', 'border-pink-300');
         }
         ctx.strokeStyle = state.color;
     }
@@ -352,10 +356,22 @@ window.initCanvas = function () {
         if (e.type === 'touchmove') e.preventDefault();
 
         const coords = getCoords(e);
+
         ctx.beginPath();
+
+        if (state.mode === 'eraser') {
+            ctx.globalCompositeOperation = 'destination-out';
+        } else {
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
         ctx.moveTo(state.lastX, state.lastY);
         ctx.lineTo(coords.x, coords.y);
         ctx.stroke();
+
+        // Reset to default for safety
+        ctx.globalCompositeOperation = 'source-over';
+
         [state.lastX, state.lastY] = [coords.x, coords.y];
     }
 
@@ -459,18 +475,50 @@ window.initCanvas = function () {
     if (fillBtn) {
         fillBtn.addEventListener('click', () => {
             const icon = fillBtn.querySelector('svg') || fillBtn.querySelector('i');
-
             if (state.mode === 'fill') {
-                state.mode = 'pen';
-                if (icon) icon.classList.remove('text-pink-500');
-                fillBtn.classList.remove('border-pink-300');
+                setPenMode();
             } else {
                 state.mode = 'fill';
-                // App.toast('Paint Bucket Ready! 🪣', 'pink');
+                // Reset others
+                resetToolUI();
                 if (icon) icon.classList.add('text-pink-500');
                 fillBtn.classList.add('border-pink-300');
             }
         });
+    }
+
+    // Eraser Button
+    const eraserBtn = document.getElementById('btn-eraser-tool');
+    if (eraserBtn) {
+        eraserBtn.addEventListener('click', () => {
+            if (state.mode === 'eraser') {
+                setPenMode();
+            } else {
+                state.mode = 'eraser';
+                resetToolUI();
+                eraserBtn.classList.add('bg-pink-100', 'text-pink-500', 'border-pink-300');
+                App.toast('Eraser Active! 🧼', 'info');
+            }
+        });
+    }
+
+    function setPenMode() {
+        state.mode = 'pen';
+        ctx.globalCompositeOperation = 'source-over';
+        resetToolUI();
+    }
+
+    function resetToolUI() {
+        // Reset Fill UI
+        if (fillBtn) {
+            const icon = fillBtn.querySelector('svg') || fillBtn.querySelector('i');
+            if (icon) icon.classList.remove('text-pink-500');
+            fillBtn.classList.remove('border-pink-300');
+        }
+        // Reset Eraser UI
+        if (eraserBtn) {
+            eraserBtn.classList.remove('bg-pink-100', 'text-pink-500', 'border-pink-300');
+        }
     }
 
     // Stamp Selection
