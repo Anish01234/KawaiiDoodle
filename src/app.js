@@ -258,6 +258,7 @@ const App = {
                 this.state.latestRelease = data;
                 this.renderView();
                 this.toast(`New Magic Available: v${latestVersion}! 🚀`, 'pink');
+                this.showUpdateModal();
             } else {
                 console.log("✅ Custom check: App is up to date!");
             }
@@ -344,14 +345,12 @@ const App = {
         if (!apkAsset) return;
 
         this.toast("Downloading magic update... 📦", "pink");
-
+        // ... (rest of download logic) ...
         try {
             // Robust Plugin Access
-            // We use the global Capacitor object to access plugins if imports fail
             const Filesystem = window.Capacitor.Plugins.Filesystem;
 
             if (!Filesystem) {
-                // FALLBACK: If plugin is strictly missing, we MUST use browser
                 console.warn("Filesystem plugin missing. Falling back to browser.");
                 window.open(apkAsset.browser_download_url, '_system');
                 return;
@@ -362,8 +361,6 @@ const App = {
 
             console.log(`⬇️ Downloading ${url} to ${path}...`);
 
-            // 1. Download File
-            // Using 'CACHE' directory is the standard reliable way
             const downloadResult = await Filesystem.downloadFile({
                 path: path,
                 directory: 'CACHE',
@@ -373,7 +370,6 @@ const App = {
             console.log("✅ Download complete:", downloadResult);
             const fileUri = downloadResult.path;
 
-            // 2. Open File
             this.toast("Installing... ✨", "pink");
 
             if (window.cordova && window.cordova.plugins && window.cordova.plugins.fileOpener2) {
@@ -383,7 +379,6 @@ const App = {
                     error: (e) => {
                         console.error('FileOpen Error:', e);
                         this.toast("Install failed 😭. Please update manually.", "blue");
-                        // Last resort fallback
                         setTimeout(() => window.open(url, '_system'), 2000);
                     },
                     success: () => console.log('Installer opened!')
@@ -400,6 +395,57 @@ const App = {
             this.toast("Update failed 😭", "blue");
             window.open(apkAsset.browser_download_url, '_system');
         }
+    },
+
+    showUpdateModal() {
+        if (!this.state.latestRelease) return;
+        const release = this.state.latestRelease;
+        const version = release.tag_name;
+        const body = release.body || "A shiny new version is ready for you!";
+
+        // Create Modal
+        const modalId = 'update-modal-overlay';
+        if (document.getElementById(modalId)) return; // Already showing
+
+        const div = document.createElement('div');
+        div.id = modalId;
+        div.className = "fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in";
+        div.innerHTML = `
+            <div class="bg-white w-full max-w-sm rounded-bubbly shadow-2xl p-6 relative flex flex-col gap-4 animate-float border-4 border-pink-200">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                        <i data-lucide="sparkles" class="w-8 h-8 text-pink-500"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-pink-500">New Magic! ✨</h3>
+                    <p class="text-gray-400 font-bold text-sm">${version}</p>
+                </div>
+                
+                <div class="bg-pink-50 p-4 rounded-xl border border-pink-100 max-h-40 overflow-y-auto text-left">
+                    <p class="text-gray-600 text-sm whitespace-pre-wrap">${body}</p>
+                </div>
+
+                <div class="flex flex-col gap-3 mt-2">
+                    <button id="btn-update-confirm" class="bg-pink-500 text-white py-3 rounded-xl font-black shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                        <i data-lucide="download"></i> Update Now
+                    </button>
+                    <button onclick="document.getElementById('${modalId}').remove()" class="text-gray-400 text-sm font-bold hover:text-gray-600 py-2">
+                        Maybe Later 🐢
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(div);
+        if (window.lucide) lucide.createIcons();
+
+        // Bind download
+        document.getElementById('btn-update-confirm').onclick = () => {
+            document.getElementById(modalId).remove();
+            this.downloadAndInstallUpdate(release.assets);
+        };
+    },
+
+    openLatestRelease() {
+        window.open('https://github.com/Anish01234/KawaiiDoodle/releases', '_system');
     },
 
     // --- SAFETY NET ---
@@ -1501,7 +1547,7 @@ const App = {
 
                 <div class="text-center">
                     <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
-                    <p id="app-version-label" onclick="App.handleVersionTap()" class="text-[10px] text-white/50 mt-2 font-mono" style="user-select:none;">Loading version...</p>
+                    <p id="app-version-label" onclick="App.openLatestRelease()" class="text-[10px] text-white/50 mt-2 font-mono hover:text-white cursor-pointer underline decoration-dotted underline-offset-2 transition-colors" style="user-select:none;">Loading version...</p>
                     
                     <!-- Crash Log Tool -->
                     <button onclick="App.downloadCrashLogs()" class="mt-4 text-[10px] text-white/40 hover:text-white underline p-2">
