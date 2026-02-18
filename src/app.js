@@ -667,10 +667,9 @@ const App = {
 
     async requestPushPermission() {
         const { PushNotifications } = window.Capacitor.Plugins;
-        if (!PushNotifications) return;
+        if (!PushNotifications) return false;
 
         // FORCE native prompt first! 🚀
-        // This attempts to show the screenshot 1 (System Dialog)
         let status = await PushNotifications.requestPermissions();
 
         if (status.receive === 'granted') {
@@ -678,44 +677,29 @@ const App = {
             this.state.notificationsEnabled = true;
             this.initPush();
             this.renderView();
+            return true;
         } else {
             console.log("Magic blocked by OS or User.");
             this.toast("Please allow notifications in settings! 🥺", "blue");
+            return false;
         }
     },
 
     showPermissionGuide() {
-        this.confirmKawaii({
-            title: "Magic Activation Guide 📡",
-            message: "Automatic setup paused! ✨\n\nTo hear your friends' magic, please click 'Open Settings' and enable 'Notifications' for Kawaii Doodle.\n\nIt only takes 5 seconds! 🌸",
-            okText: "Open Settings ⚙️",
-            onConfirm: async () => {
-                try {
-                    const Cap = window.Capacitor;
-                    const appPlugin = Cap?.Plugins?.App;
-                    const opener = appPlugin?.openAppSettings || appPlugin?.openSettings;
-
-                    if (typeof opener === 'function') {
-                        await opener.call(appPlugin);
-                    } else {
-                        // Clear description for the user
-                        this.toast("Please open Phone Settings > Apps > Kawaii Doodle > Notifications! 🎨", "blue");
-                    }
-                } catch (err) {
-                    console.error("Settings Guide Fail:", err);
-                    this.toast("Manual setting required! ⚙️", "blue");
-                }
-            }
-        });
+        // ... (kept for reference, but currently unused/reverted)
     },
 
     async requestAllPermissions() {
         this.toast('Syncing all magic realms... 🔮', 'pink');
         try {
-            await this.requestPushPermission();
+            const granted = await this.requestPushPermission();
+
             // Trigger any other permission prompts if needed
             if (window.navigator.vibrate) window.navigator.vibrate(20);
-            this.toast('All systems Kawaii! 🌈', 'pink');
+
+            if (granted) {
+                this.toast('All systems Kawaii! 🌈', 'pink');
+            }
         } catch (e) { console.error(e); }
     },
 
