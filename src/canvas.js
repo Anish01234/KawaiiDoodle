@@ -262,6 +262,7 @@ window.initCanvas = function () {
         // No limit as requested by user
         state.undoStack.push(canvas.toDataURL());
         state.redoStack = []; // Clear redo on new action
+        App.state.isCanvasDirty = true; // Track unsaved changes
         updateUndoUI();
     }
 
@@ -659,6 +660,7 @@ window.initCanvas = function () {
             // 6. Success
             App.toast('Doodles sent with magic! 💖', 'pink');
             App.state.activeRecipients = [];
+            App.state.isCanvasDirty = false;
             App.setView('home');
             App.loadHistory();
 
@@ -669,7 +671,8 @@ window.initCanvas = function () {
             if (e.message === 'Offline' || e.message === 'Network timeout' || e.message === 'Failed to fetch') {
                 App.toast('Network slow... saving as Draft! 📂', 'pink');
                 const snapshot = getCanvasData();
-                App.saveDraft(snapshot); // Auto-save draft
+                App.saveLocalDraft(snapshot); // Save locally (works offline!)
+                App.state.isCanvasDirty = false;
                 App.setView('home');
             } else {
                 App.toast(`Send failed: ${e.message} 😭`, 'blue');

@@ -25,7 +25,10 @@ const App = {
         bootLogs: [],
         previousView: null,
         isSending: false,
-        isLoadingHistory: false
+        isLoadingHistory: false,
+        viewHistory: [],
+        isCanvasDirty: false,
+        lastBackPress: 0
     },
 
     enableDebugConsole() {
@@ -646,6 +649,50 @@ const App = {
                 try { this.initPush(); } catch (e) { console.error("Push Init:", e); }
             }
 
+            // Sync any local drafts saved while offline
+            this.syncLocalDrafts();
+
+            // Android Back Button Handler
+            if (window.Capacitor && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.addListener('backButton', () => {
+                    // If on draw view with unsaved work, prompt
+                    if (this.state.view === 'draw' && this.state.isCanvasDirty) {
+                        this.confirmKawaii({
+                            title: 'Save your doodle? 🎨',
+                            message: 'You have unsaved magic! Save as draft before leaving?',
+                            okText: 'Save Draft 💾',
+                            onConfirm: () => {
+                                const canvas = document.getElementById('kawaii-canvas');
+                                if (canvas) this.saveLocalDraft(canvas.toDataURL('image/png'));
+                                this.state.isCanvasDirty = false;
+                                this.navigateBack();
+                            },
+                            cancelText: 'Discard 🗑️',
+                            onCancel: () => {
+                                this.state.isCanvasDirty = false;
+                                this.navigateBack();
+                            }
+                        });
+                        return;
+                    }
+                    this.navigateBack();
+                });
+            }
+
+            // Online/Offline Listeners
+            window.addEventListener('online', () => {
+                console.log('🌐 Back online!');
+                this.toast('Back online! 🌐', 'pink');
+                this.syncLocalDrafts();
+                if (this.state.session) {
+                    this.loadHistory();
+                }
+            });
+
+            window.addEventListener('offline', () => {
+                this.toast('You\'re offline ✈️', 'blue');
+            });
+
         } catch (e) {
             console.error("Critical Init Error:", e);
             this.toast('Startup failed 🩹', 'blue');
@@ -1085,12 +1132,12 @@ const App = {
 
         if (this.state.isLoadingHistory && this.state.history.length === 0) {
             container.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-20 text-pink-300 animate-pulse">
-                    <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-4"></i>
-                    <p class="font-bold text-sm">Summoning Doodles... ✨</p>
+                <div class="flex flex-col items-center justify-center py-20 text-pink-400">
+                    <div class="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-4"></div>
+                    <p class="font-bold text-sm animate-pulse">Waiting for connection... ✨</p>
+                    <p class="text-xs text-pink-300 mt-1">Your doodles will appear here</p>
                 </div>
              `;
-            if (window.lucide) lucide.createIcons();
             return;
         }
 
@@ -1432,8 +1479,65 @@ const App = {
         this.renderView();
     },
 
+    navigateBack() {
+        if (this.state.viewHistory.length > 0) {
+            const prev = this.state.viewHistory.pop();
+            this.state.view = prev;
+            this.renderView();
+            // Re-trigger setView side effects without pushing to history
+            const viewName = prev;
+            const header = document.querySelector('header');
+            const nav = document.querySelector('nav');
+            if (viewName === 'widget' || viewName === 'landing' || viewName === 'setup') {
+                header.style.display = 'none';
+                nav.style.display = 'none';
+            } else {
+                header.style.display = 'flex';
+                nav.style.display = 'flex';
+                document.body.classList.add('bg-kawaii-pink');
+                document.body.classList.remove('bg-transparent');
+                const content = document.getElementById('content');
+                if (viewName === 'draw') {
+                    document.body.classList.add('draw-mode');
+                    nav.style.display = 'none';
+                    if (content) {
+                        content.classList.remove('p-4', 'items-center', 'overflow-y-auto');
+                        content.classList.add('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                    }
+                } else {
+                    document.body.classList.remove('draw-mode');
+                    nav.style.display = 'flex';
+                    nav.classList.remove('nav-minimized');
+                    if (nav.firstElementChild) nav.firstElementChild.style.display = 'flex';
+                    if (content && viewName !== 'landing') {
+                        content.classList.add('p-4', 'items-center', 'overflow-y-auto');
+                        content.classList.remove('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                    }
+                }
+            }
+            setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 0);
+        } else {
+            // On home with empty stack: double-tap to exit
+            const now = Date.now();
+            if (now - this.state.lastBackPress < 2000) {
+                if (window.Capacitor && window.Capacitor.Plugins.App) {
+                    window.Capacitor.Plugins.App.exitApp();
+                }
+            } else {
+                this.state.lastBackPress = now;
+                this.toast('Press back again to exit 👋', 'blue');
+            }
+        }
+    },
+
     setView(viewName) {
         if (this.state.view === viewName) return; // Prevent reset if already on view
+        // Push current view to history stack (for back button)
+        if (this.state.view && this.state.view !== 'landing' && this.state.view !== 'setup') {
+            this.state.viewHistory.push(this.state.view);
+            // Keep stack manageable
+            if (this.state.viewHistory.length > 10) this.state.viewHistory.shift();
+        }
         this.state.view = viewName;
         this.renderView();
 
@@ -1983,9 +2087,59 @@ const App = {
         this.editDoodle(url);
     },
 
+    // Save draft to LOCAL storage (works offline)
+    saveLocalDraft(imageData) {
+        try {
+            const drafts = JSON.parse(localStorage.getItem('kawaii-local-drafts') || '[]');
+            drafts.unshift({
+                id: Date.now(),
+                image_data: imageData,
+                created_at: new Date().toISOString()
+            });
+            localStorage.setItem('kawaii-local-drafts', JSON.stringify(drafts));
+            this.toast('Draft saved locally! 📂', 'pink');
+        } catch (e) {
+            console.error('Local draft save failed:', e);
+            this.toast('Could not save draft 😭', 'blue');
+        }
+    },
+
+    // Sync local drafts to Supabase when back online
+    async syncLocalDrafts() {
+        if (!this.state.supabase || !this.state.session) return;
+        if (!navigator.onLine) return;
+
+        const drafts = JSON.parse(localStorage.getItem('kawaii-local-drafts') || '[]');
+        if (drafts.length === 0) return;
+
+        console.log(`☁️ Syncing ${drafts.length} local drafts...`);
+        let synced = 0;
+
+        for (const draft of drafts) {
+            try {
+                const { error } = await this.state.supabase
+                    .from('drafts')
+                    .insert({
+                        user_id: this.state.session.user.id,
+                        image_data: draft.image_data
+                    });
+                if (!error) synced++;
+            } catch (e) {
+                console.error('Sync draft failed:', e);
+            }
+        }
+
+        if (synced > 0) {
+            localStorage.setItem('kawaii-local-drafts', '[]');
+            this.toast(`${synced} draft(s) synced to cloud! ☁️`, 'pink');
+            this.loadHistory();
+        }
+    },
+
     async saveDraft(imageData) {
-        if (!this.state.supabase || !this.state.session) {
-            this.toast('Login to save drafts! ☁️', 'blue');
+        // Always save locally first as a safety net
+        if (!this.state.supabase || !this.state.session || !navigator.onLine) {
+            this.saveLocalDraft(imageData);
             return;
         }
         try {
@@ -1997,12 +2151,12 @@ const App = {
                 });
 
             if (error) throw error;
-            if (error) throw error;
             this.toast('Sketch saved! ✨', 'pink');
             this.loadHistory(); // Refresh
         } catch (e) {
             console.error(e);
-            this.toast('Failed to save sketch 😭', 'blue');
+            // Fallback to local if remote fails
+            this.saveLocalDraft(imageData);
         }
     },
 
@@ -2049,7 +2203,7 @@ const App = {
         resetScale();
     },
 
-    confirmKawaii({ title, message, okText, onConfirm }) {
+    confirmKawaii({ title, message, okText, onConfirm, cancelText, onCancel }) {
         const modal = document.getElementById('confirm-modal');
         if (!modal) return;
 
@@ -2057,6 +2211,9 @@ const App = {
         document.getElementById('confirm-message').innerText = message || "";
         const okBtn = document.getElementById('confirm-ok');
         okBtn.innerText = okText || "Yes! ✨";
+
+        const cancelBtn = document.getElementById('confirm-cancel');
+        if (cancelText && cancelBtn) cancelBtn.innerText = cancelText;
 
         modal.classList.remove('hidden');
 
@@ -2067,7 +2224,10 @@ const App = {
             if (onConfirm) onConfirm();
         };
 
-        document.getElementById('confirm-cancel').onclick = close;
+        cancelBtn.onclick = () => {
+            close();
+            if (onCancel) onCancel();
+        };
     },
 
     toast(message, type = 'info') {
