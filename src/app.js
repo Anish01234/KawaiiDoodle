@@ -884,7 +884,7 @@ const App = {
 
                 if (retryError) throw retryError;
                 doodles = retryData;
-                this.toast("Low memory mode active 💾", "blue");
+                // this.toast("Low memory mode active 💾", "blue");
             }
 
             // 2. Load Drafts (from Cloud)
@@ -901,6 +901,11 @@ const App = {
             // 3. Process Doodles (Group Sent & Cache Names)
             const userIds = new Set();
             if (doodles) {
+                // Initialize lastDoodle for Home View
+                if (doodles.length > 0) {
+                    this.state.lastDoodle = doodles[0].image_data;
+                }
+
                 doodles.forEach(d => {
                     userIds.add(d.sender_id);
                     userIds.add(d.receiver_id);
@@ -1338,6 +1343,15 @@ const App = {
             // Fire and forget the remote sign out
             if (this.state.supabase) {
                 this.state.supabase.auth.signOut();
+            }
+
+            // Force Google Disconnect to allow account picker next time
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                const { GoogleAuth } = window.Capacitor.Plugins;
+                if (GoogleAuth) {
+                    await GoogleAuth.signOut(); // Signs out
+                    await GoogleAuth.disconnect(); // Revokes access (Forces picker)
+                }
             }
 
             // Clear all local session data immediately

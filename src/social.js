@@ -308,39 +308,75 @@ const Social = {
             return;
         }
 
-        list.innerHTML = this.friends.map(f => {
-            return `
-                <div id="friend-row-${f.id}" class="bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 border-transparent animate-slide-up">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white transition-colors overflow-hidden shrink-0">
-                            ${f.avatar_url ? `<img src="${f.avatar_url}" 
-                                class="w-full h-full object-cover" 
-                                referrerpolicy="no-referrer"
-                                onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''}
-                            <div class="${f.avatar_url ? 'hidden' : ''} w-full h-full flex items-center justify-center">
-                                <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <p class="font-bold text-sm text-gray-700">${f.username}</p>
-                            <p class="text-[10px] text-pink-300">ID: ${f.id} ${f.status === 'pending' ? '(Pending 💌)' : ''}</p>
+        // DOM Diffing / Smart Update
+        // 1. Remove friends that are no longer in the list
+        const currentIds = new Set(this.friends.map(f => f.id));
+        Array.from(list.children).forEach(child => {
+            if (child.id && child.id.startsWith('friend-row-')) {
+                const id = child.id.replace('friend-row-', '');
+                if (!currentIds.has(id)) {
+                    child.remove();
+                }
+            } else if (!child.id || !child.id.startsWith('friend-row-')) {
+                // Remove empty state or other non-row elements
+                child.remove();
+            }
+        });
+
+        // 2. Add or Update friends
+        this.friends.forEach(f => {
+            const rowId = `friend-row-${f.id}`;
+            let row = document.getElementById(rowId);
+
+            const pendingHtml = f.status === 'pending' && !f.isRequester ? `
+                <button onclick="Social.acceptFriendRequest('${f.relId}', {username: '${f.username}'})" class="w-8 h-8 bg-green-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                </button>
+            ` : '';
+
+            const removeHtml = f.status === 'accepted' ? `
+                <button onclick="Social.removeFriend('${f.relId}', '${f.username}')" class="w-8 h-8 bg-red-50 text-red-400 rounded-full flex items-center justify-center shadow-sm hover:bg-red-100 active:scale-95 transition-all">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            ` : '';
+
+            const innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center border-2 border-white transition-colors overflow-hidden shrink-0">
+                        ${f.avatar_url ? `<img src="${f.avatar_url}" 
+                            class="w-full h-full object-cover" 
+                            referrerpolicy="no-referrer"
+                            onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''}
+                        <div class="${f.avatar_url ? 'hidden' : ''} w-full h-full flex items-center justify-center">
+                            <i data-lucide="user" class="w-5 h-5 text-pink-400"></i>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        ${f.status === 'pending' && !f.isRequester ? `
-                            <button onclick="Social.acceptFriendRequest('${f.relId}', {username: '${f.username}'})" class="w-8 h-8 bg-green-400 text-white rounded-full flex items-center justify-center shadow-sm hover:scale-110 active:scale-95 transition-all">
-                                <i data-lucide="check" class="w-4 h-4"></i>
-                            </button>
-                        ` : ''}
-                        ${f.status === 'accepted' ? `
-                            <button onclick="Social.removeFriend('${f.relId}', '${f.username}')" class="w-8 h-8 bg-red-50 text-red-400 rounded-full flex items-center justify-center shadow-sm hover:bg-red-100 active:scale-95 transition-all">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        ` : ''}
+                    <div>
+                        <p class="font-bold text-sm text-gray-700">${f.username}</p>
+                        <p class="text-[10px] text-pink-300">ID: ${f.id} ${f.status === 'pending' ? '(Pending 💌)' : ''}</p>
                     </div>
                 </div>
+                <div class="flex gap-2">
+                    ${pendingHtml}
+                    ${removeHtml}
+                </div>
             `;
-        }).join('');
+
+            if (!row) {
+                // Create new
+                row = document.createElement('div');
+                row.id = rowId;
+                row.className = "bg-white/80 p-3 rounded-[2rem] shadow-sm flex items-center justify-between border-2 border-transparent animate-slide-up mb-2";
+                row.innerHTML = innerHTML;
+                list.appendChild(row);
+            } else {
+                // Update existing if content changed (simple check)
+                // To avoid re-rendering images mostly
+                if (row.innerHTML.trim() !== innerHTML.trim()) {
+                    row.innerHTML = innerHTML;
+                }
+            }
+        });
 
         if (window.lucide) lucide.createIcons();
     },
