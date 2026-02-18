@@ -432,7 +432,7 @@ const App = {
                     <button id="btn-update-confirm" class="bg-pink-500 text-white py-3 rounded-xl font-black shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
                         <i data-lucide="download"></i> Update Now
                     </button>
-                    <button onclick="document.getElementById('${modalId}').remove()" class="text-gray-400 text-sm font-bold hover:text-gray-600 py-2">
+                    <button id="btn-update-later" onclick="document.getElementById('${modalId}').remove()" class="text-gray-400 text-sm font-bold hover:text-gray-600 py-2">
                         Maybe Later 🐢
                     </button>
                 </div>
@@ -442,9 +442,23 @@ const App = {
         if (window.lucide) lucide.createIcons();
 
         // Bind download
-        document.getElementById('btn-update-confirm').onclick = () => {
+        const btn = document.getElementById('btn-update-confirm');
+        const laterBtn = document.getElementById('btn-update-later'); // Need to ID this
+
+        btn.onclick = async () => {
+            // UI Loading State
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> Downloading...`;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            if (laterBtn) laterBtn.remove(); // Can't cancel once started to avoid currupted files
+
+            // Start Download
+            await this.downloadAndInstallUpdate(release.assets);
+
+            // Only close on error (download function handles installs/redirects)
+            // If we are here, it might have failed or is installing. 
+            // We can leave the modal for a moment or let the installer take over.
             document.getElementById(modalId).remove();
-            this.downloadAndInstallUpdate(release.assets);
         };
     },
 
@@ -643,7 +657,7 @@ const App = {
             this.renderView();
         } else {
             console.log("Magic blocked by OS or User.");
-            this.showPermissionGuide();
+            this.toast("Please allow notifications in settings! 🥺", "blue");
         }
     },
 
@@ -1073,6 +1087,12 @@ const App = {
             return;
         }
 
+        // Anti-Flicker: Only update if the LIST of IDs has changed
+        // This ignores trivial updates like "1 min ago" -> "1 min ago" re-renders
+        const currentIdsHash = JSON.stringify(this.state.history.map(d => d.id));
+        if (this._lastHistoryHash === currentIdsHash) return;
+        this._lastHistoryHash = currentIdsHash;
+
         const newHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
             this.state.history.map(d => `
             <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
@@ -1353,37 +1373,35 @@ const App = {
 
     async signOut() {
         this.toast('Signing out... 👋', 'blue');
+
+        // Stop all magic loops
+        if (this.historyInterval) clearInterval(this.historyInterval);
+        if (Social.friendInterval) clearInterval(Social.friendInterval);
+        if (this.magicTimeout) clearTimeout(this.magicTimeout);
+
         try {
             // Fire and forget the remote sign out
             if (this.state.supabase) {
-                this.state.supabase.auth.signOut();
+                await this.state.supabase.auth.signOut();
             }
 
-            // Force Google Disconnect to allow account picker next time
+            // Force Google Disconnect
             if (window.Capacitor && window.Capacitor.isNativePlatform()) {
                 const { GoogleAuth } = window.Capacitor.Plugins;
                 if (GoogleAuth) {
-                    await GoogleAuth.signOut(); // Signs out
-                    await GoogleAuth.disconnect(); // Revokes access (Forces picker)
+                    await GoogleAuth.signOut();
+                    await GoogleAuth.disconnect();
                 }
             }
 
-            // Clear all local session data immediately
-            localStorage.removeItem('sb-access-token');
-            localStorage.removeItem('sb-refresh-token');
-            localStorage.removeItem('user-name');
-            localStorage.removeItem('user-id');
-            localStorage.removeItem('user-avatar');
+            // Clear all local session data
+            localStorage.clear(); // Nuke everything to be safe
 
-            // Short delay to let the toast be seen before the hard reload
+            // Hard Redirect to clear memory/state
             setTimeout(() => {
-                // Clear any potential auth fragments to prevent auto-relogin
-                if (window.history.replaceState) {
-                    window.history.replaceState(null, null, window.location.pathname);
-                }
-                window.location.href = window.location.origin + window.location.pathname;
-                window.location.reload();
+                window.location.replace(window.location.origin + window.location.pathname);
             }, 500);
+
         } catch (e) {
             console.error("Sign out error:", e);
             window.location.reload();
