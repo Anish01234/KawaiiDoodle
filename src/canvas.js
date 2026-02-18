@@ -69,7 +69,7 @@ window.initCanvas = function () {
             saveBtn.disabled = true;
             saveBtn.classList.add('opacity-50');
             const data = getCanvasData();
-            App.saveLocalDraft(data);
+            App.saveDraft(data);
             App.state.isCanvasDirty = false;
             localStorage.removeItem('kawaii-autosave');
 
@@ -447,7 +447,7 @@ window.initCanvas = function () {
             // Zoom
             if (state.lastPinchDist > 0) {
                 const scale = dist / state.lastPinchDist;
-                state.zoomScale = Math.min(5, Math.max(0.8, state.zoomScale * scale));
+                state.zoomScale = Math.min(5, Math.max(1, state.zoomScale * scale));
             }
 
             // Pan
