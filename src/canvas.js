@@ -444,26 +444,37 @@ window.initCanvas = function () {
                 y: (e.touches[0].clientY + e.touches[1].clientY) / 2
             };
 
-            // Zoom
+            // Calculate new scale
+            let newScale = state.zoomScale;
             if (state.lastPinchDist > 0) {
-                const scale = dist / state.lastPinchDist;
-                state.zoomScale = Math.min(5, Math.max(1, state.zoomScale * scale));
+                const scaleFactor = dist / state.lastPinchDist;
+                newScale = Math.min(5, Math.max(1, state.zoomScale * scaleFactor));
             }
 
-            // Pan
+            // Calculate new pan to keep center stationary
+            // P2 = C - (C - P1) * (S2 / S1)
+            const scaleRatio = newScale / state.zoomScale;
+
+            let newPanX = center.x - (center.x - state.panX) * scaleRatio;
+            let newPanY = center.y - (center.y - state.panY) * scaleRatio;
+
+            // Add pan delta (if moving while pinching)
             if (state.lastPinchCenter) {
-                state.panX += center.x - state.lastPinchCenter.x;
-                state.panY += center.y - state.lastPinchCenter.y;
-
-                // Clamp Pan
-                const maxPanX = 0;
-                const minPanX = -canvas.offsetWidth * (state.zoomScale - 1);
-                const maxPanY = 0;
-                const minPanY = -canvas.offsetHeight * (state.zoomScale - 1);
-
-                state.panX = Math.min(maxPanX, Math.max(minPanX, state.panX));
-                state.panY = Math.min(maxPanY, Math.max(minPanY, state.panY));
+                newPanX += center.x - state.lastPinchCenter.x;
+                newPanY += center.y - state.lastPinchCenter.y;
             }
+
+            // Update state
+            state.zoomScale = newScale;
+
+            // Clamp Pan
+            const maxPanX = 0;
+            const minPanX = -canvas.offsetWidth * (state.zoomScale - 1);
+            const maxPanY = 0;
+            const minPanY = -canvas.offsetHeight * (state.zoomScale - 1);
+
+            state.panX = Math.min(maxPanX, Math.max(minPanX, newPanX));
+            state.panY = Math.min(maxPanY, Math.max(minPanY, newPanY));
 
             state.lastPinchDist = dist;
             state.lastPinchCenter = center;
