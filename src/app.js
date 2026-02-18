@@ -23,7 +23,9 @@ const App = {
         magicClickCount: 0,
         notificationsEnabled: false,
         bootLogs: [],
-        previousView: null
+        previousView: null,
+        isSending: false,
+        isLoadingHistory: false
     },
 
     enableDebugConsole() {
@@ -133,6 +135,85 @@ const App = {
             setTimeout(() => {
                 this.createSparkle(Math.random() * window.innerWidth, Math.random() * window.innerHeight);
             }, i * 50);
+        }
+    },
+
+    // --- SAFETY NET ---
+    async checkCriticalHealth() {
+        try {
+            // 1. Fetch Status from GitHub (Use raw content)
+            // Replace with your actual username/repo
+            const statusUrl = 'https://raw.githubusercontent.com/Anish01234/KawaiiDoodle/main/status.json';
+            // Add cache busting
+            const response = await fetch(`${statusUrl}?t=${Date.now()}`);
+            if (!response.ok) return;
+
+            const status = await response.json();
+
+            // 2. Get Current Version
+            let currentVersion = '0.0.0';
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                const info = await window.Capacitor.Plugins.App.getInfo();
+                currentVersion = info.version;
+            } else {
+                return; // Don't block web/dev functionality
+            }
+
+            // 3. Check for Broken Version or Deprecation
+            const isBroken = (status.broken_versions || []).includes(currentVersion);
+
+            // Semver check for min version
+            const isTooOld = (v1, min) => {
+                const p1 = v1.split('.').map(Number);
+                const pMin = min.split('.').map(Number);
+                for (let i = 0; i < Math.max(p1.length, pMin.length); i++) {
+                    const n1 = p1[i] || 0;
+                    const nMin = pMin[i] || 0;
+                    if (n1 < nMin) return true;
+                    if (n1 > nMin) return false;
+                }
+                return false;
+            };
+
+            const belowMinParam = status.min_supported_version && isTooOld(currentVersion, status.min_supported_version);
+
+            if (isBroken || belowMinParam) {
+                // BLOCKING UI
+                console.error("CRITICAL: App version blocked.", { currentVersion, status });
+                document.body.innerHTML = `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff0f5; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center;">
+                    <h1 style="font-size:2rem; color:#db2777; margin-bottom:1rem;">⚠️ Update Required</h1>
+                    <p style="font-size:1.1rem; color:#4b5563; margin-bottom:2rem;">${status.critical_message || "This version of the app is no longer supported. Please update to continue sending magic!"}</p>
+                    <button onclick="window.open('${status.force_update_url || 'https://github.com/Anish01234/KawaiiDoodle/releases'}', '_system')"
+                        style="background:#db2777; color:white; padding:1rem 2rem; border-radius:99px; font-weight:bold; font-size:1.2rem; border:none; box-shadow:0 4px 15px rgba(219, 39, 119, 0.3);">
+                        Download Fix 🚀
+                    </button>
+                    <p style="margin-top:2rem; font-size:0.8rem; color:#9ca3af;">Installed: v${currentVersion}</p>
+                </div>
+                `;
+            }
+
+        } catch (e) {
+            console.warn("Safety net check failed (offline?):", e);
+        }
+    },
+
+    // Panic Button: Triple Tap Version
+    versionTaps: 0,
+    versionTapTimer: null,
+    handleVersionTap() {
+        this.versionTaps++;
+        if (this.versionTapTimer) clearTimeout(this.versionTapTimer);
+
+        this.versionTapTimer = setTimeout(() => {
+            this.versionTaps = 0;
+        }, 1000); // Reset after 1 second of inactivity
+
+        if (this.versionTaps >= 3) {
+            // Trigger Panic Mode
+            this.toast('🚑 Panic Link Activated!', 'pink');
+            window.open('https://github.com/Anish01234/KawaiiDoodle/releases', '_system');
+            this.versionTaps = 0;
         }
     },
 
@@ -321,176 +402,166 @@ const App = {
         }
     },
 
+    // --- SAFETY NET ---
+    async checkCriticalHealth() {
+        try {
+            const statusUrl = 'https://raw.githubusercontent.com/Anish01234/KawaiiDoodle/main/status.json';
+            const response = await fetch(`${statusUrl}?t=${Date.now()}`);
+            if (!response.ok) return;
+
+            const status = await response.json();
+
+            let currentVersion = '0.0.0';
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                const info = await window.Capacitor.Plugins.App.getInfo();
+                currentVersion = info.version;
+            } else {
+                return;
+            }
+
+            const isBroken = (status.broken_versions || []).includes(currentVersion);
+            const isTooOld = (v1, min) => {
+                const p1 = v1.split('.').map(Number);
+                const pMin = min.split('.').map(Number);
+                for (let i = 0; i < Math.max(p1.length, pMin.length); i++) {
+                    const n1 = p1[i] || 0;
+                    const nMin = pMin[i] || 0;
+                    if (n1 < nMin) return true;
+                    if (n1 > nMin) return false;
+                }
+                return false;
+            };
+
+            const belowMinParam = status.min_supported_version && isTooOld(currentVersion, status.min_supported_version);
+
+            if (isBroken || belowMinParam) {
+                console.error("CRITICAL: App version blocked.", { currentVersion, status });
+                document.body.innerHTML = `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff0f5; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center;">
+                    <h1 style="font-size:2rem; color:#db2777; margin-bottom:1rem;">⚠️ Update Required</h1>
+                    <p style="font-size:1.1rem; color:#4b5563; margin-bottom:2rem;">${status.critical_message || "This version is obsolete. Please update to continue sending magic!"}</p>
+                    <button onclick="window.open('${status.force_update_url || 'https://github.com/Anish01234/KawaiiDoodle/releases'}', '_system')" 
+                        style="background:#db2777; color:white; padding:1rem 2rem; border-radius:99px; font-weight:bold; font-size:1.2rem; border:none; box-shadow:0 4px 15px rgba(219, 39, 119, 0.3);">
+                        Download Fix 🚀
+                    </button>
+                    <p style="margin-top:2rem; font-size:0.8rem; color:#9ca3af;">Installed: v${currentVersion}</p>
+                </div>
+                `;
+            }
+        } catch (e) {
+            console.warn("Safety net check failed:", e);
+        }
+    },
+
+    // Panic Button
+    versionTaps: 0,
+    versionTapTimer: null,
+    handleVersionTap() {
+        this.versionTaps++;
+        if (this.versionTapTimer) clearTimeout(this.versionTapTimer);
+        this.versionTapTimer = setTimeout(() => { this.versionTaps = 0; }, 1000);
+
+        if (this.versionTaps >= 3) {
+            this.toast('🚑 Panic Link Activated!', 'pink');
+            window.open('https://github.com/Anish01234/KawaiiDoodle/releases', '_system');
+            this.versionTaps = 0;
+        }
+    },
+
     async init() {
         this.enableDebugConsole();
+        this.checkCriticalHealth();
         this.checkForUpdates();
         this.logBoot("✨ Kawaii App Initializing...");
-        this.logBoot(`Capacitor: ${window.Capacitor ? 'LOADED' : 'MISSING'}`);
-        if (window.Capacitor) {
-            this.logBoot(`Platform: ${window.Capacitor.getPlatform()}`);
-        }
+
         try {
-            // Check for Force Offline
+            // Check Force Offline
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('offline') === 'true') {
-                this.logBoot("✈️ Force Offline Mode Active");
                 this.toast('Offline Mode Active ✈️', 'blue');
-                this.state.view = 'landing';
-                this.renderView();
+                this.setView('landing');
                 this.finalizeInit();
                 return;
             }
 
-            // 00. Truly Fullscreen Mode for Android
+            // Fullscreen
             if (window.Capacitor && window.Capacitor.isNativePlatform()) {
                 this.enableFullscreenMode();
-                this.enableFullscreenMode();
                 window.Capacitor.Plugins.App.addListener('appStateChange', ({ isActive }) => {
-                    if (isActive) {
-                        this.enableFullscreenMode();
-                        // Redundant check for slower devices
-                        setTimeout(() => this.enableFullscreenMode(), 1000);
-                    }
+                    if (isActive) setTimeout(() => this.enableFullscreenMode(), 500);
                 });
             }
 
-            // 0. Handle Bridge Redirect for deep linking
-            // If we are on the web version and have ?redirect_to_app=true, jump to native app
+            // Bridge Redirect
             if (urlParams.get('redirect_to_app') === 'true') {
-                const nativeUrl = 'io.kawaii.doodle://' + window.location.hash;
-                this.logBoot("🌉 Bridge Redirect: Attempting jump to native app...");
-                // Force a manual click if auto-redirect is blocked, but let's try auto first
-                window.location.href = nativeUrl;
-
-                // Fallback UI if redirect doesn't happen automatically
-                setTimeout(() => {
-                    const content = document.getElementById('content');
-                    if (content) {
-                        content.innerHTML = `
-                            <div class="p-8 text-center bg-white rounded-bubbly m-4 shadow-xl">
-                                <h2 class="text-xl font-bold mb-4">Redirecting back... 🚀</h2>
-                                <p class="mb-6">If the app didn't open automatically, tap the button below:</p>
-                                <a href="${nativeUrl}" class="btn-primary btn-bubbly inline-block bg-pink-400 text-white border-0 py-4 px-8">Open App 📱</a>
-                            </div>
-                        `;
-                    }
-                }, 2000);
+                window.location.href = 'io.kawaii.doodle://' + window.location.hash;
                 return;
             }
 
-            // 1. Initialize Capacitor App Plugin for Deep Links
+            // Deep Links
             if (window.Capacitor && window.Capacitor.Plugins.App) {
-                const { App: CapApp } = window.Capacitor.Plugins;
-
-                CapApp.addListener('appUrlOpen', async (data) => {
-                    console.log('🔗 Deep Link Received:', data.url);
-                    // Handle Supabase OAuth redirection
+                window.Capacitor.Plugins.App.addListener('appUrlOpen', async (data) => {
                     const url = new URL(data.url);
-                    const hash = url.hash;
-                    if (hash && hash.includes('access_token')) {
-                        console.log('🔑 OAuth fragment found in deep link, syncing session...');
-                        const { data: authData, error } = await this.state.supabase.auth.setSession({
-                            access_token: hash.split('access_token=')[1].split('&')[0],
-                            refresh_token: hash.split('refresh_token=')[1].split('&')[0]
+                    if (url.hash && url.hash.includes('access_token')) {
+                        const { error } = await this.state.supabase.auth.setSession({
+                            access_token: url.hash.split('access_token=')[1].split('&')[0],
+                            refresh_token: url.hash.split('refresh_token=')[1].split('&')[0]
                         });
-                        if (error) console.error("Session sync error:", error);
-                        else window.location.reload();
+                        if (!error) window.location.reload();
                     }
                 });
             }
 
-            // 2. Initialize Supabase
+            // Init Supabase
             this.initSupabase();
 
-            // Check for session
+            // Check Session
+            let session = null;
             if (this.state.supabase) {
-                this.logBoot("☁️ Checking session...");
-                // Timeout wrapper for getSession (3s)
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Session timeout')), 3000));
-
-                let sessionData = { data: { session: null }, error: null };
-
                 try {
-                    sessionData = await Promise.race([
-                        this.state.supabase.auth.getSession(),
-                        timeout
-                    ]);
-                } catch (e) {
-                    console.warn("Session check failed or timed out:", e);
-                    // Fallback to null session
-                }
+                    const { data, error } = await this.state.supabase.auth.getSession();
+                    if (!error) session = data.session;
+                } catch (e) { console.warn("Session check error", e); }
+            }
 
-                const { data: { session }, error } = sessionData;
+            this.state.session = session;
 
-                if (error) throw error;
+            if (session) {
+                // Fetch Profile
+                const { data: profile } = await this.state.supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', session.user.id)
+                    .single();
 
-                this.state.session = session;
+                if (profile && profile.username && profile.kawaii_id) {
+                    this.state.user.username = profile.username;
+                    this.state.user.kawaiiId = profile.kawaii_id;
+                    this.state.user.avatarUrl = profile.avatar_url || localStorage.getItem('user-avatar') || '';
 
-                // Resume Listener for Fullscreen Restoration
-                if (window.Capacitor && window.Capacitor.Plugins.App) {
-                    window.Capacitor.Plugins.App.addListener('resume', () => {
-                        console.log("Create Resume: Restoring Fullscreen & Syncing...");
-                        this.enableFullscreenMode();
-                        this.loadHistory(); // Check for new doodles while away
-                    });
-                }
+                    localStorage.setItem('user-name', profile.username);
+                    localStorage.setItem('user-id', profile.kawaii_id);
+                    if (this.state.user.avatarUrl) localStorage.setItem('user-avatar', this.state.user.avatarUrl);
 
-                if (session) {
-                    // If logged in, fetch profile
-                    const { data: profile } = await this.state.supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (profile && profile.username && profile.kawaii_id) {
-                        this.state.user.username = profile.username;
-                        this.state.user.kawaiiId = profile.kawaii_id;
-                        this.state.user.avatarUrl = profile.avatar_url || localStorage.getItem('user-avatar') || '';
-
-                        localStorage.setItem('user-name', profile.username);
-                        localStorage.setItem('user-id', profile.kawaii_id);
-                        if (this.state.user.avatarUrl) localStorage.setItem('user-avatar', this.state.user.avatarUrl);
-
-                        this.loadAppData();
-                    } else {
-                        // Logged in but profile is missing or blank? Go to setup!
-                        console.log("🍭 Profile missing or blank, heading to setup...");
-                        this.setView('setup');
-                        this.finalizeInit();
-                        return;
-                    }
+                    this.loadAppData();
+                    this.setView('home');
                 } else {
-                    // Not logged in? Go to landing
-                    this.setView('landing');
-                    this.finalizeInit();
-                    return;
+                    this.setView('setup');
                 }
+            } else {
+                this.setView('landing');
             }
 
-            // Listen for URL params (e.g., ?view=widget)
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('view') === 'widget') {
-                this.setView('widget');
-                this.finalizeInit();
-                return;
-            }
-
-            this.renderView();
             this.finalizeInit();
 
-            // 3. Initialize Push (FCM) & Google Auth
-            // 3. Initialize Push (FCM) & Google Auth
+            // Init Push
             if (window.Capacitor.isNativePlatform()) {
-                // Initialize immediately to catch launch intents!
-                try {
-                    this.initPush();
-                } catch (e) { console.error("Push Init Failed:", e); }
+                try { this.initPush(); } catch (e) { console.error("Push Init:", e); }
             }
 
         } catch (e) {
             console.error("Critical Init Error:", e);
-            this.toast('Magic startup failed... trying offline mode 🩹', 'blue');
+            this.toast('Startup failed 🩹', 'blue');
             this.state.view = 'landing';
             this.renderView();
             this.finalizeInit();
@@ -731,6 +802,12 @@ const App = {
 
     async loadHistory(silent = false) {
         if (!this.state.supabase || !this.state.session) return;
+
+        if (!silent) {
+            this.state.isLoadingHistory = true;
+            this.updateHistoryDOM(); // Show spinner immediately
+        }
+
         try {
             // 1. Load History (Doodles)
             if (performance && performance.memory) {
@@ -742,7 +819,7 @@ const App = {
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                 .order('created_at', { ascending: false })
-                .limit(20); // Test: Increasing back to 20 with logging
+                .limit(20);
 
             if (doodles) {
                 const sizeBytes = JSON.stringify(doodles).length;
@@ -770,17 +847,19 @@ const App = {
                 .select('*')
                 .eq('user_id', this.state.session.user.id)
                 .order('created_at', { ascending: false })
-                .limit(5); // Optimization: Limit drafts to prevent OOM
+                .limit(5);
 
             if (draftError) console.warn("Drafts load error:", draftError);
             this.state.drafts = drafts || [];
 
             // 3. Process Doodles (Group Sent & Cache Names)
             const userIds = new Set();
-            doodles.forEach(d => {
-                userIds.add(d.sender_id);
-                userIds.add(d.receiver_id);
-            });
+            if (doodles) {
+                doodles.forEach(d => {
+                    userIds.add(d.sender_id);
+                    userIds.add(d.receiver_id);
+                });
+            }
 
             if (userIds.size > 0) {
                 const { data: profiles, error: profError } = await this.state.supabase
@@ -802,31 +881,28 @@ const App = {
             const groupedHistory = [];
             const processedImages = new Set();
 
-            doodles.forEach(d => {
-                const isSent = d.sender_id === this.state.session.user.id;
-
-                if (isSent) {
-                    // Unique identifier for the "batch" - using image_data length + hash or just image_data
-                    // Since image_data is large, let's look for adjacent sends with same image
-                    if (processedImages.has(d.image_data)) {
-                        // Find the group and add recipient
-                        const group = groupedHistory.find(g => g.isGroup && g.image_data === d.image_data);
-                        if (group) {
-                            group.recipients.push(d.receiver_id);
+            if (doodles) {
+                doodles.forEach(d => {
+                    const isSent = d.sender_id === this.state.session.user.id;
+                    if (isSent) {
+                        // Use image_data as hash to group
+                        if (processedImages.has(d.image_data)) {
+                            // Find existing group
+                            const group = groupedHistory.find(g => g.isGroup && g.image_data === d.image_data);
+                            if (group) group.recipients.push(d.receiver_id);
+                        } else {
+                            processedImages.add(d.image_data);
+                            groupedHistory.push({
+                                ...d,
+                                isGroup: true,
+                                recipients: [d.receiver_id]
+                            });
                         }
                     } else {
-                        // Create new group
-                        processedImages.add(d.image_data);
-                        groupedHistory.push({
-                            ...d,
-                            isGroup: true,
-                            recipients: [d.receiver_id]
-                        });
+                        groupedHistory.push(d);
                     }
-                } else {
-                    groupedHistory.push(d); // Received doodles are always unique events
-                }
-            });
+                });
+            }
 
             // CHECK FOR CHANGES TO PREVENT BLINKING
             const currentHash = JSON.stringify(this.state.history.map(h => h.id));
@@ -834,67 +910,119 @@ const App = {
 
             // Also check unread count change
             const currentUnread = this.state.unreadCount;
-            // Count doodles where I am receiver AND is_read is explicitly false
-            const newUnread = doodles.filter(d =>
+            const newUnread = doodles ? doodles.filter(d =>
                 d.receiver_id === this.state.session.user.id &&
                 d.is_read === false
-            ).length;
+            ).length : 0;
 
             if (silent && currentHash === newHash && currentUnread === newUnread) {
-                // No changes, no blink!
                 return;
             }
 
             this.state.history = groupedHistory;
             this.state.unreadCount = newUnread;
 
-            // Update App Badge (Plugin)
+            // Intelligent Update for Home View to prevent flickering
+            if (this.state.view === 'home') {
+                if (silent) {
+                    this.updateHomeView();
+                } else {
+                    this.renderView();
+                }
+            } else if (this.state.view === 'history') {
+                if (silent) {
+                    this.updateHistoryDOM();
+                    this.updateDraftsDOM(); // Manual update for drafts
+                } else {
+                    this.renderView();
+                }
+            }
+
+            // Update App Badge
             if (window.Capacitor && window.Capacitor.Plugins.Badge) {
-                try {
-                    await window.Capacitor.Plugins.Badge.set({ count: newUnread });
-                } catch (e) { /* ignore badge error */ }
+                window.Capacitor.Plugins.Badge.set({ count: newUnread }).catch(() => { });
             }
 
-            if (this.state.history.length > 0) {
-                this.state.lastDoodle = doodles[0].image_data;
-                this.setSmartWallpaper(doodles[0]);
-            }
-
-            // INTELLIGENT RENDER: Only update history list if we are already seeing it
+        } catch (e) {
+            console.error("History Load Error:", e);
+            this.toast(`Failed to load magic: ${e.message || 'Unknown error'} 😭`, 'blue');
+        } finally {
+            this.state.isLoadingHistory = false;
+            // Ensure UI removes spinner even if errored
             if (this.state.view === 'history') {
                 this.updateHistoryDOM();
-            } else if (this.state.view === 'home') {
-                this.renderView();
             }
-        } catch (e) {
-            console.error("History load failed:", e);
+        }
+    },
+
+    updateDraftsDOM() {
+        const container = document.getElementById('drafts-section');
+        if (!container) return;
+
+        const drafts = App.state.drafts || [];
+        if (drafts.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const newHtml = `
+            <div class="bg-blue-50/50 p-4 rounded-bubbly border border-blue-100">
+                <h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
+                    <i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook
+                </h3>
+                <div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
+                    ${drafts.map((d, i) => `
+                        <div class="bg-white p-2 rounded-xl shadow-sm relative shrink-0 w-32 snap-start">
+                            <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-lg bg-gray-50/50 border border-gray-100" />
+                            <div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl backdrop-blur-[1px]">
+                                <button onclick="App.editDoodleFromUrl('${d.image_data}')" class="bg-white/90 text-blue-500 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="App.deleteDraft('${d.id}')" class="bg-white/90 text-red-400 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+
+        if (container.innerHTML !== newHtml) {
+            container.innerHTML = newHtml;
+            if (window.lucide) lucide.createIcons();
         }
     },
 
     updateHistoryDOM() {
         const container = document.getElementById('history-list-container');
-        if (!container) return; // Fallback if view changed safely
+        if (!container) return;
 
-        // Preserve Scroll
-        // const scrollPos = container.scrollTop; // If container scrolls
-        // const windowScroll = window.scrollY;
+        if (this.state.isLoadingHistory) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 text-pink-300 animate-pulse">
+                    <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-4"></i>
+                    <p class="font-bold text-sm">Summoning Doodles... ✨</p>
+                </div>
+             `;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
 
-        // Re-generate ONLY the list HTML
         const newHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
             this.state.history.map(d => `
-                <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
-                    <div class="relative">
-                        <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
-                        <button onclick="App.editDoodle('${d.image_data}')" class="absolute top-2 right-2 bg-white/90 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
-                            <i data-lucide="edit-2" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="App.setWallpaper('${d.image_data}', '${d.id}')" class="absolute top-12 right-2 bg-white/90 text-blue-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
-                            <i data-lucide="smartphone" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                    <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
-                        <span>
-                            ${(() => {
+            <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
+                <div class="relative">
+                    <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
+                    <button onclick="App.editDoodle('${d.image_data}')" class="absolute top-2 right-2 bg-white/90 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                        <i data-lucide="edit-2" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="App.setWallpaper('${d.image_data}', '${d.id}')" class="absolute top-12 right-2 bg-white/90 text-blue-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                        <i data-lucide="smartphone" class="w-4 h-4"></i>
+                    </button>
+                </div>
+                <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
+                    <span>
+                        ${(() => {
                     const isSent = d.sender_id === App.state.session.user.id;
                     const otherId = isSent ? d.receiver_id : d.sender_id;
                     const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
@@ -903,25 +1031,17 @@ const App = {
                     let name = cacheName || (friend ? friend.username : 'Unknown');
                     if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...';
 
-                    if (isSent && d.recipients && d.recipients.length > 0) {
+                    // Group logic
+                    if (d.isGroup) {
                         const names = d.recipients.map(rid => {
-                            const cName = App.state.userCache ? App.state.userCache[rid] : null;
                             const f = (Social.friends || []).find(fr => fr.id === rid);
+                            const cName = App.state.userCache ? App.state.userCache[rid] : null;
                             return cName || (f ? f.username : rid.substring(0, 5) + '..');
                         });
                         return `TO: ${names.join(', ')} 📤`;
                     }
 
-                    return isSent ? `TO: ${name} 📤` : `
-                                    <div class="flex items-center gap-1">
-                                        <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                                            ${(() => {
-                            const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
-                            return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
-                        })()}
-                                        </div>
-                                        FROM: ${name} 📥
-                                    </div>`;
+                    return isSent ? `TO: ${name} 📤` : `FROM: ${name} 📥`;
                 })()}
                         </span>
                         <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
@@ -929,12 +1049,11 @@ const App = {
                 </div>
             `).join('');
 
-        container.innerHTML = newHtml;
-
-        // Re-init icons for new content
-        if (window.lucide) lucide.createIcons();
+        if (container.innerHTML !== newHtml) {
+            container.innerHTML = newHtml;
+            if (window.lucide) lucide.createIcons();
+        }
     },
-
     async markAllRead() {
         if (!this.state.supabase || !this.state.session) return;
         if (this.state.unreadCount === 0) return;
@@ -1382,7 +1501,7 @@ const App = {
 
                 <div class="text-center">
                     <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
-                    <p id="app-version-label" class="text-[10px] text-white/50 mt-2 font-mono">Loading version...</p>
+                    <p id="app-version-label" onclick="App.handleVersionTap()" class="text-[10px] text-white/50 mt-2 font-mono" style="user-select:none;">Loading version...</p>
                     
                     <!-- Crash Log Tool -->
                     <button onclick="App.downloadCrashLogs()" class="mt-4 text-[10px] text-white/40 hover:text-white underline p-2">
@@ -1466,6 +1585,13 @@ const App = {
                     </button>
                     ` : ''}
                 </div>
+                ${App.state.updateAvailable ? `
+                <div class="w-full max-w-md animate-bounce">
+                    <button id="update-btn" onclick="App.showUpdateModal()" class="w-full bg-white text-pink-500 font-bold py-3 rounded-xl shadow-lg border-2 border-pink-200 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="sparkles"></i> New Magic Available! (v${App.state.latestRelease?.tag_name || '...'})
+                    </button>
+                </div>
+                ` : ''}
             </div>
     `,
         widget: () => `
@@ -1642,7 +1768,8 @@ const App = {
                     </button>
                 </div>
             </div>
-    `,
+    </div>
+`,
         history: () => `
     <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
                 <header class="text-center mb-2">
@@ -1651,6 +1778,7 @@ const App = {
                 </header>
                 <div class="flex flex-col gap-4">
                     <!-- Drafts Section -->
+                    <div id="drafts-section">
                     ${(() => {
                 const drafts = App.state.drafts || [];
                 if (drafts.length === 0) return '';
@@ -1677,7 +1805,7 @@ const App = {
                             </div>
                         `;
             })()}
-
+                    </div>
                     <!-- History List -->
                     <div id="history-list-container" class="flex flex-col gap-4">
                     ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :

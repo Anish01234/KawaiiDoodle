@@ -570,13 +570,20 @@ window.initCanvas = function () {
     });
 
     document.getElementById('send-doodle').addEventListener('click', async () => {
+        // 0. Debounce & State Check
+        if (App.state.isSending) return;
+        App.state.isSending = true;
+
         const btn = document.getElementById('send-doodle');
-        const originalText = btn.innerHTML;
-        const snapshot = getCanvasData(); // Use flattened data (Fixes transparency/pink lockscreen)
+        const originalText = `<span>SEND MAGIC</span> <i data-lucide="send" class="w-5 h-5"></i>`; // Hardcode original to be safe
+
         const sb = App.state.supabase;
 
+        // 1. Validate Recipients
         if (!App.state.activeRecipients || App.state.activeRecipients.length === 0) {
+            App.state.isSending = false; // Reset lock
             if (!sb) {
+                const snapshot = getCanvasData();
                 App.state.lastDoodle = snapshot;
                 App.toast('Local doodle saved! 🎨', 'pink');
                 App.setView('home');
@@ -589,16 +596,24 @@ window.initCanvas = function () {
             return;
         }
 
-        // 1. Enter Loading State
+        // 2. Enter Loading State
         btn.disabled = true;
-        btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> GENERATING MAGIC...`;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> SENDING...`;
         if (window.lucide) lucide.createIcons();
 
         try {
+            // Check network status explicitly if possible, or rely on timeout
+            if (!window.navigator.onLine) throw new Error("Offline");
+
+            const snapshot = getCanvasData(); // Flatten data
             App.toast(`Sending to ${App.state.activeRecipients.length} friends... 🚀`, 'pink');
 
-            // 2. Fetch User & Targets in ONE batch
-            const user = (await sb.auth.getUser()).data.user;
+            // 3. Fetch User & Targets
+            // Timeout wrapper for network operations
+            const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error("Network timeout")), ms));
+
+            const user = (await Promise.race([sb.auth.getUser(), timeout(15000)])).data.user;
+
             const { data: targets, error: targetError } = await sb
                 .from('profiles')
                 .select('id, kawaii_id, fcm_token')
@@ -607,7 +622,7 @@ window.initCanvas = function () {
             if (targetError) throw targetError;
             if (!targets || targets.length === 0) throw new Error("No friends found!");
 
-            // 3. Prepare Batch Insert
+            // 4. Batch Insert
             const doodlesToInsert = targets.map(target => ({
                 sender_id: user.id,
                 receiver_id: target.id,
@@ -621,7 +636,7 @@ window.initCanvas = function () {
 
             if (insertError) throw insertError;
 
-            // 4. Fire-and-forget push notifications (don't block UI)
+            // 5. Fire-and-forget Push
             targets.forEach(target => {
                 if (target.fcm_token) {
                     const doodleId = insertedDoodles.find(d => d.receiver_id === target.id)?.id;
@@ -641,7 +656,7 @@ window.initCanvas = function () {
                 }
             });
 
-            // 5. Success Flow
+            // 6. Success
             App.toast('Doodles sent with magic! 💖', 'pink');
             App.state.activeRecipients = [];
             App.setView('home');
@@ -649,10 +664,22 @@ window.initCanvas = function () {
 
         } catch (e) {
             console.error("Send Failure:", e);
-            App.toast(`Send failed: ${e.message} 😭`, 'blue');
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-            if (window.lucide) lucide.createIcons();
+
+            // Offline / Timeout Handling
+            if (e.message === 'Offline' || e.message === 'Network timeout' || e.message === 'Failed to fetch') {
+                App.toast('Network slow... saving as Draft! 📂', 'pink');
+                const snapshot = getCanvasData();
+                App.saveDraft(snapshot); // Auto-save draft
+                App.setView('home');
+            } else {
+                App.toast(`Send failed: ${e.message} 😭`, 'blue');
+                // Only re-enable button if it was a real error, not an offline save
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                if (window.lucide) lucide.createIcons();
+            }
+        } finally {
+            App.state.isSending = false; // Always release lock
         }
     });
 
