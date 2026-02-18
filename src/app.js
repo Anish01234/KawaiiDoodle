@@ -392,8 +392,12 @@ const App = {
 
         } catch (e) {
             console.error("Update download failed:", e);
-            this.toast("Update failed 😭", "blue");
-            window.open(apkAsset.browser_download_url, '_system');
+            this.confirmKawaii({
+                title: "Update Failed 🥺",
+                message: "The auto-update magic fizzled out (network error). Want to download it manually?",
+                okText: "Yes, Open Browser 🌐",
+                onConfirm: () => window.open(apkAsset.browser_download_url, '_system')
+            });
         }
     },
 
@@ -817,6 +821,19 @@ const App = {
             try {
                 this.state.supabase = supabase.createClient(this.state.config.url, this.state.config.key);
                 this.logBoot("✅ Cloud Connected");
+
+                // Global Auth Listener
+                this.state.supabase.auth.onAuthStateChange((event, session) => {
+                    // console.log("🔐 Auth Event:", event);
+                    if (event === 'TokenRefreshError' || event === 'TOKEN_REFRESH_FAILED') {
+                        console.warn("Auth token expired. Redirecting...");
+                        this.signOut();
+                    }
+                    if (event === 'SIGNED_OUT') {
+                        this.state.session = null;
+                        if (this.state.view !== 'landing') this.setView('landing');
+                    }
+                });
             } catch (e) {
                 this.logBoot("❌ Cloud Connection Failed: " + e.message);
                 console.error("Cloud Sync init failed:", e);
