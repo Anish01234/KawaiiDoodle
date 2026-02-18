@@ -642,11 +642,8 @@ const App = {
             this.initPush();
             this.renderView();
         } else {
-            // User feedback: Remove "useless" modal.
-            // If native prompt fails/is denied, we do nothing or just log it.
             console.log("Magic blocked by OS or User.");
-            // Optional: sleek toast if you really want feedback, but user asked to remove the popup.
-            // this.toast("Magic blocked 😔", "blue"); 
+            this.showPermissionGuide();
         }
     },
 
@@ -1065,7 +1062,7 @@ const App = {
         const container = document.getElementById('history-list-container');
         if (!container) return;
 
-        if (this.state.isLoadingHistory) {
+        if (this.state.isLoadingHistory && this.state.history.length === 0) {
             container.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-20 text-pink-300 animate-pulse">
                     <i data-lucide="loader-2" class="w-10 h-10 animate-spin mb-4"></i>
@@ -1380,7 +1377,12 @@ const App = {
 
             // Short delay to let the toast be seen before the hard reload
             setTimeout(() => {
+                // Clear any potential auth fragments to prevent auto-relogin
+                if (window.history.replaceState) {
+                    window.history.replaceState(null, null, window.location.pathname);
+                }
                 window.location.href = window.location.origin + window.location.pathname;
+                window.location.reload();
             }, 500);
         } catch (e) {
             console.error("Sign out error:", e);
