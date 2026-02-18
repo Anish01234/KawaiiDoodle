@@ -175,6 +175,7 @@ const Social = {
     async loadFriends() {
         const sb = App.state.supabase;
         if (!sb) return;
+        if (!navigator.onLine) return; // Skip when offline
 
         try {
             const user = (await sb.auth.getUser()).data.user;

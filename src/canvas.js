@@ -27,8 +27,18 @@ window.initCanvas = function () {
         mode: 'pen', // 'pen' or 'stamp'
         stampValue: '💖',
         undoStack: [],
-        redoStack: []
+        redoStack: [],
+        // Zoom/Pan state
+        zoomScale: 1,
+        panX: 0,
+        panY: 0,
+        isPinching: false,
+        lastPinchDist: 0,
+        lastPinchCenter: null
     };
+
+    // Autosave timer
+    let autosaveTimer = null;
 
     // Constants
     const PALETTE = [
@@ -56,16 +66,19 @@ window.initCanvas = function () {
     const saveBtn = document.getElementById('save-draft');
     if (saveBtn) {
         saveBtn.addEventListener('click', () => {
-            const data = getCanvasData(); // Use flattened data
-            App.saveDraft(data);
-            // const drafts = JSON.parse(localStorage.getItem('kawaii-drafts') || '[]');
-            // drafts.unshift({ id: Date.now(), image_data: data, created_at: new Date().toISOString() });
-            // localStorage.setItem('kawaii-drafts', JSON.stringify(drafts));
-            // App.toast('Draft saved to History! 📂', 'pink');
+            saveBtn.disabled = true;
+            saveBtn.classList.add('opacity-50');
+            const data = getCanvasData();
+            App.saveLocalDraft(data);
+            App.state.isCanvasDirty = false;
+            localStorage.removeItem('kawaii-autosave');
 
-            // Optional: Animate button
+            // Animate button
             saveBtn.classList.add('scale-125', 'text-pink-500');
-            setTimeout(() => saveBtn.classList.remove('scale-125', 'text-pink-500'), 200);
+            setTimeout(() => {
+                saveBtn.classList.remove('scale-125', 'text-pink-500', 'opacity-50');
+                saveBtn.disabled = false;
+            }, 1000);
         });
     }
 
@@ -264,6 +277,15 @@ window.initCanvas = function () {
         state.redoStack = []; // Clear redo on new action
         App.state.isCanvasDirty = true; // Track unsaved changes
         updateUndoUI();
+
+        // Debounced autosave to localStorage
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(() => {
+            try {
+                const data = canvas.toDataURL('image/png');
+                localStorage.setItem('kawaii-autosave', data);
+            } catch (e) { console.error('Autosave failed:', e); }
+        }, 2000);
     }
 
     function undo() {
@@ -312,7 +334,6 @@ window.initCanvas = function () {
     ctx.lineWidth = state.size;
 
     function getCoords(e) {
-        // Use client coords relative to rect directly
         const r = canvas.getBoundingClientRect();
         let x, y;
 
@@ -324,7 +345,10 @@ window.initCanvas = function () {
             y = e.clientY - r.top;
         }
 
-        // No manual scaling needed because ctx.scale(dpr, dpr) handles it!
+        // Adjust for zoom/pan transform
+        x = (x - state.panX) / state.zoomScale;
+        y = (y - state.panY) / state.zoomScale;
+
         return { x, y };
     }
 
@@ -389,9 +413,93 @@ window.initCanvas = function () {
     canvas.addEventListener('mouseup', endDraw);
     canvas.addEventListener('mouseleave', endDraw);
 
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove', draw, { passive: false });
-    canvas.addEventListener('touchend', endDraw);
+    canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length >= 2) {
+            // Two-finger: enter zoom/pan mode
+            e.preventDefault();
+            state.isPinching = true;
+            state.isDrawing = false;
+            const dx = e.touches[1].clientX - e.touches[0].clientX;
+            const dy = e.touches[1].clientY - e.touches[0].clientY;
+            state.lastPinchDist = Math.hypot(dx, dy);
+            state.lastPinchCenter = {
+                x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+            };
+            return;
+        }
+        if (!state.isPinching) startDraw(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length >= 2 || state.isPinching) {
+            e.preventDefault();
+            if (e.touches.length < 2) return;
+
+            const dx = e.touches[1].clientX - e.touches[0].clientX;
+            const dy = e.touches[1].clientY - e.touches[0].clientY;
+            const dist = Math.hypot(dx, dy);
+            const center = {
+                x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+            };
+
+            // Zoom
+            if (state.lastPinchDist > 0) {
+                const scale = dist / state.lastPinchDist;
+                state.zoomScale = Math.min(5, Math.max(0.5, state.zoomScale * scale));
+            }
+
+            // Pan
+            if (state.lastPinchCenter) {
+                state.panX += center.x - state.lastPinchCenter.x;
+                state.panY += center.y - state.lastPinchCenter.y;
+            }
+
+            state.lastPinchDist = dist;
+            state.lastPinchCenter = center;
+
+            // Apply transform
+            applyZoomTransform();
+            return;
+        }
+        draw(e);
+    }, { passive: false });
+
+    canvas.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            state.isPinching = false;
+            state.lastPinchDist = 0;
+            state.lastPinchCenter = null;
+        }
+        if (e.touches.length === 0 && !state.isPinching) {
+            endDraw(e);
+        }
+    });
+
+    function applyZoomTransform() {
+        canvas.style.transform = `scale(${state.zoomScale}) translate(${state.panX / state.zoomScale}px, ${state.panY / state.zoomScale}px)`;
+        canvas.style.transformOrigin = '0 0';
+        // Show/hide reset button
+        const resetBtn = document.getElementById('btn-reset-zoom');
+        if (resetBtn) {
+            resetBtn.style.display = state.zoomScale !== 1 ? 'flex' : 'none';
+        }
+    }
+
+    function resetZoom() {
+        state.zoomScale = 1;
+        state.panX = 0;
+        state.panY = 0;
+        canvas.style.transform = '';
+        const resetBtn = document.getElementById('btn-reset-zoom');
+        if (resetBtn) resetBtn.style.display = 'none';
+        App.toast('Zoom reset! 🔍', 'pink');
+    }
+
+    // Wire reset zoom button
+    const resetZoomBtn = document.getElementById('btn-reset-zoom');
+    if (resetZoomBtn) resetZoomBtn.addEventListener('click', resetZoom);
 
     function placeStamp(x, y) {
         ctx.font = `${state.size * 4}px serif`;

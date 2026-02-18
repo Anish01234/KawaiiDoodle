@@ -683,14 +683,28 @@ const App = {
             window.addEventListener('online', () => {
                 console.log('🌐 Back online!');
                 this.toast('Back online! 🌐', 'pink');
+                // Remove offline banner
+                const banner = document.getElementById('offline-banner');
+                if (banner) banner.remove();
+                // Sync drafts and reload data
                 this.syncLocalDrafts();
                 if (this.state.session) {
-                    this.loadHistory();
+                    this.loadAppData();
                 }
+                // Re-render current view to clear offline spinners
+                this.renderView();
             });
 
             window.addEventListener('offline', () => {
                 this.toast('You\'re offline ✈️', 'blue');
+                // Show persistent offline banner
+                if (!document.getElementById('offline-banner')) {
+                    const banner = document.createElement('div');
+                    banner.id = 'offline-banner';
+                    banner.className = 'fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-700 to-gray-800 text-white text-center text-xs font-bold py-2 px-4 flex items-center justify-center gap-2 animate-slide-down';
+                    banner.innerHTML = '<span class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span> No internet connection';
+                    document.body.prepend(banner);
+                }
             });
 
         } catch (e) {
@@ -911,6 +925,12 @@ const App = {
     async loadAppData() {
         if (!this.state.supabase || !this.state.session) return;
 
+        // Don't try heavy network operations if offline
+        if (!navigator.onLine) {
+            this.toast('Offline Mode — using cached data ✈️', 'blue');
+            return;
+        }
+
         this.subscribeToDoodles();
         this.syncProfile();
 
@@ -921,10 +941,8 @@ const App = {
         this.loadHistory();
 
         // 🔄 Polling Fallback: Check for new magic every 30s
-        // FIX: Only render if data actually changed to prevent blinking
-        setInterval(async () => {
-            // console.log("⏱️ Polling: Checking for new doodles..."); // Reduce log spam
-            await this.loadHistory(true); // Pass 'silent' flag
+        this.historyInterval = setInterval(async () => {
+            if (navigator.onLine) await this.loadHistory(true);
         }, 30000);
     },
 
@@ -1447,19 +1465,28 @@ const App = {
                     await GoogleAuth.disconnect();
                 }
             }
-
-            // Clear all local session data
-            localStorage.clear(); // Nuke everything to be safe
-
-            // Hard Redirect to clear memory/state
-            setTimeout(() => {
-                window.location.replace(window.location.origin + window.location.pathname);
-            }, 500);
-
         } catch (e) {
-            console.error("Sign out error:", e);
-            window.location.reload();
+            console.error('Sign out error:', e);
         }
+
+        // Clear all local session data
+        localStorage.clear();
+
+        // Reset state in-memory (no page reload = no flicker!)
+        this.state.session = null;
+        this.state.user = { username: '', kawaiiId: '', avatarUrl: '' };
+        this.state.history = [];
+        this.state.drafts = [];
+        this.state.activeRecipients = [];
+        this.state.unreadCount = 0;
+        this.state.viewHistory = [];
+        this.state.isCanvasDirty = false;
+        this.state.notificationsEnabled = false;
+        this.state.updateAvailable = false;
+
+        // Smooth transition to landing
+        this.setView('landing');
+        this.toast('Signed out! See you soon 🌸', 'pink');
     },
 
     handleSaveConfig() {
@@ -1656,6 +1683,25 @@ const App = {
                 // Delay canvas init to fix touch coordinates
                 setTimeout(() => {
                     if (window.initCanvas) window.initCanvas();
+                    // Check for autosaved doodle
+                    const autosave = localStorage.getItem('kawaii-autosave');
+                    if (autosave) {
+                        this.confirmKawaii({
+                            title: 'Resume your doodle? 🎨',
+                            message: 'You have an unsaved doodle from last time!',
+                            okText: 'Resume ✨',
+                            onConfirm: () => {
+                                this.state.pendingDoodle = autosave;
+                                localStorage.removeItem('kawaii-autosave');
+                                this.setView('home');
+                                setTimeout(() => this.setView('draw'), 50);
+                            },
+                            cancelText: 'Start Fresh 🗑️',
+                            onCancel: () => {
+                                localStorage.removeItem('kawaii-autosave');
+                            }
+                        });
+                    }
                 }, 100);
                 // Ensure friends are loaded for recipient picker
                 if (window.Social && (!Social.friends || Social.friends.length === 0)) {
@@ -1759,9 +1805,10 @@ const App = {
             <div class="flex flex-col items-center gap-6 p-4 w-full max-w-md mx-auto animate-slide-up">
                 <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transform hover:scale-105 transition-transform duration-500">
                     ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" />` : `
-                    <div class="text-center p-4">
-                        <i data-lucide="image" class="w-12 h-12 mx-auto text-pink-300 mb-2"></i>
-                        <p class="font-bold text-pink-400 text-sm">Waiting for a doodle...</p>
+                    <div class="flex flex-col items-center justify-center p-4">
+                        <div class="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-3"></div>
+                        <p class="font-bold text-pink-400 text-sm animate-pulse">Loading your magic... ✨</p>
+                        <p class="text-xs text-pink-300 mt-1">${navigator.onLine ? 'Almost there!' : 'Waiting for connection...'}</p>
                     </div>`}
                 </div>
                 <div class="flex flex-col items-center gap-3">
@@ -1820,6 +1867,9 @@ const App = {
                     <div class="relative w-full aspect-square max-w-md max-h-full bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white overflow-hidden">
                         <canvas id="drawing-canvas" class="w-full h-full touch-none"></canvas>
                     </div>
+                    <button id="btn-reset-zoom" style="display:none" class="absolute top-3 right-3 bg-white/90 backdrop-blur text-pink-500 font-bold text-xs py-2 px-3 rounded-full shadow-lg border border-pink-200 items-center gap-1 hover:bg-pink-50 active:scale-95 transition-all z-50">
+                        <i data-lucide="minimize-2" class="w-4 h-4 inline"></i> Reset Zoom
+                    </button>
                 </div>
                 
                 <!-- Controls Area -->
