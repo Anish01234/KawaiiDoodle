@@ -662,7 +662,7 @@ const App = {
                             message: 'You have unsaved magic! Save as draft before leaving?',
                             okText: 'Save Draft 💾',
                             onConfirm: () => {
-                                const canvas = document.getElementById('kawaii-canvas');
+                                const canvas = document.getElementById('drawing-canvas');
                                 if (canvas) this.saveLocalDraft(canvas.toDataURL('image/png'));
                                 this.state.isCanvasDirty = false;
                                 this.navigateBack();
@@ -1683,25 +1683,7 @@ const App = {
                 // Delay canvas init to fix touch coordinates
                 setTimeout(() => {
                     if (window.initCanvas) window.initCanvas();
-                    // Check for autosaved doodle
-                    const autosave = localStorage.getItem('kawaii-autosave');
-                    if (autosave) {
-                        this.confirmKawaii({
-                            title: 'Resume your doodle? 🎨',
-                            message: 'You have an unsaved doodle from last time!',
-                            okText: 'Resume ✨',
-                            onConfirm: () => {
-                                this.state.pendingDoodle = autosave;
-                                localStorage.removeItem('kawaii-autosave');
-                                this.setView('home');
-                                setTimeout(() => this.setView('draw'), 50);
-                            },
-                            cancelText: 'Start Fresh 🗑️',
-                            onCancel: () => {
-                                localStorage.removeItem('kawaii-autosave');
-                            }
-                        });
-                    }
+
                 }, 100);
                 // Ensure friends are loaded for recipient picker
                 if (window.Social && (!Social.friends || Social.friends.length === 0)) {

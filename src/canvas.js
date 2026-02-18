@@ -334,7 +334,7 @@ window.initCanvas = function () {
     ctx.lineWidth = state.size;
 
     function getCoords(e) {
-        const r = canvas.getBoundingClientRect();
+        const r = canvas.parentElement.getBoundingClientRect();
         let x, y;
 
         if (e.touches && e.touches[0]) {
@@ -447,7 +447,7 @@ window.initCanvas = function () {
             // Zoom
             if (state.lastPinchDist > 0) {
                 const scale = dist / state.lastPinchDist;
-                state.zoomScale = Math.min(5, Math.max(0.5, state.zoomScale * scale));
+                state.zoomScale = Math.min(5, Math.max(0.8, state.zoomScale * scale));
             }
 
             // Pan
