@@ -454,6 +454,15 @@ window.initCanvas = function () {
             if (state.lastPinchCenter) {
                 state.panX += center.x - state.lastPinchCenter.x;
                 state.panY += center.y - state.lastPinchCenter.y;
+
+                // Clamp Pan
+                const maxPanX = 0;
+                const minPanX = -canvas.offsetWidth * (state.zoomScale - 1);
+                const maxPanY = 0;
+                const minPanY = -canvas.offsetHeight * (state.zoomScale - 1);
+
+                state.panX = Math.min(maxPanX, Math.max(minPanX, state.panX));
+                state.panY = Math.min(maxPanY, Math.max(minPanY, state.panY));
             }
 
             state.lastPinchDist = dist;
