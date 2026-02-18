@@ -592,16 +592,28 @@ const App = {
 
             if (session) {
                 // Fetch Profile
-                const { data: profile } = await this.state.supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', session.user.id)
-                    .single();
+                let profile = null;
+                try {
+                    const { data, error } = await this.state.supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', session.user.id)
+                        .single();
+                    if (!error) profile = data;
+                } catch (e) {
+                    console.warn("Offline: Profile fetch failed", e);
+                }
+
+                // Fallback to LocalStorage if offline/error
+                const localName = localStorage.getItem('user-name');
+                const localId = localStorage.getItem('user-id');
+                const localAvatar = localStorage.getItem('user-avatar');
 
                 if (profile && profile.username && profile.kawaii_id) {
+                    // Online / Fresh Data
                     this.state.user.username = profile.username;
                     this.state.user.kawaiiId = profile.kawaii_id;
-                    this.state.user.avatarUrl = profile.avatar_url || localStorage.getItem('user-avatar') || '';
+                    this.state.user.avatarUrl = profile.avatar_url || localAvatar || '';
 
                     localStorage.setItem('user-name', profile.username);
                     localStorage.setItem('user-id', profile.kawaii_id);
@@ -609,7 +621,18 @@ const App = {
 
                     this.loadAppData();
                     this.setView('home');
+                } else if (localName && localId) {
+                    // Offline Fallback
+                    console.log("⚠️ Offline Mode: Using cached profile");
+                    this.state.user.username = localName;
+                    this.state.user.kawaiiId = localId;
+                    this.state.user.avatarUrl = localAvatar || '';
+
+                    this.toast('Offline Mode ✈️', 'blue');
+                    this.loadAppData();
+                    this.setView('home');
                 } else {
+                    // Truly new user or cleared cache
                     this.setView('setup');
                 }
             } else {
