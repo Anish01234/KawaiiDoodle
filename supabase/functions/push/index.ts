@@ -157,21 +157,11 @@ serve(async (req) => {
                             title: title || "New Magic! ✨",
                             body: body || "You received a doodle!"
                         },
-                        // Explicit notification block ensures it shows up even if app is killed (on some devices)
-                        // But also handling data-only logic in client is key.
-                        // We include a minimal notification for guaranteed delivery visibility.
-                        notification: {
-                            title: title || "New Magic! ✨",
-                            body: body || "You received a doodle!",
-                        },
+                        // Removed 'notification' block to force data-only message
+                        // This allows FCMService.onMessageReceived to run in background
                         android: {
                             priority: "HIGH",
-                            ttl: "0s",
-                            notification: {
-                                icon: "ic_stat_icon", // Ensure you have this icon resource!
-                                color: "#FF69B4",     // Pink color
-                                click_action: "FLUTTER_NOTIFICATION_CLICK" // Or your intent filter
-                            }
+                            ttl: "0s"
                         }
                     }
                 })
