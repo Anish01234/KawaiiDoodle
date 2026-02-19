@@ -160,9 +160,11 @@ serve(async (req) => {
                         // Explicit notification block ensures it shows up even if app is killed (on some devices)
                         // But also handling data-only logic in client is key.
                         // We include a minimal notification for guaranteed delivery visibility.
+                        // COMMENTED OUT to force onMessageReceived in background
+                        /*
                         notification: {
-                            title: title || "New Magic! ✨",
-                            body: body || "You received a doodle!",
+                            icon: "ic_stat_icon",
+                            color: "#FF69B4"
                         },
                         android: {
                             priority: "HIGH",
@@ -172,6 +174,7 @@ serve(async (req) => {
                                 color: "#FF69B4"
                             }
                         }
+                        */
                     }
                 })
             }
