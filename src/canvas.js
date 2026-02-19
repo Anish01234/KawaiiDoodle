@@ -265,9 +265,7 @@ window.initCanvas = function () {
         if (state.mode !== 'fill') {
             state.mode = 'pen';
             ctx.globalCompositeOperation = 'source-over';
-            // Visual reset for eraser if it was active
-            const eraserBtn = document.getElementById('btn-eraser-tool');
-            if (eraserBtn) eraserBtn.classList.remove('bg-pink-100', 'text-pink-500', 'border-pink-300');
+            resetToolUI(); // Clear all tool highlights (fill + eraser)
         }
         ctx.strokeStyle = state.color;
     }
