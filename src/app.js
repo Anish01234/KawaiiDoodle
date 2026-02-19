@@ -694,8 +694,13 @@ const App = {
                     this.toast('Offline Mode ✈️', 'blue');
                     this.loadAppData();
                     this.setView('home');
+                } else {
+                    // Session exists but no data? Force landing/login
+                    console.warn("Session valid but no profile/local data found.");
+                    this.setView('landing');
                 }
             } else {
+                // FALLBACK: If Supabase auths but profile fails & no local data, GO TO LANDING
                 this.setView('landing');
             }
 
@@ -868,6 +873,17 @@ const App = {
                 console.log("✅ Fullscreen mode enabled");
             } catch (err) { console.log("Fullscreen error:", err); }
         }, 500);
+    },
+
+    setupNavigation() {
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
+            item.addEventListener('click', (e) => {
+                const view = e.currentTarget.dataset.view;
+                this.setView(view);
+                this.haptic('light');
+            });
+        });
     },
 
     finalizeInit() {
