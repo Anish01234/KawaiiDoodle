@@ -13,6 +13,9 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(WallpaperPlugin.class);
         super.onCreate(savedInstanceState);
 
+        // FORCE WEBVIEW DEBUGGING
+        android.webkit.WebView.setWebContentsDebuggingEnabled(true);
+
         // Manual Firebase Initialization
         // Bypass google-services.json processing issues
         try {
