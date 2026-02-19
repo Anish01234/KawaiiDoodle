@@ -1879,11 +1879,11 @@ const App = {
 
                 <!-- Toggles -->
                 <div class="flex gap-2 shrink-0">
-                    <button id="btn-fill-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center hover:scale-110 transition-transform active:bg-pink-50 group">
-                        <i data-lucide="paint-bucket" class="w-5 h-5 text-gray-400 group-hover:text-pink-400 transition-colors"></i>
+                    <button id="btn-fill-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
+                        <i data-lucide="paint-bucket" class="w-5 h-5 text-gray-400 transition-colors"></i>
                     </button>
-                    <button id="btn-eraser-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center hover:scale-110 transition-transform active:bg-pink-50 group">
-                        <i data-lucide="eraser" class="w-5 h-5 text-gray-400 group-hover:text-pink-400 transition-colors"></i>
+                    <button id="btn-eraser-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
+                        <i data-lucide="eraser" class="w-5 h-5 text-gray-400 transition-colors"></i>
                     </button>
                     <button id="btn-custom-color" class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
                         <i data-lucide="plus" class="w-5 h-5 text-white"></i>
