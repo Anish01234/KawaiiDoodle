@@ -623,7 +623,13 @@ const App = {
                     if (this.state.user.avatarUrl) localStorage.setItem('user-avatar', this.state.user.avatarUrl);
 
                     this.loadAppData();
-                    this.setView('home');
+                    if (this.state.pendingDeepLink) {
+                        const target = this.state.pendingDeepLink;
+                        this.state.pendingDeepLink = null;
+                        this.setView(target);
+                    } else {
+                        this.setView('home');
+                    }
                 } else if (localName && localId) {
                     // Offline Fallback
                     console.log("⚠️ Offline Mode: Using cached profile");
@@ -633,7 +639,13 @@ const App = {
 
                     this.toast('Offline Mode ✈️', 'blue');
                     this.loadAppData();
-                    this.setView('home');
+                    if (this.state.pendingDeepLink) {
+                        const target = this.state.pendingDeepLink;
+                        this.state.pendingDeepLink = null;
+                        this.setView(target);
+                    } else {
+                        this.setView('home');
+                    }
                 } else {
                     // Truly new user or cleared cache
                     this.setView('setup');
@@ -821,15 +833,33 @@ const App = {
             console.log('🔔 Push received:', notification);
             this.toast(`New magic in the air! ✨`, 'pink');
 
-            // If the notification contains image data (data-only payload), we could set wallpaper here
-            // But usually we just refresh history
-            this.loadHistory();
+            // Refresh history
+            await this.loadHistory();
+
+            // Auto-set wallpaper: find the latest doodle sent TO me
+            try {
+                if (this.state.supabase && this.state.session) {
+                    const { data } = await this.state.supabase
+                        .from('doodles')
+                        .select('*')
+                        .eq('receiver_id', this.state.session.user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+                    if (data) this.setSmartWallpaper(data);
+                }
+            } catch (e) { console.warn('Wallpaper auto-set on push failed:', e); }
         });
 
         // On notification tapped
         PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
             console.log('🔔 Push tapped:', notification);
-            this.setView('history');
+            // Store pending deep link for cold-start (session may not be ready yet)
+            this.state.pendingDeepLink = 'history';
+            // Also try direct navigation (works on warm-start)
+            if (this.state.session) {
+                this.setView('history');
+            }
         });
     },
 
