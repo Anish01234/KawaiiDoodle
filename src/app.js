@@ -220,17 +220,11 @@ const App = {
         }
     },
 
-    async checkForUpdates() {
+    async checkForUpdates(retryCount = 0) {
         if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
 
         try {
-            console.log("🔄 Checking for updates...");
-            // Use specific repo
-            const response = await fetch('https://api.github.com/repos/Anish01234/KawaiiDoodle/releases/latest');
-            if (!response.ok) return;
-
-            const data = await response.json();
-            const latestVersion = data.tag_name?.replace('v', '');
+            console.log(`🔄 Checking for updates... (attempt ${retryCount + 1})`);
 
             // Get current version dynamically
             let currentVersion = '0.0.0';
@@ -239,8 +233,6 @@ const App = {
                 const info = await CapApp.getInfo();
                 currentVersion = info.version;
             } catch (e) { console.warn("Could not get native version", e); }
-
-            console.log(`🚀 Checking updates: Installed=${currentVersion}, Remote=${latestVersion}`);
 
             // Robust Semver Comparison
             const isNewer = (v1, v2) => {
@@ -255,9 +247,58 @@ const App = {
                 return false;
             };
 
+            // Try fetching from GitHub API
+            let data = null;
+            try {
+                const response = await fetch('https://api.github.com/repos/Anish01234/KawaiiDoodle/releases/latest');
+                if (response.ok) {
+                    data = await response.json();
+                    // Cache the release data for reliability
+                    localStorage.setItem('cached-update-data', JSON.stringify({
+                        tag_name: data.tag_name,
+                        body: data.body,
+                        assets: data.assets,
+                        cachedAt: Date.now()
+                    }));
+                } else {
+                    console.warn(`⚠️ Update check HTTP ${response.status} — using cache`);
+                }
+            } catch (fetchErr) {
+                console.warn('⚠️ Update fetch failed:', fetchErr.message);
+            }
+
+            // Fallback to cache if fetch failed
+            if (!data) {
+                try {
+                    const cached = JSON.parse(localStorage.getItem('cached-update-data'));
+                    if (cached && cached.tag_name) {
+                        // Only use cache if it's less than 24 hours old
+                        if (Date.now() - cached.cachedAt < 24 * 60 * 60 * 1000) {
+                            data = cached;
+                            console.log('📦 Using cached update data');
+                        }
+                    }
+                } catch (e) { /* cache parse error, ignore */ }
+            }
+
+            // If still no data, retry once after 5s
+            if (!data && retryCount < 1) {
+                console.log('🔁 Will retry update check in 5s...');
+                setTimeout(() => this.checkForUpdates(retryCount + 1), 5000);
+                return;
+            }
+
+            if (!data) {
+                console.warn('❌ Update check: no data available after retries');
+                return;
+            }
+
+            const latestVersion = data.tag_name?.replace('v', '');
+            console.log(`🚀 Checking updates: Installed=${currentVersion}, Remote=${latestVersion}`);
+
             if (latestVersion && latestVersion !== currentVersion && isNewer(latestVersion, currentVersion)) {
                 console.log(`Update available: ${latestVersion}`);
-                this.state.updateAvailable = true; // Use this flag for UI button
+                this.state.updateAvailable = true;
                 this.state.latestRelease = data;
                 this.renderView();
                 this.toast(`New Magic Available: v${latestVersion}! 🚀`, 'pink');
@@ -267,6 +308,10 @@ const App = {
             }
         } catch (e) {
             console.warn("Update check failed:", e);
+            // Retry once on unexpected errors
+            if (retryCount < 1) {
+                setTimeout(() => this.checkForUpdates(retryCount + 1), 5000);
+            }
         }
     },
 
@@ -538,7 +583,6 @@ const App = {
     async init() {
         this.enableDebugConsole();
         this.checkCriticalHealth();
-        this.checkForUpdates();
         this.logBoot("✨ Kawaii App Initializing...");
 
         try {
@@ -969,6 +1013,9 @@ const App = {
             Social.listenToSocial();
         }
         this.loadHistory();
+
+        // Check for app updates (network is ready here)
+        this.checkForUpdates();
 
         // 🔄 Polling Fallback: Check for new magic every 30s
         this.historyInterval = setInterval(async () => {
