@@ -1043,23 +1043,20 @@ const App = {
             if (data && !data.wallpaper_set_at) {
                 this.setSmartWallpaper(data);
             }
-        }
-        } catch(e) { /* No unset wallpaper doodles, or column missing */ }
+        } catch (e) { /* No unset wallpaper doodles, or column missing */ }
 
         // 🔄 Polling Fallback: Check for new magic every 30s
         this.historyInterval = setInterval(async () => {
             if (navigator.onLine) await this.loadHistory(true);
         }, 30000);
-},
+    },
 
     async loadHistory(silent = false, page = 0) {
         // Prevent duplicate loads
         if (this.state.isLoadingHistory && page === 0) return;
 
-        try {
-            if (page === 0) this.state.isLoadingHistory = true;
-            console.log(`📜 Loading History (Page ${page})...`); // Show spinner immediately
-        }
+        if (page === 0) this.state.isLoadingHistory = true;
+        console.log(`📜 Loading History (Page ${page})...`); // Show spinner immediately
 
         try {
             // 1. Load History (Doodles)
@@ -1236,17 +1233,17 @@ const App = {
         }
     },
 
-        updateDraftsDOM() {
-    const container = document.getElementById('drafts-section');
-    if (!container) return;
+    updateDraftsDOM() {
+        const container = document.getElementById('drafts-section');
+        if (!container) return;
 
-    const drafts = App.state.drafts || [];
-    if (drafts.length === 0) {
-        container.innerHTML = '';
-        return;
-    }
+        const drafts = App.state.drafts || [];
+        if (drafts.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
 
-    const newHtml = `
+        const newHtml = `
             <div class="bg-blue-50/50 p-4 rounded-bubbly border border-blue-100">
                 <h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
                     <i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook
@@ -1268,37 +1265,37 @@ const App = {
                 </div>
             </div>`;
 
-    if (container.innerHTML !== newHtml) {
-        container.innerHTML = newHtml;
-        if (window.lucide) lucide.createIcons();
-    }
-},
+        if (container.innerHTML !== newHtml) {
+            container.innerHTML = newHtml;
+            if (window.lucide) lucide.createIcons();
+        }
+    },
 
-updateHistoryDOM() {
-    const container = document.getElementById('history-list-container');
-    if (!container) return;
+    updateHistoryDOM() {
+        const container = document.getElementById('history-list-container');
+        if (!container) return;
 
-    if (this.state.isLoadingHistory && this.state.history.length === 0) {
-        container.innerHTML = `
+        if (this.state.isLoadingHistory && this.state.history.length === 0) {
+            container.innerHTML = `
                 <div class="flex flex-col items-center justify-center py-20 text-pink-400">
                     <div class="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-4"></div>
                     <p class="font-bold text-sm animate-pulse">Waiting for connection... ✨</p>
                     <p class="text-xs text-pink-300 mt-1">Your doodles will appear here</p>
                 </div>
              `;
-        return;
-    }
+            return;
+        }
 
-    // Anti-Flicker: Only update if the LIST of IDs has changed
-    const currentIdsHash = JSON.stringify(this.state.history.map(d => d.id));
-    // Also check if pagination state changed
-    if (this._lastHistoryHash === currentIdsHash && this._lastHasMore === this.state.hasMoreHistory) return;
+        // Anti-Flicker: Only update if the LIST of IDs has changed
+        const currentIdsHash = JSON.stringify(this.state.history.map(d => d.id));
+        // Also check if pagination state changed
+        if (this._lastHistoryHash === currentIdsHash && this._lastHasMore === this.state.hasMoreHistory) return;
 
-    this._lastHistoryHash = currentIdsHash;
-    this._lastHasMore = this.state.hasMoreHistory;
+        this._lastHistoryHash = currentIdsHash;
+        this._lastHasMore = this.state.hasMoreHistory;
 
-    let listHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
-        this.state.history.map(d => `
+        let listHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
+            this.state.history.map(d => `
             <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
                 <div class="relative">
                     <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
@@ -1312,369 +1309,433 @@ updateHistoryDOM() {
                 <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
                     <span>
                         ${(() => {
-                const isSent = d.sender_id === App.state.session.user.id;
-                const otherId = isSent ? d.receiver_id : d.sender_id;
-                const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
-                const friend = (Social.friends || []).find(f => f.id === otherId);
+                    const isSent = d.sender_id === App.state.session.user.id;
+                    const otherId = isSent ? d.receiver_id : d.sender_id;
+                    const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
+                    const friend = (Social.friends || []).find(f => f.id === otherId);
 
-                let name = cacheName || (friend ? friend.username : 'Unknown');
-                if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...';
+                    let name = cacheName || (friend ? friend.username : 'Unknown');
+                    if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...';
 
-                // Group logic
-                if (d.isGroup) {
-                    const names = d.recipients.map(rid => {
-                        const f = (Social.friends || []).find(fr => fr.id === rid);
-                        const cName = App.state.userCache ? App.state.userCache[rid] : null;
-                        return cName || (f ? f.username : rid.substring(0, 5) + '..');
-                    });
-                    return `TO: ${names.join(', ')} 📤`;
-                }
+                    // Group logic
+                    if (d.isGroup) {
+                        const names = d.recipients.map(rid => {
+                            const f = (Social.friends || []).find(fr => fr.id === rid);
+                            const cName = App.state.userCache ? App.state.userCache[rid] : null;
+                            return cName || (f ? f.username : rid.substring(0, 5) + '..');
+                        });
+                        return `TO: ${names.join(', ')} 📤`;
+                    }
 
-                return isSent ? `TO: ${name} 📤` : `
+                    return isSent ? `TO: ${name} 📤` : `
                                         <div class="flex items-center gap-1">
                                             <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
                                                 ${(() => {
-                        const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
-                        return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
-                    })()}
+                            const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
+                            return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
+                        })()}
                                             </div>
                                             FROM: ${name} 📥
                                         </div>`;
-            })()}
+                })()}
                     </span>
                     <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
                 </div>
             </div>
             `).join('');
 
-    if (this.state.hasMoreHistory) {
-        listHtml += `
+        if (this.state.hasMoreHistory) {
+            listHtml += `
             <div class="text-center pb-8 pt-4">
                 <button onclick="App.loadHistory(false, ${this.state.historyPage + 1})" 
                         class="bg-white/50 hover:bg-white text-pink-400 font-bold py-2 px-6 rounded-full shadow-sm transition-all active:scale-95 border border-white">
                     Show More ✨
                 </button>
             </div>`;
-    }
+        }
 
-    if (container.innerHTML !== listHtml) {
-        container.innerHTML = listHtml;
-        if (window.lucide) lucide.createIcons();
-    }
-},
+        if (container.innerHTML !== listHtml) {
+            container.innerHTML = listHtml;
+            if (window.lucide) lucide.createIcons();
+        }
+    },
 
     async markAllRead() {
-    if (!this.state.supabase || !this.state.session) return;
-    if (this.state.unreadCount === 0) return;
+        if (!this.state.supabase || !this.state.session) return;
+        if (this.state.unreadCount === 0) return;
 
-    // Optimistic Update
-    this.state.unreadCount = 0;
-    this.renderView();
-    if (window.Capacitor && window.Capacitor.Plugins.Badge) {
-        window.Capacitor.Plugins.Badge.clear().catch(() => { });
-    }
+        // Optimistic Update
+        this.state.unreadCount = 0;
+        this.renderView();
+        if (window.Capacitor && window.Capacitor.Plugins.Badge) {
+            window.Capacitor.Plugins.Badge.clear().catch(() => { });
+        }
 
-    try {
-        await this.state.supabase
-            .from('doodles')
-            .update({ is_read: true })
-            .eq('receiver_id', this.state.session.user.id)
-            .eq('is_read', false);
-        console.log("✅ Marked all as read");
-    } catch (e) {
-        console.warn("Failed to mark read:", e);
-    }
-},
+        try {
+            await this.state.supabase
+                .from('doodles')
+                .update({ is_read: true })
+                .eq('receiver_id', this.state.session.user.id)
+                .eq('is_read', false);
+            console.log("✅ Marked all as read");
+        } catch (e) {
+            console.warn("Failed to mark read:", e);
+        }
+    },
 
     async setWallpaper(imageData, id) {
-    this.confirmKawaii({
-        title: "New Look? 📱",
-        message: "Set this doodle as your lock screen?",
-        okText: "Set as Wallpaper! ✨",
-        onConfirm: async () => {
-            this.toast('Updating lock screen... ✨', 'pink');
-            try {
-                const { Wallpaper } = window.Capacitor.Plugins;
-                if (Wallpaper) {
-                    await Wallpaper.setSeamlessDoodleAsWallpaper({ image: imageData });
-                    this.toast('Lock screen updated! ✨', 'pink');
-                    if (id) localStorage.setItem('last-wallpaper-id', id);
-                } else {
-                    this.toast('Feature not available 😭', 'blue');
+        this.confirmKawaii({
+            title: "New Look? 📱",
+            message: "Set this doodle as your lock screen?",
+            okText: "Set as Wallpaper! ✨",
+            onConfirm: async () => {
+                this.toast('Updating lock screen... ✨', 'pink');
+                try {
+                    const { Wallpaper } = window.Capacitor.Plugins;
+                    if (Wallpaper) {
+                        await Wallpaper.setSeamlessDoodleAsWallpaper({ image: imageData });
+                        this.toast('Lock screen updated! ✨', 'pink');
+                        if (id) localStorage.setItem('last-wallpaper-id', id);
+                    } else {
+                        this.toast('Feature not available 😭', 'blue');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    this.toast('Failed to set wallpaper', 'blue');
                 }
-            } catch (e) {
-                console.error(e);
-                this.toast('Failed to set wallpaper', 'blue');
             }
-        }
-    });
-},
+        });
+    },
 
     async setSmartWallpaper(doodle) {
-    if (!doodle || !doodle.image_data) return;
+        if (!doodle || !doodle.image_data) return;
 
-    // CRITICAL: Only set if I am the RECEIVER.
-    // If I sent it, do NOT set my own wallpaper.
-    console.log(`🔍 Wallpaper Check: Me(${this.state.session.user.id}) vs Receiver(${doodle.receiver_id})`);
+        // CRITICAL: Only set if I am the RECEIVER.
+        // If I sent it, do NOT set my own wallpaper.
+        console.log(`🔍 Wallpaper Check: Me(${this.state.session.user.id}) vs Receiver(${doodle.receiver_id})`);
 
-    if (doodle.receiver_id !== this.state.session.user.id) {
-        console.log("Not setting wallpaper: I am the sender.");
-        return;
-    }
-
-    // Check persistent flag (requires SQL update: user must add column)
-    if (doodle.wallpaper_set_at) {
-        console.log("Wallpaper already set historically (DB flag). Skipping.");
-        return;
-    }
-
-    const lastSetId = localStorage.getItem('last-wallpaper-id');
-    if (doodle.id === lastSetId) return;
-
-    console.log("🖼️ Setting Wallpaper (Receiver Mode)...");
-    try {
-        const { Wallpaper } = window.Capacitor.Plugins;
-        if (Wallpaper) {
-            await Wallpaper.setSeamlessDoodleAsWallpaper({ image: doodle.image_data });
-            this.toast('Lock screen updated! ✨', 'pink');
-            localStorage.setItem('last-wallpaper-id', doodle.id);
-
-            // Mark as set in DB so it doesn't re-set on reinstall/clear data
-            // NOTE: This requires the 'wallpaper_set_at' column AND proper RLS policies
-            try {
-                const { error } = await this.state.supabase
-                    .from('doodles')
-                    .update({ wallpaper_set_at: new Date().toISOString() })
-                    .eq('id', doodle.id); // This will FAIL if RLS blocks receivers
-
-                if (error) {
-                    console.error("❌ DB Update Failed (RLS Permission?):", error);
-                    this.toast('Database sync failed! Check RLS policies.', 'blue');
-                } else {
-                    console.log("✅ Successfully marked doodle as wallpaper_set_at in DB");
-                }
-            } catch (dbErr) {
-                console.warn("Could not update DB (column might be missing):", dbErr);
-            }
+        if (doodle.receiver_id !== this.state.session.user.id) {
+            console.log("Not setting wallpaper: I am the sender.");
+            return;
         }
-    } catch (e) {
-        console.error("Wallpaper set failed:", e);
-    }
-},
+
+        // Check persistent flag (requires SQL update: user must add column)
+        if (doodle.wallpaper_set_at) {
+            console.log("Wallpaper already set historically (DB flag). Skipping.");
+            return;
+        }
+
+        const lastSetId = localStorage.getItem('last-wallpaper-id');
+        if (doodle.id === lastSetId) return;
+
+        console.log("🖼️ Setting Wallpaper (Receiver Mode)...");
+        try {
+            const { Wallpaper } = window.Capacitor.Plugins;
+            if (Wallpaper) {
+                await Wallpaper.setSeamlessDoodleAsWallpaper({ image: doodle.image_data });
+                this.toast('Lock screen updated! ✨', 'pink');
+                localStorage.setItem('last-wallpaper-id', doodle.id);
+
+                // Mark as set in DB so it doesn't re-set on reinstall/clear data
+                // NOTE: This requires the 'wallpaper_set_at' column AND proper RLS policies
+                try {
+                    const { error } = await this.state.supabase
+                        .from('doodles')
+                        .update({ wallpaper_set_at: new Date().toISOString() })
+                        .eq('id', doodle.id); // This will FAIL if RLS blocks receivers
+
+                    if (error) {
+                        console.error("❌ DB Update Failed (RLS Permission?):", error);
+                        this.toast('Database sync failed! Check RLS policies.', 'blue');
+                    } else {
+                        console.log("✅ Successfully marked doodle as wallpaper_set_at in DB");
+                    }
+                } catch (dbErr) {
+                    console.warn("Could not update DB (column might be missing):", dbErr);
+                }
+            }
+        } catch (e) {
+            console.error("Wallpaper set failed:", e);
+        }
+    },
 
 
     async syncProfile() {
-    if (!this.state.supabase || !this.state.user.username || !this.state.user.kawaiiId) return;
-    try {
-        const user = (await this.state.supabase.auth.getUser()).data.user;
-        if (!user) return;
+        if (!this.state.supabase || !this.state.user.username || !this.state.user.kawaiiId) return;
+        try {
+            const user = (await this.state.supabase.auth.getUser()).data.user;
+            if (!user) return;
 
-        // Intelligently grab the avatar: State -> LocalStorage -> Metadata -> Default
-        const metadataAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || user.user_metadata?.full_name;
-        // IMPORTANT: If state doesn't have it but metadata does, metadata wins!
-        const avatar = this.state.user.avatarUrl || metadataAvatar || localStorage.getItem('user-avatar') || '';
+            // Intelligently grab the avatar: State -> LocalStorage -> Metadata -> Default
+            const metadataAvatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || user.user_metadata?.full_name;
+            // IMPORTANT: If state doesn't have it but metadata does, metadata wins!
+            const avatar = this.state.user.avatarUrl || metadataAvatar || localStorage.getItem('user-avatar') || '';
 
-        const updateData = {
-            id: user.id,
-            username: this.state.user.username,
-            kawaii_id: this.state.user.kawaiiId
-        };
+            const updateData = {
+                id: user.id,
+                username: this.state.user.username,
+                kawaii_id: this.state.user.kawaiiId
+            };
 
-        // Only add if we have a valid avatar URL
-        if (avatar && avatar.startsWith('http')) {
-            updateData.avatar_url = avatar;
-            this.state.user.avatarUrl = avatar;
-            localStorage.setItem('user-avatar', avatar);
-        }
-
-        const { error } = await this.state.supabase
-            .from('profiles')
-            .upsert(updateData);
-
-        if (error) {
-            console.warn("Profile sync logic:", error.message);
-            // Fallback: If 'avatar_url' doesn't exist in DB, it will fail.
-            // We'll try one more time without it to keep the app working.
-            if (error.message.includes('avatar_url')) {
-                delete updateData.avatar_url;
-                await this.state.supabase.from('profiles').upsert(updateData);
-                console.log("⚠️ avatar_url column missing - skipping avatar sync");
+            // Only add if we have a valid avatar URL
+            if (avatar && avatar.startsWith('http')) {
+                updateData.avatar_url = avatar;
+                this.state.user.avatarUrl = avatar;
+                localStorage.setItem('user-avatar', avatar);
             }
-        } else {
-            console.log("✨ Profile & Avatar synced!");
-        }
-    } catch (e) { console.log("Sync error:", e); }
-},
 
-subscribeToDoodles() {
-    if (!this.state.supabase) return;
-    if (this.state.doodleSubscription) return; // Prevent duplicates
+            const { error } = await this.state.supabase
+                .from('profiles')
+                .upsert(updateData);
 
-    const channel = this.state.supabase
-        .channel('public:doodles')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'doodles' }, payload => {
-            console.log('🌈 New Magic Received!', payload);
-            this.state.lastDoodle = payload.new.image_data;
-            this.toast('New doodle from a friend! 💖', 'pink');
+            if (error) {
+                console.warn("Profile sync logic:", error.message);
+                // Fallback: If 'avatar_url' doesn't exist in DB, it will fail.
+                // We'll try one more time without it to keep the app working.
+                if (error.message.includes('avatar_url')) {
+                    delete updateData.avatar_url;
+                    await this.state.supabase.from('profiles').upsert(updateData);
+                    console.log("⚠️ avatar_url column missing - skipping avatar sync");
+                }
+            } else {
+                console.log("✨ Profile & Avatar synced!");
+            }
+        } catch (e) { console.log("Sync error:", e); }
+    },
 
-            // Auto-set wallpaper via smart logic
-            this.setSmartWallpaper(payload.new);
+    subscribeToDoodles() {
+        if (!this.state.supabase) return;
+        if (this.state.doodleSubscription) return; // Prevent duplicates
 
-            if (this.state.view === 'home' || this.state.view === 'widget') this.renderView();
-        })
-        .subscribe();
+        const channel = this.state.supabase
+            .channel('public:doodles')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'doodles' }, payload => {
+                console.log('🌈 New Magic Received!', payload);
+                this.state.lastDoodle = payload.new.image_data;
+                this.toast('New doodle from a friend! 💖', 'pink');
 
-    this.state.doodleSubscription = channel;
-    console.log("📡 Listening for forest magic...");
-},
+                // Auto-set wallpaper via smart logic
+                this.setSmartWallpaper(payload.new);
+
+                if (this.state.view === 'home' || this.state.view === 'widget') this.renderView();
+            })
+            .subscribe();
+
+        this.state.doodleSubscription = channel;
+        console.log("📡 Listening for forest magic...");
+    },
 
     async handleGoogleSignIn() {
-    if (!this.state.supabase) {
-        this.toast('Login is currently unavailable! 🥺', 'blue');
-        return;
-    }
-
-    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try {
-            const { GoogleAuth } = window.Capacitor.Plugins;
-            if (!GoogleAuth) throw new Error("GoogleAuth plugin not found");
-
-            const user = await GoogleAuth.signIn();
-            this.logBoot("✅ Native Google Auth Success");
-
-            // Restore fullscreen after account picker closes
-            this.enableFullscreenMode();
-
-            if (user && user.authentication && user.authentication.idToken) {
-                const { data, error } = await this.state.supabase.auth.signInWithIdToken({
-                    provider: 'google',
-                    token: user.authentication.idToken
-                });
-
-                if (error) throw error;
-
-                // Capture Avatar
-                if (user.imageUrl) {
-                    App.state.user.avatarUrl = user.imageUrl;
-                    localStorage.setItem('user-avatar', user.imageUrl);
-                }
-
-                this.toast('Login Successful! 🎉', 'pink');
-                // Force a profile sync before reload to ensure avatar travels to cloud
-                await this.syncProfile();
-                window.location.reload();
-            } else {
-                throw new Error("No ID token received from Google");
-            }
-        } catch (e) {
-            console.error("Native Google Login failed:", e);
-            // Restore fullscreen even on error
-            this.enableFullscreenMode();
-
-            // Show raw error for debugging
-            const rawError = JSON.stringify(e, Object.getOwnPropertyNames(e));
-            this.toast(`Login Error: ${e.message || e.code || rawError}`, 'blue');
+        if (!this.state.supabase) {
+            this.toast('Login is currently unavailable! 🥺', 'blue');
+            return;
         }
-        return;
-    }
 
-    // Web Fallback (Browser)
-    try {
-        App.toast('Opening Google login...', 'blue');
-        const { error } = await this.state.supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-                redirectTo: window.location.origin + window.location.pathname + '?redirect_to_app=true'
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { GoogleAuth } = window.Capacitor.Plugins;
+                if (!GoogleAuth) throw new Error("GoogleAuth plugin not found");
+
+                const user = await GoogleAuth.signIn();
+                this.logBoot("✅ Native Google Auth Success");
+
+                // Restore fullscreen after account picker closes
+                this.enableFullscreenMode();
+
+                if (user && user.authentication && user.authentication.idToken) {
+                    const { data, error } = await this.state.supabase.auth.signInWithIdToken({
+                        provider: 'google',
+                        token: user.authentication.idToken
+                    });
+
+                    if (error) throw error;
+
+                    // Capture Avatar
+                    if (user.imageUrl) {
+                        App.state.user.avatarUrl = user.imageUrl;
+                        localStorage.setItem('user-avatar', user.imageUrl);
+                    }
+
+                    this.toast('Login Successful! 🎉', 'pink');
+                    // Force a profile sync before reload to ensure avatar travels to cloud
+                    await this.syncProfile();
+                    window.location.reload();
+                } else {
+                    throw new Error("No ID token received from Google");
+                }
+            } catch (e) {
+                console.error("Native Google Login failed:", e);
+                // Restore fullscreen even on error
+                this.enableFullscreenMode();
+
+                // Show raw error for debugging
+                const rawError = JSON.stringify(e, Object.getOwnPropertyNames(e));
+                this.toast(`Login Error: ${e.message || e.code || rawError}`, 'blue');
             }
-        });
+            return;
+        }
 
-        if (error) throw error;
-    } catch (e) {
-        console.error(e);
-        this.toast('Google login failed', 'blue');
-    }
-},
+        // Web Fallback (Browser)
+        try {
+            App.toast('Opening Google login...', 'blue');
+            const { error } = await this.state.supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: window.location.origin + window.location.pathname + '?redirect_to_app=true'
+                }
+            });
+
+            if (error) throw error;
+        } catch (e) {
+            console.error(e);
+            this.toast('Google login failed', 'blue');
+        }
+    },
 
     async signOut() {
-    this.toast('Signing out... 👋', 'blue');
+        this.toast('Signing out... 👋', 'blue');
 
-    // Stop all magic loops
-    if (this.historyInterval) clearInterval(this.historyInterval);
-    if (Social.friendInterval) clearInterval(Social.friendInterval);
-    if (this.magicTimeout) clearTimeout(this.magicTimeout);
+        // Stop all magic loops
+        if (this.historyInterval) clearInterval(this.historyInterval);
+        if (Social.friendInterval) clearInterval(Social.friendInterval);
+        if (this.magicTimeout) clearTimeout(this.magicTimeout);
 
-    try {
-        // Fire and forget the remote sign out
-        if (this.state.supabase) {
-            await this.state.supabase.auth.signOut();
+        try {
+            // Fire and forget the remote sign out
+            if (this.state.supabase) {
+                await this.state.supabase.auth.signOut();
+            }
+
+            // Force Google Disconnect
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                const { GoogleAuth } = window.Capacitor.Plugins;
+                if (GoogleAuth) {
+                    await GoogleAuth.signOut();
+                    await GoogleAuth.disconnect();
+                }
+            }
+        } catch (e) {
+            console.error('Sign out error:', e);
         }
 
-        // Force Google Disconnect
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            const { GoogleAuth } = window.Capacitor.Plugins;
-            if (GoogleAuth) {
-                await GoogleAuth.signOut();
-                await GoogleAuth.disconnect();
+        // Clear all local session data
+        localStorage.clear();
+
+        // Reset state in-memory (no page reload = no flicker!)
+        this.state.session = null;
+        this.state.user = { username: '', kawaiiId: '', avatarUrl: '' };
+        this.state.history = [];
+        this.state.drafts = [];
+        this.state.activeRecipients = [];
+        this.state.unreadCount = 0;
+        this.state.viewHistory = [];
+        this.state.isCanvasDirty = false;
+        this.state.notificationsEnabled = false;
+        this.state.updateAvailable = false;
+
+        // Smooth transition to landing
+        this.setView('landing');
+        this.toast('Signed out! See you soon 🌸', 'pink');
+    },
+
+    handleSaveConfig() {
+        const url = document.getElementById('sb-url').value.trim();
+        const key = document.getElementById('sb-key').value.trim();
+
+        if (!url || !key) {
+            this.toast('Please enter both magic values! 🥺', 'blue');
+            return;
+        }
+
+        localStorage.setItem('sb-url', url);
+        localStorage.setItem('sb-key', key);
+        this.state.config = { url, key };
+        this.initSupabase();
+        this.toast('Magic connection saved! ✨', 'pink');
+        this.renderView();
+    },
+
+    navigateBack() {
+        if (this.state.viewHistory.length > 0) {
+            const prev = this.state.viewHistory.pop();
+            this.state.view = prev;
+            this.renderView();
+            // Re-trigger setView side effects without pushing to history
+            const viewName = prev;
+            const header = document.querySelector('header');
+            const nav = document.querySelector('nav');
+            if (viewName === 'widget' || viewName === 'landing' || viewName === 'setup') {
+                header.style.display = 'none';
+                nav.style.display = 'none';
+            } else {
+                header.style.display = 'flex';
+                nav.style.display = 'flex';
+                document.body.classList.add('bg-kawaii-pink');
+                document.body.classList.remove('bg-transparent');
+                const content = document.getElementById('content');
+                if (viewName === 'draw') {
+                    document.body.classList.add('draw-mode');
+                    nav.style.display = 'none';
+                    if (content) {
+                        content.classList.remove('p-4', 'items-center', 'overflow-y-auto');
+                        content.classList.add('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                    }
+                } else {
+                    document.body.classList.remove('draw-mode');
+                    nav.style.display = 'flex';
+                    nav.classList.remove('nav-minimized');
+                    if (nav.firstElementChild) nav.firstElementChild.style.display = 'flex';
+                    if (content && viewName !== 'landing') {
+                        content.classList.add('p-4', 'items-center', 'overflow-y-auto');
+                        content.classList.remove('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                    }
+                }
+            }
+            setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 0);
+        } else {
+            // On home with empty stack: double-tap to exit
+            const now = Date.now();
+            if (now - this.state.lastBackPress < 2000) {
+                if (window.Capacitor && window.Capacitor.Plugins.App) {
+                    window.Capacitor.Plugins.App.exitApp();
+                }
+            } else {
+                this.state.lastBackPress = now;
+                this.toast('Press back again to exit 👋', 'blue');
             }
         }
-    } catch (e) {
-        console.error('Sign out error:', e);
-    }
+    },
 
-    // Clear all local session data
-    localStorage.clear();
-
-    // Reset state in-memory (no page reload = no flicker!)
-    this.state.session = null;
-    this.state.user = { username: '', kawaiiId: '', avatarUrl: '' };
-    this.state.history = [];
-    this.state.drafts = [];
-    this.state.activeRecipients = [];
-    this.state.unreadCount = 0;
-    this.state.viewHistory = [];
-    this.state.isCanvasDirty = false;
-    this.state.notificationsEnabled = false;
-    this.state.updateAvailable = false;
-
-    // Smooth transition to landing
-    this.setView('landing');
-    this.toast('Signed out! See you soon 🌸', 'pink');
-},
-
-handleSaveConfig() {
-    const url = document.getElementById('sb-url').value.trim();
-    const key = document.getElementById('sb-key').value.trim();
-
-    if (!url || !key) {
-        this.toast('Please enter both magic values! 🥺', 'blue');
-        return;
-    }
-
-    localStorage.setItem('sb-url', url);
-    localStorage.setItem('sb-key', key);
-    this.state.config = { url, key };
-    this.initSupabase();
-    this.toast('Magic connection saved! ✨', 'pink');
-    this.renderView();
-},
-
-navigateBack() {
-    if (this.state.viewHistory.length > 0) {
-        const prev = this.state.viewHistory.pop();
-        this.state.view = prev;
+    setView(viewName) {
+        if (this.state.view === viewName) return; // Prevent reset if already on view
+        // Push current view to history stack (for back button)
+        if (this.state.view && this.state.view !== 'landing' && this.state.view !== 'setup') {
+            this.state.viewHistory.push(this.state.view);
+            // Keep stack manageable
+            if (this.state.viewHistory.length > 10) this.state.viewHistory.shift();
+        }
+        this.state.view = viewName;
         this.renderView();
-        // Re-trigger setView side effects without pushing to history
-        const viewName = prev;
+
+        // Handle widget mode UI (hide header/nav)
+        const appShell = document.getElementById('app');
         const header = document.querySelector('header');
         const nav = document.querySelector('nav');
+
         if (viewName === 'widget' || viewName === 'landing' || viewName === 'setup') {
             header.style.display = 'none';
             nav.style.display = 'none';
+            if (viewName === 'widget') {
+                document.body.classList.remove('bg-kawaii-pink');
+                document.body.classList.add('bg-transparent');
+            }
         } else {
             header.style.display = 'flex';
             nav.style.display = 'flex';
             document.body.classList.add('bg-kawaii-pink');
             document.body.classList.remove('bg-transparent');
+
+            // Hide Nav for Draw Mode (User Request: "no home button needed")
             const content = document.getElementById('content');
             if (viewName === 'draw') {
                 document.body.classList.add('draw-mode');
@@ -1686,180 +1747,116 @@ navigateBack() {
             } else {
                 document.body.classList.remove('draw-mode');
                 nav.style.display = 'flex';
+                // Reset minimized state just in case
                 nav.classList.remove('nav-minimized');
                 if (nav.firstElementChild) nav.firstElementChild.style.display = 'flex';
+
                 if (content && viewName !== 'landing') {
+                    // Restore default content style
                     content.classList.add('p-4', 'items-center', 'overflow-y-auto');
                     content.classList.remove('h-full', 'w-full', 'p-0', 'overflow-hidden');
                 }
             }
         }
-        setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 0);
-    } else {
-        // On home with empty stack: double-tap to exit
-        const now = Date.now();
-        if (now - this.state.lastBackPress < 2000) {
-            if (window.Capacitor && window.Capacitor.Plugins.App) {
-                window.Capacitor.Plugins.App.exitApp();
+
+        const currentView = this.state.view;
+        setTimeout(() => {
+            if (window.lucide) lucide.createIcons();
+            // Populate dynamic lists
+            if (viewName === 'friends') {
+                if (window.Social) {
+                    Social.loadFriends(); // Fetch fresh data
+                    Social.renderFriendList();
+                }
+                // Explicitly bind search button
+                const searchBtn = document.getElementById('btn-search-friend');
+                if (searchBtn) {
+                    searchBtn.onclick = () => {
+                        App.toast('Button clicked! 🖱️', 'blue'); // Debug toast
+                        window.handleSearchFriend();
+                    };
+                }
             }
-        } else {
-            this.state.lastBackPress = now;
-            this.toast('Press back again to exit 👋', 'blue');
-        }
-    }
-},
+            if (viewName === 'history') {
+                this.loadHistory();
+                this.markAllRead();
+            }
+        }, 0);
+    },
 
-setView(viewName) {
-    if (this.state.view === viewName) return; // Prevent reset if already on view
-    // Push current view to history stack (for back button)
-    if (this.state.view && this.state.view !== 'landing' && this.state.view !== 'setup') {
-        this.state.viewHistory.push(this.state.view);
-        // Keep stack manageable
-        if (this.state.viewHistory.length > 10) this.state.viewHistory.shift();
-    }
-    this.state.view = viewName;
-    this.renderView();
+    setupNavigation() {
+        document.getElementById('nav-draw').addEventListener('click', () => this.setView('draw'));
+        document.getElementById('nav-home').addEventListener('click', () => this.setView('home'));
+        document.getElementById('header-home').addEventListener('click', () => this.setView('home'));
+        document.getElementById('btn-friends').addEventListener('click', () => this.setView('friends'));
+        document.getElementById('btn-profile').addEventListener('click', () => this.setView('profile'));
 
-    // Handle widget mode UI (hide header/nav)
-    const appShell = document.getElementById('app');
-    const header = document.querySelector('header');
-    const nav = document.querySelector('nav');
+        // Magic Sequence Listener
+        const title = document.querySelector('header h1');
+        if (title) title.addEventListener('click', () => this.handleMagicSequence());
+    },
 
-    if (viewName === 'widget' || viewName === 'landing' || viewName === 'setup') {
-        header.style.display = 'none';
-        nav.style.display = 'none';
-        if (viewName === 'widget') {
-            document.body.classList.remove('bg-kawaii-pink');
-            document.body.classList.add('bg-transparent');
-        }
-    } else {
-        header.style.display = 'flex';
-        nav.style.display = 'flex';
-        document.body.classList.add('bg-kawaii-pink');
-        document.body.classList.remove('bg-transparent');
-
-        // Hide Nav for Draw Mode (User Request: "no home button needed")
+    renderView() {
         const content = document.getElementById('content');
-        if (viewName === 'draw') {
-            document.body.classList.add('draw-mode');
-            nav.style.display = 'none';
-            if (content) {
-                content.classList.remove('p-4', 'items-center', 'overflow-y-auto');
-                content.classList.add('h-full', 'w-full', 'p-0', 'overflow-hidden');
-            }
-        } else {
-            document.body.classList.remove('draw-mode');
-            nav.style.display = 'flex';
-            // Reset minimized state just in case
-            nav.classList.remove('nav-minimized');
-            if (nav.firstElementChild) nav.firstElementChild.style.display = 'flex';
+        const header = document.querySelector('header');
+        const nav = document.querySelector('nav');
 
-            if (content && viewName !== 'landing') {
-                // Restore default content style
-                content.classList.add('p-4', 'items-center', 'overflow-y-auto');
-                content.classList.remove('h-full', 'w-full', 'p-0', 'overflow-hidden');
-            }
+        // Force Landing if no session
+        if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget') {
+            this.state.view = 'landing';
         }
-    }
 
-    const currentView = this.state.view;
-    setTimeout(() => {
+        switch (this.state.view) {
+            case 'landing':
+                content.innerHTML = this.templates.landing();
+                header.style.display = 'none';
+                nav.style.display = 'none';
+
+                // Fetch and display version
+                this.getAppVersion().then(v => {
+                    const label = document.getElementById('app-version-label');
+                    if (label) label.textContent = v;
+
+                    const modalLabel = document.getElementById('modal-version-label');
+                    if (modalLabel) modalLabel.textContent = `Version ${v} - The Magic Update! 🦄`;
+                });
+                break;
+            case 'setup':
+                content.innerHTML = this.templates.setup();
+                header.style.display = 'none';
+                nav.style.display = 'none';
+                break;
+            case 'home': content.innerHTML = this.templates.home(); break;
+            case 'draw':
+                content.innerHTML = this.templates.draw();
+                // Delay canvas init to fix touch coordinates
+                setTimeout(() => {
+                    if (window.initCanvas) window.initCanvas();
+
+                }, 100);
+                // Ensure friends are loaded for recipient picker
+                if (window.Social && (!Social.friends || Social.friends.length === 0)) {
+                    Social.loadFriends().then(() => Social.renderRecipientBubbles());
+                }
+                break;
+            case 'friends': content.innerHTML = this.templates.friends(); break;
+            case 'profile': content.innerHTML = this.templates.profile(); break;
+            case 'history': content.innerHTML = this.templates.history(); break;
+            case 'widget': content.innerHTML = this.templates.widget(); break;
+            default: content.innerHTML = `<div>404 - Kawaii Not Found 😭</div>`;
+        }
+
+        // Add animation class to new content
+        // Add animation class to new content ONLY if view changed
+        if (content.firstElementChild && this.state.view !== this.state.previousView) {
+            content.firstElementChild.classList.add('animate-slide-up');
+        }
+        this.state.previousView = this.state.view;
         if (window.lucide) lucide.createIcons();
-        // Populate dynamic lists
-        if (viewName === 'friends') {
-            if (window.Social) {
-                Social.loadFriends(); // Fetch fresh data
-                Social.renderFriendList();
-            }
-            // Explicitly bind search button
-            const searchBtn = document.getElementById('btn-search-friend');
-            if (searchBtn) {
-                searchBtn.onclick = () => {
-                    App.toast('Button clicked! 🖱️', 'blue'); // Debug toast
-                    window.handleSearchFriend();
-                };
-            }
-        }
-        if (viewName === 'history') {
-            this.loadHistory();
-            this.markAllRead();
-        }
-    }, 0);
-},
+    },
 
-setupNavigation() {
-    document.getElementById('nav-draw').addEventListener('click', () => this.setView('draw'));
-    document.getElementById('nav-home').addEventListener('click', () => this.setView('home'));
-    document.getElementById('header-home').addEventListener('click', () => this.setView('home'));
-    document.getElementById('btn-friends').addEventListener('click', () => this.setView('friends'));
-    document.getElementById('btn-profile').addEventListener('click', () => this.setView('profile'));
-
-    // Magic Sequence Listener
-    const title = document.querySelector('header h1');
-    if (title) title.addEventListener('click', () => this.handleMagicSequence());
-},
-
-renderView() {
-    const content = document.getElementById('content');
-    const header = document.querySelector('header');
-    const nav = document.querySelector('nav');
-
-    // Force Landing if no session
-    if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget') {
-        this.state.view = 'landing';
-    }
-
-    switch (this.state.view) {
-        case 'landing':
-            content.innerHTML = this.templates.landing();
-            header.style.display = 'none';
-            nav.style.display = 'none';
-
-            // Fetch and display version
-            this.getAppVersion().then(v => {
-                const label = document.getElementById('app-version-label');
-                if (label) label.textContent = v;
-
-                const modalLabel = document.getElementById('modal-version-label');
-                if (modalLabel) modalLabel.textContent = `Version ${v} - The Magic Update! 🦄`;
-            });
-            break;
-        case 'setup':
-            content.innerHTML = this.templates.setup();
-            header.style.display = 'none';
-            nav.style.display = 'none';
-            break;
-        case 'home': content.innerHTML = this.templates.home(); break;
-        case 'draw':
-            content.innerHTML = this.templates.draw();
-            // Delay canvas init to fix touch coordinates
-            setTimeout(() => {
-                if (window.initCanvas) window.initCanvas();
-
-            }, 100);
-            // Ensure friends are loaded for recipient picker
-            if (window.Social && (!Social.friends || Social.friends.length === 0)) {
-                Social.loadFriends().then(() => Social.renderRecipientBubbles());
-            }
-            break;
-        case 'friends': content.innerHTML = this.templates.friends(); break;
-        case 'profile': content.innerHTML = this.templates.profile(); break;
-        case 'history': content.innerHTML = this.templates.history(); break;
-        case 'widget': content.innerHTML = this.templates.widget(); break;
-        default: content.innerHTML = `<div>404 - Kawaii Not Found 😭</div>`;
-    }
-
-    // Add animation class to new content
-    // Add animation class to new content ONLY if view changed
-    if (content.firstElementChild && this.state.view !== this.state.previousView) {
-        content.firstElementChild.classList.add('animate-slide-up');
-    }
-    this.state.previousView = this.state.view;
-    if (window.lucide) lucide.createIcons();
-},
-
-templates: {
-    landing: () => `
+    templates: {
+        landing: () => `
             <div class="flex flex-col items-center justify-center min-h-screen gap-8 text-center animate-float p-4">
                 <div class="relative">
                     <div class="w-48 h-48 bg-white/40 rounded-full border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
@@ -1935,7 +1932,7 @@ templates: {
                 </div>
             </div>
         `,
-            home: () => `
+        home: () => `
             <div class="flex flex-col items-center gap-6 p-4 w-full max-w-md mx-auto animate-slide-up">
                 <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transform hover:scale-105 transition-transform duration-500">
                     ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" />` : `
@@ -1948,8 +1945,8 @@ templates: {
                 <div class="flex flex-col items-center gap-3">
                     <div class="w-16 h-16 rounded-full border-4 border-white/50 shadow-lg overflow-hidden bg-pink-100 flex-shrink-0">
                         ${App.state.user.avatarUrl ?
-                    `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
-                }
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
+            }
                         <div class="w-full h-full flex items-center justify-center ${App.state.user.avatarUrl ? 'hidden' : ''}"><i data-lucide="user" class="w-8 h-8 text-pink-300"></i></div>
                     </div>
                     <div class="text-center">
@@ -1983,7 +1980,7 @@ templates: {
                 ` : ''}
             </div>
     `,
-                widget: () => `
+        widget: () => `
             <div class="h-screen w-full flex items-center justify-center p-4">
                 <div class="w-full aspect-square bg-white/40 backdrop-blur-md rounded-bubbly border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden animate-float">
                     ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain p-2" />` : `
@@ -1994,7 +1991,7 @@ templates: {
                 </div>
             </div>
     `,
-                    draw: () => `
+        draw: () => `
             <div class="h-full w-full relative flex flex-col items-center animate-fade-in overflow-hidden">
                 <!-- Canvas Area -->
                 <div class="flex-1 w-full flex items-center justify-center p-6 min-h-0 relative">
@@ -2099,7 +2096,7 @@ templates: {
         </div>
     </div>
 `,
-                        friends: () => `
+        friends: () => `
         <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
                 <div class="bg-white/60 p-4 rounded-bubbly shadow-sm">
                     <h3 class="font-bold mb-3 flex items-center gap-2">
@@ -2117,12 +2114,12 @@ templates: {
                 </div>
             </div>
 `,
-                            profile: () => `
+        profile: () => `
     <div class="flex flex-col items-center gap-6 w-full max-w-sm animate-slide-up">
                 <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden shrink-0">
                     ${App.state.user.avatarUrl ?
-                                    `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
-                                }
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
+            }
                     <i data-lucide="user" class="w-12 h-12 text-gray-300 ${App.state.user.avatarUrl ? 'hidden' : ''}"></i>
                 </div>
                 <div class="text-center">
@@ -2162,7 +2159,7 @@ templates: {
             </div>
     </div>
 `,
-                                history: () => `
+        history: () => `
     <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
                 <header class="text-center mb-2">
                     <h2 class="text-2xl font-black text-white drop-shadow-md">Magic History 📜</h2>
@@ -2172,9 +2169,9 @@ templates: {
                     <!-- Drafts Section -->
                     <div id="drafts-section">
                     ${(() => {
-                                        const drafts = App.state.drafts || [];
-                                        if (drafts.length === 0) return '';
-                                        return `
+                const drafts = App.state.drafts || [];
+                if (drafts.length === 0) return '';
+                return `
                             <div class="bg-blue-50/50 p-4 rounded-bubbly border border-blue-100">
                                 <h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
                                     <i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook
@@ -2196,12 +2193,12 @@ templates: {
                                 </div>
                             </div>
                         `;
-                                    })()}
+            })()}
                     </div>
                     <!-- History List -->
                     <div id="history-list-container" class="flex flex-col gap-4">
                     ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
-                                        App.state.history.map(d => `
+                App.state.history.map(d => `
                         <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
                             <div class="relative">
                                 <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
@@ -2215,38 +2212,38 @@ templates: {
                             <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
                                 <span>
                                     ${(() => {
-                                                const isSent = d.sender_id === App.state.session.user.id;
-                                                // The other person's ID (receiver if sent, sender if received)
-                                                const otherId = isSent ? d.receiver_id : d.sender_id;
-                                                // Use the new Cache first, then Friend list, then generic fallback
-                                                const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
-                                                const friend = (Social.friends || []).find(f => f.id === otherId);
+                        const isSent = d.sender_id === App.state.session.user.id;
+                        // The other person's ID (receiver if sent, sender if received)
+                        const otherId = isSent ? d.receiver_id : d.sender_id;
+                        // Use the new Cache first, then Friend list, then generic fallback
+                        const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
+                        const friend = (Social.friends || []).find(f => f.id === otherId);
 
-                                                let name = cacheName || (friend ? friend.username : 'Unknown');
-                                                if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...'; // Short ID fallback
+                        let name = cacheName || (friend ? friend.username : 'Unknown');
+                        if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...'; // Short ID fallback
 
-                                                // Multi-recipient formatting
-                                                if (isSent && d.recipients && d.recipients.length > 0) {
-                                                    const names = d.recipients.map(rid => {
-                                                        const cName = App.state.userCache ? App.state.userCache[rid] : null;
-                                                        const f = (Social.friends || []).find(fr => fr.id === rid);
-                                                        return cName || (f ? f.username : rid.substring(0, 5) + '..');
-                                                    });
-                                                    // Join all names
-                                                    return `TO: ${names.join(', ')} 📤`;
-                                                }
+                        // Multi-recipient formatting
+                        if (isSent && d.recipients && d.recipients.length > 0) {
+                            const names = d.recipients.map(rid => {
+                                const cName = App.state.userCache ? App.state.userCache[rid] : null;
+                                const f = (Social.friends || []).find(fr => fr.id === rid);
+                                return cName || (f ? f.username : rid.substring(0, 5) + '..');
+                            });
+                            // Join all names
+                            return `TO: ${names.join(', ')} 📤`;
+                        }
 
-                                                return isSent ? `TO: ${name} 📤` : `
+                        return isSent ? `TO: ${name} 📤` : `
                                             <div class="flex items-center gap-1">
                                                 <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
                                                     ${(() => {
-                                                        const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
-                                                        return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
-                                                    })()}
+                                const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
+                                return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
+                            })()}
                                                 </div>
                                                 FROM: ${name} 📥
                                             </div>`;
-                                            })()}
+                    })()}
                                 </span>
                                 <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
                             </div>
@@ -2265,257 +2262,257 @@ templates: {
             <!-- Spacer for floating nav -->
     <div class="h-32 w-full"></div>
         `
-},
+    },
 
-// --- Actions ---
-editDoodle(imageData) {
-    this.state.pendingDoodle = imageData;
-    this.toast('Opening studio... 🎨', 'pink');
-    this.setView('draw');
-},
+    // --- Actions ---
+    editDoodle(imageData) {
+        this.state.pendingDoodle = imageData;
+        this.toast('Opening studio... 🎨', 'pink');
+        this.setView('draw');
+    },
 
-editDoodleFromUrl(url) {
-    this.editDoodle(url);
-},
+    editDoodleFromUrl(url) {
+        this.editDoodle(url);
+    },
 
-// Save draft to LOCAL storage (works offline)
-saveLocalDraft(imageData) {
-    try {
-        const drafts = JSON.parse(localStorage.getItem('kawaii-local-drafts') || '[]');
-        drafts.unshift({
-            id: Date.now(),
-            image_data: imageData,
-            created_at: new Date().toISOString()
-        });
-        localStorage.setItem('kawaii-local-drafts', JSON.stringify(drafts));
-        this.toast('Draft saved locally! 📂', 'pink');
-    } catch (e) {
-        console.error('Local draft save failed:', e);
-        this.toast('Could not save draft 😭', 'blue');
-    }
-},
+    // Save draft to LOCAL storage (works offline)
+    saveLocalDraft(imageData) {
+        try {
+            const drafts = JSON.parse(localStorage.getItem('kawaii-local-drafts') || '[]');
+            drafts.unshift({
+                id: Date.now(),
+                image_data: imageData,
+                created_at: new Date().toISOString()
+            });
+            localStorage.setItem('kawaii-local-drafts', JSON.stringify(drafts));
+            this.toast('Draft saved locally! 📂', 'pink');
+        } catch (e) {
+            console.error('Local draft save failed:', e);
+            this.toast('Could not save draft 😭', 'blue');
+        }
+    },
 
     // Sync local drafts to Supabase when back online
     async syncLocalDrafts() {
-    if (!this.state.supabase || !this.state.session) return;
-    if (!navigator.onLine) return;
+        if (!this.state.supabase || !this.state.session) return;
+        if (!navigator.onLine) return;
 
-    const drafts = JSON.parse(localStorage.getItem('kawaii-local-drafts') || '[]');
-    if (drafts.length === 0) return;
+        const drafts = JSON.parse(localStorage.getItem('kawaii-local-drafts') || '[]');
+        if (drafts.length === 0) return;
 
-    console.log(`☁️ Syncing ${drafts.length} local drafts...`);
-    let synced = 0;
+        console.log(`☁️ Syncing ${drafts.length} local drafts...`);
+        let synced = 0;
 
-    for (const draft of drafts) {
+        for (const draft of drafts) {
+            try {
+                const { error } = await this.state.supabase
+                    .from('drafts')
+                    .insert({
+                        user_id: this.state.session.user.id,
+                        image_data: draft.image_data
+                    });
+                if (!error) synced++;
+            } catch (e) {
+                console.error('Sync draft failed:', e);
+            }
+        }
+
+        if (synced > 0) {
+            localStorage.setItem('kawaii-local-drafts', '[]');
+            this.toast(`${synced} draft(s) synced to cloud! ☁️`, 'pink');
+            this.loadHistory();
+        }
+    },
+
+    async saveDraft(imageData) {
+        // Always save locally first as a safety net
+        if (!this.state.supabase || !this.state.session || !navigator.onLine) {
+            this.saveLocalDraft(imageData);
+            return;
+        }
         try {
             const { error } = await this.state.supabase
                 .from('drafts')
                 .insert({
                     user_id: this.state.session.user.id,
-                    image_data: draft.image_data
+                    image_data: imageData
                 });
-            if (!error) synced++;
+
+            if (error) throw error;
+            this.toast('Sketch saved! ✨', 'pink');
+            this.loadHistory(); // Refresh
         } catch (e) {
-            console.error('Sync draft failed:', e);
+            console.error(e);
+            // Fallback to local if remote fails
+            this.saveLocalDraft(imageData);
         }
-    }
-
-    if (synced > 0) {
-        localStorage.setItem('kawaii-local-drafts', '[]');
-        this.toast(`${synced} draft(s) synced to cloud! ☁️`, 'pink');
-        this.loadHistory();
-    }
-},
-
-    async saveDraft(imageData) {
-    // Always save locally first as a safety net
-    if (!this.state.supabase || !this.state.session || !navigator.onLine) {
-        this.saveLocalDraft(imageData);
-        return;
-    }
-    try {
-        const { error } = await this.state.supabase
-            .from('drafts')
-            .insert({
-                user_id: this.state.session.user.id,
-                image_data: imageData
-            });
-
-        if (error) throw error;
-        this.toast('Sketch saved! ✨', 'pink');
-        this.loadHistory(); // Refresh
-    } catch (e) {
-        console.error(e);
-        // Fallback to local if remote fails
-        this.saveLocalDraft(imageData);
-    }
-},
+    },
 
     async deleteDraft(id) {
-    this.confirmKawaii({
-        title: "Discard Sketch? 🗑️",
-        message: "Are you sure you want to throw this magic away?",
-        okText: "Discard 👋",
-        onConfirm: async () => {
-            try {
-                const { error } = await this.state.supabase
-                    .from('drafts')
-                    .delete()
-                    .eq('id', id);
+        this.confirmKawaii({
+            title: "Discard Sketch? 🗑️",
+            message: "Are you sure you want to throw this magic away?",
+            okText: "Discard 👋",
+            onConfirm: async () => {
+                try {
+                    const { error } = await this.state.supabase
+                        .from('drafts')
+                        .delete()
+                        .eq('id', id);
 
-                if (error) throw error;
-                this.toast('Sketch discarded into the skye 👋', 'blue');
-                this.loadHistory();
-            } catch (e) {
-                console.error(e);
-                this.toast('Delete failed', 'blue');
+                    if (error) throw error;
+                    this.toast('Sketch discarded into the skye 👋', 'blue');
+                    this.loadHistory();
+                } catch (e) {
+                    console.error(e);
+                    this.toast('Delete failed', 'blue');
+                }
             }
+        });
+    },
+
+    // Elite Haptics Helper
+    haptic(type = 'light') {
+        if (!navigator.vibrate) return;
+        if (type === 'success') navigator.vibrate(10); // Tiny tick
+        if (type === 'medium') navigator.vibrate(20);
+        if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
+    },
+
+    // Fix for zoomed-in screens / high DPI
+    fixZoomedLayout() {
+        const resetScale = () => {
+            const viewport = document.querySelector('meta[name="viewport"]');
+            if (viewport) {
+                viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+            }
+        };
+        window.addEventListener('resize', resetScale);
+        resetScale();
+    },
+
+    confirmKawaii({ title, message, okText, onConfirm, cancelText, onCancel }) {
+        const modal = document.getElementById('confirm-modal');
+        if (!modal) return;
+
+        document.getElementById('confirm-title').innerText = title || "Magic Request?";
+        document.getElementById('confirm-message').innerText = message || "";
+        const okBtn = document.getElementById('confirm-ok');
+        okBtn.innerText = okText || "Yes! ✨";
+
+        const cancelBtn = document.getElementById('confirm-cancel');
+        if (cancelText && cancelBtn) cancelBtn.innerText = cancelText;
+
+        modal.classList.remove('hidden');
+
+        const close = () => modal.classList.add('hidden');
+
+        okBtn.onclick = () => {
+            close();
+            if (onConfirm) onConfirm();
+        };
+
+        cancelBtn.onclick = () => {
+            close();
+            if (onCancel) onCancel();
+        };
+    },
+
+    toast(message, type = 'info') {
+        const container = document.getElementById('toasts');
+        const existing = container.querySelector('.toast-enter');
+
+        // Smart Singleton: If same message, just pulse it!
+        if (existing && existing.innerText.includes(message)) {
+            existing.classList.remove('toast-pulse');
+            void existing.offsetWidth; // Trigger reflow
+            existing.classList.add('toast-pulse');
+
+            // Extend life
+            clearTimeout(existing.dismissTimeout);
+            existing.dismissTimeout = setTimeout(() => {
+                existing.style.opacity = '0';
+                existing.style.transform = 'translateY(-10px) scale(0.95)';
+                setTimeout(() => existing.remove(), 300);
+            }, 2500);
+            return;
         }
-    });
-},
 
-// Elite Haptics Helper
-haptic(type = 'light') {
-    if (!navigator.vibrate) return;
-    if (type === 'success') navigator.vibrate(10); // Tiny tick
-    if (type === 'medium') navigator.vibrate(20);
-    if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
-},
-
-// Fix for zoomed-in screens / high DPI
-fixZoomedLayout() {
-    const resetScale = () => {
-        const viewport = document.querySelector('meta[name="viewport"]');
-        if (viewport) {
-            viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+        // Remove old if different message
+        while (container.firstChild) {
+            container.removeChild(container.firstChild);
         }
-    };
-    window.addEventListener('resize', resetScale);
-    resetScale();
-},
 
-confirmKawaii({ title, message, okText, onConfirm, cancelText, onCancel }) {
-    const modal = document.getElementById('confirm-modal');
-    if (!modal) return;
+        const toast = document.createElement('div');
+        // Pill shape, centered, subtle blur
+        toast.className = `toast-enter px-6 py-3 rounded-full shadow-2xl mb-4 font-bold flex items-center gap-3 text-white z-[100] backdrop-blur-sm border border-white/20`;
 
-    document.getElementById('confirm-title').innerText = title || "Magic Request?";
-    document.getElementById('confirm-message').innerText = message || "";
-    const okBtn = document.getElementById('confirm-ok');
-    okBtn.innerText = okText || "Yes! ✨";
+        // Elite Color Palette (Vibrant & Clean)
+        if (type === 'pink') {
+            toast.classList.add('bg-pink-500/90');
+            this.haptic('success');
+        } else if (type === 'blue') {
+            toast.classList.add('bg-indigo-500/90');
+            this.haptic('medium');
+        } else {
+            toast.classList.add('bg-gray-800/90');
+        }
 
-    const cancelBtn = document.getElementById('confirm-cancel');
-    if (cancelText && cancelBtn) cancelBtn.innerText = cancelText;
+        toast.innerHTML = `<i data-lucide="${type === 'pink' ? 'sparkles' : 'info'}" class="w-4 h-4 text-white/90"></i> <span class="tracking-wide text-sm">${message}</span>`;
+        container.appendChild(toast);
 
-    modal.classList.remove('hidden');
+        if (window.lucide) lucide.createIcons();
 
-    const close = () => modal.classList.add('hidden');
-
-    okBtn.onclick = () => {
-        close();
-        if (onConfirm) onConfirm();
-    };
-
-    cancelBtn.onclick = () => {
-        close();
-        if (onCancel) onCancel();
-    };
-},
-
-toast(message, type = 'info') {
-    const container = document.getElementById('toasts');
-    const existing = container.querySelector('.toast-enter');
-
-    // Smart Singleton: If same message, just pulse it!
-    if (existing && existing.innerText.includes(message)) {
-        existing.classList.remove('toast-pulse');
-        void existing.offsetWidth; // Trigger reflow
-        existing.classList.add('toast-pulse');
-
-        // Extend life
-        clearTimeout(existing.dismissTimeout);
-        existing.dismissTimeout = setTimeout(() => {
-            existing.style.opacity = '0';
-            existing.style.transform = 'translateY(-10px) scale(0.95)';
-            setTimeout(() => existing.remove(), 300);
+        toast.dismissTimeout = setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-10px) scale(0.95)';
+            toast.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
+            setTimeout(() => {
+                if (toast.parentNode === container) container.removeChild(toast);
+            }, 400);
         }, 2500);
-        return;
-    }
+    },
 
-    // Remove old if different message
-    while (container.firstChild) {
-        container.removeChild(container.firstChild);
-    }
-
-    const toast = document.createElement('div');
-    // Pill shape, centered, subtle blur
-    toast.className = `toast-enter px-6 py-3 rounded-full shadow-2xl mb-4 font-bold flex items-center gap-3 text-white z-[100] backdrop-blur-sm border border-white/20`;
-
-    // Elite Color Palette (Vibrant & Clean)
-    if (type === 'pink') {
-        toast.classList.add('bg-pink-500/90');
-        this.haptic('success');
-    } else if (type === 'blue') {
-        toast.classList.add('bg-indigo-500/90');
-        this.haptic('medium');
-    } else {
-        toast.classList.add('bg-gray-800/90');
-    }
-
-    toast.innerHTML = `<i data-lucide="${type === 'pink' ? 'sparkles' : 'info'}" class="w-4 h-4 text-white/90"></i> <span class="tracking-wide text-sm">${message}</span>`;
-    container.appendChild(toast);
-
-    if (window.lucide) lucide.createIcons();
-
-    toast.dismissTimeout = setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateY(-10px) scale(0.95)';
-        toast.style.transition = 'all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1)';
-        setTimeout(() => {
-            if (toast.parentNode === container) container.removeChild(toast);
-        }, 400);
-    }, 2500);
-},
-
-createSparkle(x, y) {
-    const s = document.createElement('div');
-    s.className = 'sparkle-particle';
-    s.style.left = `${x - 7}px`;
-    s.style.top = `${y - 7}px`;
-    s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', 'white'][Math.floor(Math.random() * 4)];
-    document.body.appendChild(s);
-    setTimeout(() => s.remove(), 800);
-},
+    createSparkle(x, y) {
+        const s = document.createElement('div');
+        s.className = 'sparkle-particle';
+        s.style.left = `${x - 7}px`;
+        s.style.top = `${y - 7}px`;
+        s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', 'white'][Math.floor(Math.random() * 4)];
+        document.body.appendChild(s);
+        setTimeout(() => s.remove(), 800);
+    },
 
     async openFriendPicker(callback) {
-    const modal = document.getElementById('recipient-modal');
-    const list = document.getElementById('modal-friend-list');
-    if (!modal || !list) return;
+        const modal = document.getElementById('recipient-modal');
+        const list = document.getElementById('modal-friend-list');
+        if (!modal || !list) return;
 
-    if (window.Social) {
-        // ALWAYS fetch fresh friends to check for 'accepted' updates
-        await Social.loadFriends();
-    }
+        if (window.Social) {
+            // ALWAYS fetch fresh friends to check for 'accepted' updates
+            await Social.loadFriends();
+        }
 
-    if (!window.Social || !Social.friends.length) {
-        this.toast('Add some friends first! 👯‍♀️', 'blue');
-        this.setView('friends');
-        return;
-    }
+        if (!window.Social || !Social.friends.length) {
+            this.toast('Add some friends first! 👯‍♀️', 'blue');
+            this.setView('friends');
+            return;
+        }
 
-    // Render simple list
-    list.innerHTML = Social.friends
-        .filter(f => f.status === 'accepted' || f.id === 'kawaii-6789' || f.status === 'pending')
-        .map(f => {
-            const isPending = f.status === 'pending';
-            const canSelect = !isPending || f.id === 'kawaii-6789';
-            return `
+        // Render simple list
+        list.innerHTML = Social.friends
+            .filter(f => f.status === 'accepted' || f.id === 'kawaii-6789' || f.status === 'pending')
+            .map(f => {
+                const isPending = f.status === 'pending';
+                const canSelect = !isPending || f.id === 'kawaii-6789';
+                return `
                 <button onclick="${canSelect ? `App.handlePickerSelect('${f.id}', '${f.username}')` : ''}"
                         class="flex items-center gap-4 w-full p-3 rounded-2xl border-2 border-transparent ${canSelect ? 'hover:border-pink-300 hover:bg-pink-50' : 'opacity-50 cursor-not-allowed bg-gray-50'} transition-all text-left">
                     <div class="w-10 h-10 ${canSelect ? 'bg-pink-100 text-pink-500' : 'bg-gray-200 text-gray-400'} rounded-full flex items-center justify-center overflow-hidden">
                         ${(() => {
-                    const av = App.state.avatarCache ? App.state.avatarCache[f.id] : null;
-                    return av ? `<img src="${av}" class="w-full h-full object-cover">` : `<i data-lucide="user" class="w-5 h-5"></i>`;
-                })()} 
+                        const av = App.state.avatarCache ? App.state.avatarCache[f.id] : null;
+                        return av ? `<img src="${av}" class="w-full h-full object-cover">` : `<i data-lucide="user" class="w-5 h-5"></i>`;
+                    })()} 
                     </div>
                     <div class="flex-1">
                         <p class="font-bold text-gray-700">${f.username}</p>
@@ -2525,34 +2522,34 @@ createSparkle(x, y) {
                 </button>
     `}).join('');
 
-    if (list.innerHTML === '') {
-        list.innerHTML = `< p class="text-center text-gray-400 italic py-4" > No friends found... 🥺</p > `;
+        if (list.innerHTML === '') {
+            list.innerHTML = `< p class="text-center text-gray-400 italic py-4" > No friends found... 🥺</p > `;
+        }
+
+        if (window.lucide) lucide.createIcons();
+
+        // Store callback
+        this.pickerCallback = callback;
+        modal.classList.remove('hidden');
+    },
+
+    handlePickerSelect(id, username) {
+        document.getElementById('recipient-modal').classList.add('hidden');
+
+        // Multi-select support for legacy picker
+        if (!this.state.activeRecipients.includes(id)) {
+            this.state.activeRecipients.push(id);
+        }
+
+        this.toast(`Selected ${username} ! 🎯`, 'pink');
+        // Update UI if needed
+        if (window.Social) Social.renderRecipientBubbles();
+
+        if (this.pickerCallback) {
+            this.pickerCallback(id);
+            this.pickerCallback = null;
+        }
     }
-
-    if (window.lucide) lucide.createIcons();
-
-    // Store callback
-    this.pickerCallback = callback;
-    modal.classList.remove('hidden');
-},
-
-handlePickerSelect(id, username) {
-    document.getElementById('recipient-modal').classList.add('hidden');
-
-    // Multi-select support for legacy picker
-    if (!this.state.activeRecipients.includes(id)) {
-        this.state.activeRecipients.push(id);
-    }
-
-    this.toast(`Selected ${username} ! 🎯`, 'pink');
-    // Update UI if needed
-    if (window.Social) Social.renderRecipientBubbles();
-
-    if (this.pickerCallback) {
-        this.pickerCallback(id);
-        this.pickerCallback = null;
-    }
-}
 };
 
 window.App = App;
