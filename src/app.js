@@ -583,6 +583,45 @@ const App = {
     async init() {
         this.enableDebugConsole();
         this.checkCriticalHealth();
+
+        // CRITICAL: Register push notification listeners IMMEDIATELY
+        // before any async work, so cold-start notification taps are captured
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            try {
+                const { PushNotifications } = window.Capacitor.Plugins;
+                if (PushNotifications) {
+                    // On notification tapped (must be registered before any await)
+                    PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+                        console.log('🔔 Push tapped:', notification);
+                        this.state.pendingDeepLink = 'history';
+                        if (this.state.session) {
+                            this.setView('history');
+                        }
+                    });
+
+                    // On notification received (Foreground)
+                    PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+                        console.log('🔔 Push received:', notification);
+                        this.toast(`New magic in the air! ✨`, 'pink');
+                        await this.loadHistory();
+                        // Auto-set wallpaper
+                        try {
+                            if (this.state.supabase && this.state.session) {
+                                const { data } = await this.state.supabase
+                                    .from('doodles')
+                                    .select('*')
+                                    .eq('receiver_id', this.state.session.user.id)
+                                    .order('created_at', { ascending: false })
+                                    .limit(1)
+                                    .single();
+                                if (data) this.setSmartWallpaper(data);
+                            }
+                        } catch (e) { console.warn('Wallpaper auto-set on push failed:', e); }
+                    });
+                    console.log('✅ Push listeners registered early');
+                }
+            } catch (e) { console.warn('Early push listener registration failed:', e); }
+        }
         this.logBoot("✨ Kawaii App Initializing...");
 
         try {
@@ -872,39 +911,8 @@ const App = {
             console.error('Push registration error: ', error);
         });
 
-        // On notification received (Foreground)
-        PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-            console.log('🔔 Push received:', notification);
-            this.toast(`New magic in the air! ✨`, 'pink');
-
-            // Refresh history
-            await this.loadHistory();
-
-            // Auto-set wallpaper: find the latest doodle sent TO me
-            try {
-                if (this.state.supabase && this.state.session) {
-                    const { data } = await this.state.supabase
-                        .from('doodles')
-                        .select('*')
-                        .eq('receiver_id', this.state.session.user.id)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .single();
-                    if (data) this.setSmartWallpaper(data);
-                }
-            } catch (e) { console.warn('Wallpaper auto-set on push failed:', e); }
-        });
-
-        // On notification tapped
-        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-            console.log('🔔 Push tapped:', notification);
-            // Store pending deep link for cold-start (session may not be ready yet)
-            this.state.pendingDeepLink = 'history';
-            // Also try direct navigation (works on warm-start)
-            if (this.state.session) {
-                this.setView('history');
-            }
-        });
+        // Note: pushNotificationReceived and pushNotificationActionPerformed
+        // listeners are registered early in init() to capture cold-start events
     },
 
     enableFullscreenMode() {
@@ -1016,6 +1024,21 @@ const App = {
 
         // Check for app updates (network is ready here)
         this.checkForUpdates();
+
+        // Auto-set wallpaper on app open: check latest received doodle
+        try {
+            if (this.state.session) {
+                const { data } = await this.state.supabase
+                    .from('doodles')
+                    .select('*')
+                    .eq('receiver_id', this.state.session.user.id)
+                    .is('wallpaper_set_at', null)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                if (data) this.setSmartWallpaper(data);
+            }
+        } catch (e) { /* No unset wallpaper doodles, or column missing */ }
 
         // 🔄 Polling Fallback: Check for new magic every 30s
         this.historyInterval = setInterval(async () => {
