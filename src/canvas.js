@@ -34,7 +34,8 @@ window.initCanvas = function () {
         panY: 0,
         isPinching: false,
         lastPinchDist: 0,
-        lastPinchCenter: null
+        lastPinchCenter: null,
+        pinchCooldown: false
     };
 
     // Autosave timer
@@ -353,8 +354,8 @@ window.initCanvas = function () {
     }
 
     function startDraw(e) {
+        if (state.pinchCooldown) return; // Block drawing during cooldown after pinch
         if (e.type === 'touchstart') {
-            // e.preventDefault(); // Don't block everything, we need clicks for buttons? No, buttons are outside canvas
             e.preventDefault();
         }
 
@@ -417,6 +418,11 @@ window.initCanvas = function () {
         if (e.touches.length >= 2) {
             // Two-finger: enter zoom/pan mode
             e.preventDefault();
+            // If drawing was active, restore canvas to erase accidental marks
+            if (state.isDrawing && state.undoStack.length > 0) {
+                const lastState = state.undoStack[state.undoStack.length - 1];
+                restoreState(lastState);
+            }
             state.isPinching = true;
             state.isDrawing = false;
             const dx = e.touches[1].clientX - e.touches[0].clientX;
@@ -487,12 +493,15 @@ window.initCanvas = function () {
     }, { passive: false });
 
     canvas.addEventListener('touchend', (e) => {
-        if (e.touches.length < 2) {
+        if (e.touches.length < 2 && state.isPinching) {
             state.isPinching = false;
             state.lastPinchDist = 0;
             state.lastPinchCenter = null;
+            // Cooldown: prevent accidental drawing when lifting fingers
+            state.pinchCooldown = true;
+            setTimeout(() => { state.pinchCooldown = false; }, 300);
         }
-        if (e.touches.length === 0 && !state.isPinching) {
+        if (e.touches.length === 0 && !state.isPinching && !state.pinchCooldown) {
             endDraw(e);
         }
     });
