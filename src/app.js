@@ -484,9 +484,7 @@ const App = {
                     <p class="text-gray-400 font-bold text-sm">${version}</p>
                 </div>
                 
-                <div class="bg-pink-50 p-4 rounded-xl border border-pink-100 max-h-40 overflow-y-auto text-left">
-                    <p class="text-gray-600 text-sm whitespace-pre-wrap">${body}</p>
-                </div>
+                <!-- Notes Removed per user request -->
 
                 <div class="flex flex-col gap-3 mt-2">
                     <button id="btn-update-confirm" class="bg-pink-500 text-white py-3 rounded-xl font-black shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
