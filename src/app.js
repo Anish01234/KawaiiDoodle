@@ -663,7 +663,7 @@ const App = {
                             okText: 'Save Draft 💾',
                             onConfirm: () => {
                                 const canvas = document.getElementById('drawing-canvas');
-                                if (canvas) this.saveLocalDraft(canvas.toDataURL('image/png'));
+                                if (canvas) this.saveDraft(canvas.toDataURL('image/png'));
                                 this.state.isCanvasDirty = false;
                                 this.navigateBack();
                             },
