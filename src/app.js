@@ -889,9 +889,14 @@ const App = {
     },
 
     finalizeInit() {
-        this.setupNavigation();
-        if (window.lucide) lucide.createIcons();
-        this.fixZoomedLayout();
+        try {
+            console.log("Finalizing Init...");
+            this.setupNavigation();
+            if (window.lucide) lucide.createIcons();
+            this.fixZoomedLayout();
+        } catch (e) {
+            console.error("Finalize Error:", e);
+        }
     },
 
     // Elite Haptics Helper
@@ -1110,7 +1115,12 @@ App.toggleReleaseNotes = () => {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-    App.init();
+    try {
+        App.init();
+    } catch (e) {
+        console.error("Fatal Init Error:", e);
+        alert("Fatal Error: " + e.message);
+    }
 
     // 🛑 FORCE UNREGISTER SERVICE WORKER TO FIX CACHE ISSUES
     if ('serviceWorker' in navigator) {
