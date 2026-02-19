@@ -28,11 +28,7 @@ const App = {
         isLoadingHistory: false,
         viewHistory: [],
         isCanvasDirty: false,
-        isCanvasDirty: false,
-        lastBackPress: 0,
-        historyPage: 0,
-        hasMoreHistory: true,
-        HISTORY_LIMIT: 20
+        lastBackPress: 0
     },
 
     enableDebugConsole() {
@@ -587,45 +583,6 @@ const App = {
     async init() {
         this.enableDebugConsole();
         this.checkCriticalHealth();
-
-        // CRITICAL: Register push notification listeners IMMEDIATELY
-        // before any async work, so cold-start notification taps are captured
-        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-            try {
-                const { PushNotifications } = window.Capacitor.Plugins;
-                if (PushNotifications) {
-                    // On notification tapped (must be registered before any await)
-                    PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-                        console.log('🔔 Push tapped:', notification);
-                        this.state.pendingDeepLink = 'history';
-                        if (this.state.session) {
-                            this.setView('history');
-                        }
-                    });
-
-                    // On notification received (Foreground)
-                    PushNotifications.addListener('pushNotificationReceived', async (notification) => {
-                        console.log('🔔 Push received:', notification);
-                        this.toast(`New magic in the air! ✨`, 'pink');
-                        await this.loadHistory();
-                        // Auto-set wallpaper
-                        try {
-                            if (this.state.supabase && this.state.session) {
-                                const { data } = await this.state.supabase
-                                    .from('doodles')
-                                    .select('*')
-                                    .eq('receiver_id', this.state.session.user.id)
-                                    .order('created_at', { ascending: false })
-                                    .limit(1)
-                                    .single();
-                                if (data) this.setSmartWallpaper(data);
-                            }
-                        } catch (e) { console.warn('Wallpaper auto-set on push failed:', e); }
-                    });
-                    console.log('✅ Push listeners registered early');
-                }
-            } catch (e) { console.warn('Early push listener registration failed:', e); }
-        }
         this.logBoot("✨ Kawaii App Initializing...");
 
         try {
@@ -915,8 +872,39 @@ const App = {
             console.error('Push registration error: ', error);
         });
 
-        // Note: pushNotificationReceived and pushNotificationActionPerformed
-        // listeners are registered early in init() to capture cold-start events
+        // On notification received (Foreground)
+        PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+            console.log('🔔 Push received:', notification);
+            this.toast(`New magic in the air! ✨`, 'pink');
+
+            // Refresh history
+            await this.loadHistory();
+
+            // Auto-set wallpaper: find the latest doodle sent TO me
+            try {
+                if (this.state.supabase && this.state.session) {
+                    const { data } = await this.state.supabase
+                        .from('doodles')
+                        .select('*')
+                        .eq('receiver_id', this.state.session.user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+                    if (data) this.setSmartWallpaper(data);
+                }
+            } catch (e) { console.warn('Wallpaper auto-set on push failed:', e); }
+        });
+
+        // On notification tapped
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+            console.log('🔔 Push tapped:', notification);
+            // Store pending deep link for cold-start (session may not be ready yet)
+            this.state.pendingDeepLink = 'history';
+            // Also try direct navigation (works on warm-start)
+            if (this.state.session) {
+                this.setView('history');
+            }
+        });
     },
 
     enableFullscreenMode() {
@@ -1029,34 +1017,19 @@ const App = {
         // Check for app updates (network is ready here)
         this.checkForUpdates();
 
-        // Auto-set wallpaper on app open: check latest received doodle
-        try {
-            const { data } = await this.state.supabase
-                .from('doodles')
-                .select('*')
-                .eq('receiver_id', this.state.session.user.id)
-                .order('created_at', { ascending: false })
-                .limit(1)
-                .single();
-
-            // Only set if it hasn't been set before (check the flag)
-            if (data && !data.wallpaper_set_at) {
-                this.setSmartWallpaper(data);
-            }
-        } catch (e) { /* No unset wallpaper doodles, or column missing */ }
-
         // 🔄 Polling Fallback: Check for new magic every 30s
         this.historyInterval = setInterval(async () => {
             if (navigator.onLine) await this.loadHistory(true);
         }, 30000);
     },
 
-    async loadHistory(silent = false, page = 0) {
-        // Prevent duplicate loads
-        if (this.state.isLoadingHistory && page === 0) return;
+    async loadHistory(silent = false) {
+        if (!this.state.supabase || !this.state.session) return;
 
-        if (page === 0) this.state.isLoadingHistory = true;
-        console.log(`📜 Loading History (Page ${page})...`); // Show spinner immediately
+        if (!silent) {
+            this.state.isLoadingHistory = true;
+            this.updateHistoryDOM(); // Show spinner immediately
+        }
 
         try {
             // 1. Load History (Doodles)
@@ -1064,45 +1037,37 @@ const App = {
                 console.log(`🧠 Memory Start: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)}MB / ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)}MB`);
             }
 
-            const limit = this.state.HISTORY_LIMIT || 20;
-            const from = page * limit;
-            const to = from + limit - 1;
-
-            let query = this.state.supabase
+            let { data: doodles, error: doodleError } = await this.state.supabase
                 .from('doodles')
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                 .order('created_at', { ascending: false })
-                .range(from, to);
-
-            let { data: doodles, error: doodleError } = await query;
+                .limit(20);
 
             if (doodles) {
-                if (doodles.length < limit) {
-                    this.state.hasMoreHistory = false;
-                } else {
-                    this.state.hasMoreHistory = true;
-                }
-
                 const sizeBytes = JSON.stringify(doodles).length;
-                console.log(`📦 History Packet (Page ${page}) Size: ${(sizeBytes / 1024).toFixed(2)} KB for ${doodles.length} items`);
+                console.log(`📦 History Packet Size: ${(sizeBytes / 1024).toFixed(2)} KB for ${doodles.length} items`);
+
+                // Auto-set wallpaper if we have a new doodle sent TO us
+                const latestReceived = doodles.find(d => d.receiver_id === this.state.session.user.id);
+                if (latestReceived) {
+                    this.setSmartWallpaper(latestReceived);
+                }
             }
 
             if (doodleError) {
-                console.warn("History fetch failed", doodleError);
-                // Fallback only on first page
-                if (page === 0) {
-                    console.warn("Retrying with single item...");
-                    const { data: retryData, error: retryError } = await this.state.supabase
-                        .from('doodles')
-                        .select('*')
-                        .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
-                        .order('created_at', { ascending: false })
-                        .limit(1);
+                console.warn("History fetch (5) failed, retrying with single item...", doodleError);
+                // Fallback: Try loading just 1 if 5 failed (Critical Memory Mode)
+                const { data: retryData, error: retryError } = await this.state.supabase
+                    .from('doodles')
+                    .select('*')
+                    .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
 
-                    if (retryError) throw retryError;
-                    doodles = retryData;
-                }
+                if (retryError) throw retryError;
+                doodles = retryData;
+                // this.toast("Low memory mode active 💾", "blue");
             }
 
             // 2. Load Drafts (from Cloud)
@@ -1188,16 +1153,7 @@ const App = {
                 return;
             }
 
-            if (page > 0) {
-                // Append
-                this.state.history = [...this.state.history, ...groupedHistory];
-                this.state.historyPage = page;
-            } else {
-                // Replace
-                this.state.history = groupedHistory;
-                this.state.historyPage = 0;
-            }
-
+            this.state.history = groupedHistory;
             this.state.unreadCount = newUnread;
 
             // Intelligent Update for Home View to prevent flickering
@@ -1287,14 +1243,12 @@ const App = {
         }
 
         // Anti-Flicker: Only update if the LIST of IDs has changed
+        // This ignores trivial updates like "1 min ago" -> "1 min ago" re-renders
         const currentIdsHash = JSON.stringify(this.state.history.map(d => d.id));
-        // Also check if pagination state changed
-        if (this._lastHistoryHash === currentIdsHash && this._lastHasMore === this.state.hasMoreHistory) return;
-
+        if (this._lastHistoryHash === currentIdsHash) return;
         this._lastHistoryHash = currentIdsHash;
-        this._lastHasMore = this.state.hasMoreHistory;
 
-        let listHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
+        const newHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
             this.state.history.map(d => `
             <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
                 <div class="relative">
@@ -1327,39 +1281,19 @@ const App = {
                         return `TO: ${names.join(', ')} 📤`;
                     }
 
-                    return isSent ? `TO: ${name} 📤` : `
-                                        <div class="flex items-center gap-1">
-                                            <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                                                ${(() => {
-                            const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
-                            return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
-                        })()}
-                                            </div>
-                                            FROM: ${name} 📥
-                                        </div>`;
+                    return isSent ? `TO: ${name} 📤` : `FROM: ${name} 📥`;
                 })()}
-                    </span>
-                    <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
+                        </span>
+                        <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
+                    </div>
                 </div>
-            </div>
             `).join('');
 
-        if (this.state.hasMoreHistory) {
-            listHtml += `
-            <div class="text-center pb-8 pt-4">
-                <button onclick="App.loadHistory(false, ${this.state.historyPage + 1})" 
-                        class="bg-white/50 hover:bg-white text-pink-400 font-bold py-2 px-6 rounded-full shadow-sm transition-all active:scale-95 border border-white">
-                    Show More ✨
-                </button>
-            </div>`;
-        }
-
-        if (container.innerHTML !== listHtml) {
-            container.innerHTML = listHtml;
+        if (container.innerHTML !== newHtml) {
+            container.innerHTML = newHtml;
             if (window.lucide) lucide.createIcons();
         }
     },
-
     async markAllRead() {
         if (!this.state.supabase || !this.state.session) return;
         if (this.state.unreadCount === 0) return;
@@ -2250,13 +2184,6 @@ const App = {
                         </div>
                     `).join('')}
                     </div>
-                    ${this.state.hasMoreHistory ? `
-                    <div class="text-center pb-8 pt-4">
-                        <button onclick="App.loadHistory(false, ${this.state.historyPage + 1})" 
-                                class="bg-white/50 hover:bg-white text-pink-400 font-bold py-2 px-6 rounded-full shadow-sm transition-all active:scale-95 border border-white">
-                            Show More ✨
-                        </button>
-                    </div>` : ''}
                 </div>
             </div>
             <!-- Spacer for floating nav -->
