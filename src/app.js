@@ -296,7 +296,14 @@ const App = {
             const latestVersion = data.tag_name?.replace('v', '');
             console.log(`🚀 Checking updates: Installed=${currentVersion}, Remote=${latestVersion}`);
 
+            // Ensure there is an APK to download!
+            const hasApk = data.assets && data.assets.some(a => a.name.endsWith('.apk'));
+
             if (latestVersion && latestVersion !== currentVersion && isNewer(latestVersion, currentVersion)) {
+                if (!hasApk) {
+                    console.warn(`Update v${latestVersion} found but has no APK asset. Skipping.`);
+                    return;
+                }
                 console.log(`Update available: ${latestVersion}`);
                 this.state.updateAvailable = true;
                 this.state.latestRelease = data;
@@ -390,7 +397,12 @@ const App = {
     async downloadAndInstallUpdate(assets) {
         if (!assets || !assets.length) return;
         const apkAsset = assets.find(a => a.name.endsWith('.apk'));
-        if (!apkAsset) return;
+
+        if (!apkAsset) {
+            this.toast('No APK found in this release! 🥺', 'blue');
+            console.error("Update failed: Release has no .apk asset");
+            return;
+        }
 
         this.toast("Downloading magic update... 📦", "pink");
         // ... (rest of download logic) ...
