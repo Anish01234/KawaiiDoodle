@@ -703,10 +703,12 @@ const App = {
                 // FALLBACK: If Supabase auths but profile fails & no local data, GO TO LANDING
                 this.setView('landing');
             }
-
-            this.finalizeInit(); // Restore critical init step
         } catch (e) {
             console.error("Critical Start Error:", e);
+            this.toast("Startup Error: " + e.message, "blue");
+            this.setView('landing'); // Force landing on error
+        } finally {
+            this.finalizeInit(); // ALWAYS RUN
         }
     },
 
