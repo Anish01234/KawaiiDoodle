@@ -60,9 +60,9 @@ const App = {
             } catch (e) { /* Storage full or error */ }
 
             // Also update UI if visible
-            const logEl = document.getElementById('boot-log-content');
+            const logEl = document.getElementById('boot-log');
             if (logEl) {
-                logEl.innerHTML += `<div class="text-[10px] ${type === 'error' ? 'text-red-400' : 'text-green-300'} font-mono mb-1 border-b border-white/5 pb-1">> ${msg}</div>`;
+                logEl.innerHTML += `<div class="text-[10px] ${type === 'error' ? 'text-red-400' : 'text-green-300'} font-mono mb-1 border-b border-black/5 pb-1">> ${msg}</div>`;
                 logEl.scrollTop = logEl.scrollHeight;
             }
         };
@@ -88,7 +88,7 @@ const App = {
     logBoot(msg) {
         console.log(msg);
         this.state.bootLogs.push(`> ${msg}`);
-        const log = document.getElementById('boot-log-content');
+        const log = document.getElementById('boot-log');
         if (log) {
             log.innerHTML += `> ${msg}<br>`;
             log.scrollTop = log.scrollHeight;
@@ -141,388 +141,6 @@ const App = {
         }
     },
 
-    // --- SAFETY NET ---
-    async checkCriticalHealth() {
-        try {
-            // 1. Fetch Status from GitHub (Use raw content)
-            // Replace with your actual username/repo
-            const statusUrl = 'https://raw.githubusercontent.com/Anish01234/KawaiiDoodle/main/status.json';
-            // Add cache busting
-            const response = await fetch(`${statusUrl}?t=${Date.now()}`);
-            if (!response.ok) return;
-
-            const status = await response.json();
-
-            // 2. Get Current Version
-            let currentVersion = '0.0.0';
-            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-                const info = await window.Capacitor.Plugins.App.getInfo();
-                currentVersion = info.version;
-            } else {
-                return; // Don't block web/dev functionality
-            }
-
-            // 3. Check for Broken Version or Deprecation
-            const isBroken = (status.broken_versions || []).includes(currentVersion);
-
-            // Semver check for min version
-            const isTooOld = (v1, min) => {
-                const p1 = v1.split('.').map(Number);
-                const pMin = min.split('.').map(Number);
-                for (let i = 0; i < Math.max(p1.length, pMin.length); i++) {
-                    const n1 = p1[i] || 0;
-                    const nMin = pMin[i] || 0;
-                    if (n1 < nMin) return true;
-                    if (n1 > nMin) return false;
-                }
-                return false;
-            };
-
-            const belowMinParam = status.min_supported_version && isTooOld(currentVersion, status.min_supported_version);
-
-            if (isBroken || belowMinParam) {
-                // BLOCKING UI
-                console.error("CRITICAL: App version blocked.", { currentVersion, status });
-                document.body.innerHTML = `
-                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff0f5; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center;">
-                    <h1 style="font-size:2rem; color:#db2777; margin-bottom:1rem;">⚠️ Update Required</h1>
-                    <p style="font-size:1.1rem; color:#4b5563; margin-bottom:2rem;">${status.critical_message || "This version of the app is no longer supported. Please update to continue sending magic!"}</p>
-                    <button onclick="window.open('${status.force_update_url || 'https://github.com/Anish01234/KawaiiDoodle/releases'}', '_system')"
-                        style="background:#db2777; color:white; padding:1rem 2rem; border-radius:99px; font-weight:bold; font-size:1.2rem; border:none; box-shadow:0 4px 15px rgba(219, 39, 119, 0.3);">
-                        Download Fix 🚀
-                    </button>
-                    <p style="margin-top:2rem; font-size:0.8rem; color:#9ca3af;">Installed: v${currentVersion}</p>
-                </div>
-                `;
-            }
-
-        } catch (e) {
-            console.warn("Safety net check failed (offline?):", e);
-        }
-    },
-
-    // Panic Button: Triple Tap Version
-    versionTaps: 0,
-    versionTapTimer: null,
-    handleVersionTap() {
-        this.versionTaps++;
-        if (this.versionTapTimer) clearTimeout(this.versionTapTimer);
-
-        this.versionTapTimer = setTimeout(() => {
-            this.versionTaps = 0;
-        }, 1000); // Reset after 1 second of inactivity
-
-        if (this.versionTaps >= 3) {
-            // Trigger Panic Mode
-            this.toast('🚑 Panic Link Activated!', 'pink');
-            window.open('https://github.com/Anish01234/KawaiiDoodle/releases', '_system');
-            this.versionTaps = 0;
-        }
-    },
-
-    async checkForUpdates(retryCount = 0) {
-        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
-
-        try {
-            console.log(`🔄 Checking for updates... (attempt ${retryCount + 1})`);
-
-            // Get current version dynamically
-            let currentVersion = '0.0.0';
-            try {
-                const { App: CapApp } = window.Capacitor.Plugins;
-                const info = await CapApp.getInfo();
-                currentVersion = info.version;
-            } catch (e) { console.warn("Could not get native version", e); }
-
-            // Robust Semver Comparison
-            const isNewer = (v1, v2) => {
-                const parts1 = v1.split('.').map(Number);
-                const parts2 = v2.split('.').map(Number);
-                for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-                    const n1 = parts1[i] || 0;
-                    const n2 = parts2[i] || 0;
-                    if (n1 > n2) return true;
-                    if (n1 < n2) return false;
-                }
-                return false;
-            };
-
-            // Try fetching from GitHub API
-            let data = null;
-            try {
-                const response = await fetch('https://api.github.com/repos/Anish01234/KawaiiDoodle/releases/latest');
-                if (response.ok) {
-                    data = await response.json();
-                    // Cache the release data for reliability
-                    localStorage.setItem('cached-update-data', JSON.stringify({
-                        tag_name: data.tag_name,
-                        body: data.body,
-                        assets: data.assets,
-                        cachedAt: Date.now()
-                    }));
-                } else {
-                    console.warn(`⚠️ Update check HTTP ${response.status} — using cache`);
-                }
-            } catch (fetchErr) {
-                console.warn('⚠️ Update fetch failed:', fetchErr.message);
-            }
-
-            // Fallback to cache if fetch failed
-            if (!data) {
-                try {
-                    const cached = JSON.parse(localStorage.getItem('cached-update-data'));
-                    if (cached && cached.tag_name) {
-                        // Only use cache if it's less than 24 hours old
-                        if (Date.now() - cached.cachedAt < 24 * 60 * 60 * 1000) {
-                            data = cached;
-                            console.log('📦 Using cached update data');
-                        }
-                    }
-                } catch (e) { /* cache parse error, ignore */ }
-            }
-
-            // If still no data, retry once after 5s
-            if (!data && retryCount < 1) {
-                console.log('🔁 Will retry update check in 5s...');
-                setTimeout(() => this.checkForUpdates(retryCount + 1), 5000);
-                return;
-            }
-
-            if (!data) {
-                console.warn('❌ Update check: no data available after retries');
-                return;
-            }
-
-            const latestVersion = data.tag_name?.replace('v', '');
-            console.log(`🚀 Checking updates: Installed=${currentVersion}, Remote=${latestVersion}`);
-
-            // Ensure there is an APK to download!
-            const hasApk = data.assets && data.assets.some(a => a.name.endsWith('.apk'));
-
-            if (latestVersion && latestVersion !== currentVersion && isNewer(latestVersion, currentVersion)) {
-                if (!hasApk) {
-                    console.warn(`Update v${latestVersion} found but has no APK asset. Skipping.`);
-                    return;
-                }
-                console.log(`Update available: ${latestVersion}`);
-                this.state.updateAvailable = true;
-                this.state.latestRelease = data;
-                this.renderView();
-                this.toast(`New Magic Available: v${latestVersion}! 🚀`, 'pink');
-                this.showUpdateModal();
-            } else {
-                console.log("✅ Custom check: App is up to date!");
-            }
-        } catch (e) {
-            console.warn("Update check failed:", e);
-            // Retry once on unexpected errors
-            if (retryCount < 1) {
-                setTimeout(() => this.checkForUpdates(retryCount + 1), 5000);
-            }
-        }
-    },
-
-    async getAppVersion() {
-        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return 'Web Dev Mode';
-        try {
-            // Retrieve info using Capacitor App Plugin
-            const { App: CapApp } = window.Capacitor.Plugins;
-            const info = await CapApp.getInfo();
-            // Format: v2.9.22 (Build: 31)
-            return `v${info.version} (Build: ${info.build})`;
-        } catch (e) {
-            console.error("Version check failed", e);
-            return 'v?.?.? (Unknown)';
-        }
-    },
-
-    async downloadCrashLogs() {
-        // Prefer persistent logs if available, fallback to memory
-        let logs = App.state.bootLogs.join('\n');
-        try {
-            const saved = localStorage.getItem('kawaii_crash_logs');
-            if (saved) logs = JSON.parse(saved).join('\n');
-        } catch (e) { console.warn("Failed to read saved logs", e); }
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const filename = `kawaii-crash-logs-${timestamp}.txt`;
-
-        this.toast('Preparing persistent logs... 🐞', 'blue');
-
-        // 1. Try Native Share (Best for Android)
-        if (window.Capacitor && window.Capacitor.Plugins.Share) {
-            try {
-                // Determine directory - Cache is reliable
-                const Filesystem = window.Capacitor.Plugins.Filesystem;
-                const path = `logs/${filename}`;
-
-                // Write file first
-                await Filesystem.writeFile({
-                    path: path,
-                    data: logs,
-                    directory: 'CACHE',
-                    encoding: 'utf8'
-                });
-
-                // Get URI
-                const uriResult = await Filesystem.getUri({
-                    path: path,
-                    directory: 'CACHE'
-                });
-
-                await window.Capacitor.Plugins.Share.share({
-                    title: 'Kawaii Doodle Logs',
-                    text: 'Here are my crash logs! 🐞',
-                    url: uriResult.uri,
-                    dialogTitle: 'Share Logs'
-                });
-                return;
-            } catch (e) {
-                console.error("Share failed:", e);
-                // Fallthrough to clipboard
-            }
-        }
-
-        // 2. Fallback: Clipboard (Universal)
-        try {
-            await navigator.clipboard.writeText(logs);
-            this.toast('Logs copied to clipboard! 📋', 'pink');
-            alert("Logs copied to clipboard! You can paste them now.");
-        } catch (e) {
-            this.toast('Could not copy logs 😭', 'blue');
-            console.error(e);
-        }
-    },
-
-    async downloadAndInstallUpdate(assets) {
-        if (!assets || !assets.length) return;
-        const apkAsset = assets.find(a => a.name.endsWith('.apk'));
-
-        if (!apkAsset) {
-            this.toast('No APK found in this release! 🥺', 'blue');
-            console.error("Update failed: Release has no .apk asset");
-            return;
-        }
-
-        this.toast("Downloading magic update... 📦", "pink");
-        // ... (rest of download logic) ...
-        try {
-            // Robust Plugin Access
-            const Filesystem = window.Capacitor.Plugins.Filesystem;
-
-            if (!Filesystem) {
-                console.warn("Filesystem plugin missing. Falling back to browser.");
-                window.open(apkAsset.browser_download_url, '_system');
-                return;
-            }
-
-            const path = `update.apk`;
-            const url = apkAsset.browser_download_url;
-
-            console.log(`⬇️ Downloading ${url} to ${path}...`);
-
-            const downloadResult = await Filesystem.downloadFile({
-                path: path,
-                directory: 'CACHE',
-                url: url
-            });
-
-            console.log("✅ Download complete:", downloadResult);
-            const fileUri = downloadResult.path;
-
-            this.toast("Installing... ✨", "pink");
-
-            if (window.cordova && window.cordova.plugins && window.cordova.plugins.fileOpener2) {
-                window.cordova.plugins.fileOpener2.open(
-                    fileUri,
-                    'application/vnd.android.package-archive', {
-                    error: (e) => {
-                        console.error('FileOpen Error:', e);
-                        this.toast("Install failed 😭. Please update manually.", "blue");
-                        setTimeout(() => window.open(url, '_system'), 2000);
-                    },
-                    success: () => console.log('Installer opened!')
-                }
-                );
-            } else {
-                console.warn("FileOpener2 not found");
-                this.toast("Installer plugin missing! 😭", "blue");
-                window.open(url, '_system');
-            }
-
-        } catch (e) {
-            console.error("Update download failed:", e);
-            this.confirmKawaii({
-                title: "Update Failed 🥺",
-                message: "The auto-update magic fizzled out (network error). Want to download it manually?",
-                okText: "Yes, Open Browser 🌐",
-                onConfirm: () => window.open(apkAsset.browser_download_url, '_system')
-            });
-        }
-    },
-
-    showUpdateModal() {
-        if (!this.state.latestRelease) return;
-        const release = this.state.latestRelease;
-        const version = release.tag_name;
-        const body = release.body || "A shiny new version is ready for you!";
-
-        // Create Modal
-        const modalId = 'update-modal-overlay';
-        if (document.getElementById(modalId)) return; // Already showing
-
-        const div = document.createElement('div');
-        div.id = modalId;
-        div.className = "fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in";
-        div.innerHTML = `
-            <div class="bg-white w-full max-w-sm rounded-bubbly shadow-2xl p-6 relative flex flex-col gap-4 animate-float border-4 border-pink-200">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                        <i data-lucide="sparkles" class="w-8 h-8 text-pink-500"></i>
-                    </div>
-                    <h3 class="text-2xl font-black text-pink-500">New Magic! ✨</h3>
-                    <p class="text-gray-400 font-bold text-sm">${version}</p>
-                </div>
-                
-                <!-- Notes Removed per user request -->
-
-                <div class="flex flex-col gap-3 mt-2">
-                    <button id="btn-update-confirm" class="bg-pink-500 text-white py-3 rounded-xl font-black shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
-                        <i data-lucide="download"></i> Update Now
-                    </button>
-                    <button id="btn-update-later" onclick="document.getElementById('${modalId}').remove()" class="text-gray-400 text-sm font-bold hover:text-gray-600 py-2">
-                        Maybe Later 🐢
-                    </button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(div);
-        if (window.lucide) lucide.createIcons();
-
-        // Bind download
-        const btn = document.getElementById('btn-update-confirm');
-        const laterBtn = document.getElementById('btn-update-later'); // Need to ID this
-
-        btn.onclick = async () => {
-            // UI Loading State
-            btn.disabled = true;
-            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> Downloading...`;
-            btn.classList.add('opacity-75', 'cursor-not-allowed');
-            if (laterBtn) laterBtn.remove(); // Can't cancel once started to avoid currupted files
-
-            // Start Download
-            await this.downloadAndInstallUpdate(release.assets);
-
-            // Only close on error (download function handles installs/redirects)
-            // If we are here, it might have failed or is installing. 
-            // We can leave the modal for a moment or let the installer take over.
-            document.getElementById(modalId).remove();
-        };
-    },
-
-    openLatestRelease() {
-        window.open('https://github.com/Anish01234/KawaiiDoodle/releases', '_system');
-    },
 
     // --- SAFETY NET ---
     async checkCriticalHealth() {
@@ -591,9 +209,10 @@ const App = {
     },
 
     async init() {
+        console.log("🛠️ App.init() started");
         this.enableDebugConsole();
         this.checkCriticalHealth();
-        this.logBoot("✨ Kawaii App Initializing...");
+        this.logBoot("✨ Kawaii App Initializing v2.9.83...");
 
         try {
             // Check Force Offline
@@ -711,6 +330,335 @@ const App = {
             this.finalizeInit(); // ALWAYS RUN
         }
     },
+
+    initSupabase() {
+        if (!window.supabase) {
+            console.error("Supabase library not found!");
+            return;
+        }
+        const { url, key } = this.state.config;
+        if (url && key) {
+            this.state.supabase = window.supabase.createClient(url, key);
+            console.log("☁️ Supabase client initialized");
+        } else {
+            console.warn("Supabase config missing");
+        }
+    },
+    // Fallback alias for misspelled calls in stale caches
+    initSupabse() {
+        console.warn("⚠️ Fallback initSupabse called! (Stale cache detected)");
+        return this.initSupabase();
+    },
+
+    setView(view) {
+        console.log(`🚀 App.setView called with: ${view}`);
+        this.logBoot(`Switching to: ${view}...`);
+        this.state.previousView = this.state.view;
+        this.state.view = view;
+
+        // Visual State Changes
+        if (view === 'draw') {
+            document.body.classList.add('draw-mode');
+        } else {
+            document.body.classList.remove('draw-mode');
+        }
+
+        // Auto-scroll to top on view change
+        const content = document.getElementById('content');
+        if (content) content.scrollTop = 0;
+
+        this.renderView();
+
+        // Update Nav visibility
+        const nav = document.getElementById('app-nav');
+        if (nav) {
+            if (view === 'landing') {
+                nav.classList.add('hidden');
+            } else {
+                nav.classList.remove('hidden');
+            }
+        }
+    },
+
+    renderView() {
+        const content = document.getElementById('content');
+        if (!content) return;
+
+        console.log(`🎨 Rendering view: ${this.state.view}`);
+
+        switch (this.state.view) {
+            case 'landing':
+                content.innerHTML = `
+                    <div class="flex flex-col items-center justify-center min-h-[70vh] gap-8 animate-fade-in text-center px-6">
+                        <div class="w-32 h-32 bg-white rounded-bubbly shadow-xl flex items-center justify-center animate-float">
+                             <i data-lucide="palette" class="w-16 h-16 text-pink-500"></i>
+                        </div>
+                        <div class="space-y-2">
+                            <h2 class="text-3xl font-black text-gray-800">Kawaii Doodle</h2>
+                            <p class="text-gray-500 font-medium">Draw magic and send it to friends! ✨</p>
+                        </div>
+                        <button onclick="App.login()" class="w-full max-w-xs bg-white text-pink-500 py-4 rounded-full font-black shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+                            <i data-lucide="log-in"></i>
+                            START DRAWING
+                        </button>
+                         <p class="text-[10px] text-pink-400 font-bold tracking-widest uppercase opacity-50">Experimental Beta v2.7</p>
+                    </div>
+                `;
+                break;
+
+            case 'home':
+                content.innerHTML = `
+                    <div class="w-full max-w-lg mx-auto space-y-6 animate-fade-in pb-20">
+                        <div class="flex justify-between items-center px-2">
+                            <h2 class="text-xl font-black text-gray-800">Recent Magic ✨</h2>
+                            <button onclick="App.loadHistory()" class="p-2 text-pink-400 hover:text-pink-600 transition-colors">
+                                <i data-lucide="refresh-cw" class="${this.state.isLoadingHistory ? 'animate-spin' : ''}"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="history-feed" class="space-y-4">
+                            ${this.state.isLoadingHistory ? `
+                                <div class="py-20 text-center space-y-4">
+                                    <div class="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mx-auto"></div>
+                                    <p class="text-sm font-bold text-pink-300">Summoning doodles...</p>
+                                </div>
+                            ` : this.state.history.length === 0 ? `
+                                <div class="py-20 text-center bg-white/40 rounded-bubbly border-2 border-dashed border-white/60">
+                                    <p class="text-gray-400 font-bold italic">No magic found yet... 🥺</p>
+                                    <button onclick="App.setView('draw')" class="mt-4 text-pink-500 font-black text-xs underline underline-offset-4">START A NEW DOODLE</button>
+                                </div>
+                            ` : this.state.history.map(item => `
+                                <div class="bg-white rounded-bubbly shadow-sm overflow-hidden border-2 border-white group hover:shadow-md transition-all">
+                                    <div class="p-3 flex items-center justify-between border-b border-gray-50 bg-pink-50/30">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-pink-100 overflow-hidden">
+                                                <i data-lucide="user" class="w-4 h-4 text-pink-300"></i>
+                                            </div>
+                                            <span class="text-xs font-bold text-gray-600">${item.profiles?.username || 'Unknown Artist'}</span>
+                                        </div>
+                                        <span class="text-[9px] font-bold text-pink-300">${new Date(item.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="aspect-square bg-gray-50 flex items-center justify-center relative">
+                                        <img src="${item.image_data}" class="w-full h-full object-contain" loading="lazy">
+                                        <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                                             <button onclick="App.editDoodle('${item.image_data}')" class="bg-white/90 p-3 rounded-full shadow-lg text-pink-500 transform hover:scale-110 active:scale-95 transition-all">
+                                                <i data-lucide="edit-3" class="w-5 h-5"></i>
+                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'draw':
+                content.innerHTML = `
+                    <div class="fixed inset-0 bg-white z-[80] flex flex-col animate-fade-in overflow-hidden">
+                        <!-- Toolbar -->
+                        <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-md">
+                            <button onclick="App.setView('home')" class="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
+                                <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                            </button>
+                            <div class="flex gap-2">
+                                <button id="btn-undo" class="p-2 bg-gray-50 rounded-full text-gray-400 disabled:opacity-30 disabled:pointer-events-none">
+                                    <i data-lucide="undo-2" class="w-5 h-5"></i>
+                                </button>
+                                <button id="btn-redo" class="p-2 bg-gray-50 rounded-full text-gray-400 disabled:opacity-30 disabled:pointer-events-none">
+                                    <i data-lucide="redo-2" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                            <button id="send-doodle" class="bg-pink-500 text-white px-6 py-2 rounded-full font-black shadow-lg shadow-pink-200 hover:bg-pink-600 active:scale-95 transition-all flex items-center gap-2">
+                                <span>SEND MAGIC</span>
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <!-- Canvas Area -->
+                        <div class="flex-1 relative bg-gray-100 overflow-hidden touch-none" id="canvas-container">
+                            <canvas id="drawing-canvas" class="bg-white shadow-inner"></canvas>
+                            
+                            <!-- Drawing Controls Overlay -->
+                            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 w-full px-6 max-w-sm">
+                                <!-- Recipient Picker -->
+                                <div id="friend-bubbles" class="flex gap-2 overflow-x-auto no-scrollbar w-full py-2 px-4 bg-white/60 backdrop-blur-md rounded-full border border-white/50 shadow-lg min-h-[60px] items-center">
+                                    <!-- Populated by Social.js -->
+                                </div>
+                                
+                                <div class="bg-white/90 backdrop-blur-xl p-4 rounded-[2.5rem] shadow-2xl border border-white/50 flex flex-col gap-4 w-full">
+                                    <!-- Brush Size -->
+                                    <div class="flex items-center gap-4 px-2">
+                                        <i data-lucide="brush" class="w-4 h-4 text-gray-400"></i>
+                                        <input type="range" id="brush-size" min="1" max="50" value="5" class="flex-1 accent-pink-500 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                    </div>
+                                    
+                                    <!-- Palette -->
+                                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="palette-container">
+                                        <!-- Populated by canvas.js -->
+                                    </div>
+
+                                    <!-- Action Tools -->
+                                    <div class="flex justify-between items-center border-t border-gray-100 pt-3">
+                                        <div class="flex gap-3">
+                                            <button id="btn-eraser-tool" class="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-pink-500 transition-colors">
+                                                <i data-lucide="eraser" class="w-5 h-5"></i>
+                                            </button>
+                                            <button id="btn-fill-tool" class="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-pink-500 transition-colors">
+                                                <i data-lucide="paint-bucket" class="w-5 h-5"></i>
+                                            </button>
+                                            <button id="clear-canvas" class="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors">
+                                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                            </button>
+                                        </div>
+                                        <button id="save-draft" class="text-xs font-black text-pink-500 bg-pink-50 px-4 py-2 rounded-full border border-pink-100 active:scale-95 transition-all">
+                                            SAVE DRAFT
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // Initialize Canvas Logic
+                setTimeout(() => {
+                    if (window.initCanvas) window.initCanvas();
+                    if (window.Social) Social.renderRecipientBubbles();
+                }, 50);
+                break;
+
+            case 'friends':
+                content.innerHTML = `
+                    <div class="w-full max-w-lg mx-auto space-y-6 animate-fade-in pb-20">
+                        <div class="bg-white rounded-bubbly shadow-xl p-6 border-4 border-pink-100">
+                            <h3 class="text-xl font-black text-pink-500 mb-4 flex items-center gap-2">
+                                <i data-lucide="user-plus"></i> Find Besties
+                            </h3>
+                            <div class="flex gap-2 p-1 bg-gray-50 rounded-full border-2 border-gray-100">
+                                <input id="friend-id-input" type="text" placeholder="Type Kawaii ID..." class="flex-1 bg-transparent px-4 py-3 outline-none font-bold text-gray-700">
+                                <button onclick="window.handleSearchFriend()" class="bg-pink-500 text-white px-6 py-3 rounded-full font-black shadow-lg hover:bg-pink-600 transition-all">
+                                    ADD
+                                </button>
+                            </div>
+                            <p class="text-[10px] text-gray-400 mt-2 px-2 italic">Tip: Your friends can find your ID in Settings!</p>
+                        </div>
+
+                        <div class="space-y-4">
+                            <h3 class="text-lg font-black text-gray-800 px-2 flex items-center gap-2">
+                                <i data-lucide="users" class="text-pink-400"></i> My Friends
+                            </h3>
+                            <div id="friend-list" class="space-y-2">
+                                <!-- Populated by Social.js -->
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // Initialize Social Logic
+                setTimeout(() => {
+                    if (window.Social) Social.renderFriendList();
+                }, 50);
+                break;
+
+            case 'history':
+                // For now, history view is redundant with home or can be a specific filtered view
+                this.setView('home');
+                break;
+        }
+
+        // Always refresh icons
+        if (window.lucide) lucide.createIcons();
+    },
+
+    async loadAppData() {
+        console.log("📦 Loading App Data...");
+        await this.loadHistory();
+        if (window.Social) {
+            await Social.loadFriends();
+            Social.listenToSocial();
+        }
+    },
+
+    async loadHistory() {
+        if (!this.state.supabase || !this.state.session) return;
+
+        console.log("📜 Summoning history...");
+        this.state.isLoadingHistory = true;
+        this.renderView(); // Show loader
+
+        try {
+            const userId = this.state.session.user.id;
+
+            // Fetch doodles where user is sender or receiver
+            const { data, error } = await this.state.supabase
+                .from('doodles')
+                .select(`
+                    id,
+                    image_data,
+                    created_at,
+                    profiles:sender_id (username, avatar_url)
+                `)
+                .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            if (error) throw error;
+
+            this.state.history = data || [];
+            console.log(`✅ Loaded ${this.state.history.length} doodles`);
+        } catch (e) {
+            console.error("History fetch failed:", e);
+            this.toast("Could not load magic feed 🥺", "blue");
+        } finally {
+            this.state.isLoadingHistory = false;
+            this.renderView();
+        }
+    },
+
+    initPush() {
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+        const { PushNotifications } = window.Capacitor.Plugins;
+        if (!PushNotifications) return;
+
+        PushNotifications.addListener('registration', (token) => {
+            console.log('Push registration success, token: ' + token.value);
+            this.updateFcmToken(token.value);
+        });
+
+        PushNotifications.addListener('registrationError', (error) => {
+            console.error('Error on registration: ' + JSON.stringify(error));
+        });
+
+        PushNotifications.addListener('pushNotificationReceived', (notification) => {
+            console.log('Push received: ' + JSON.stringify(notification));
+            this.toast(notification.title || "New Message!", "pink");
+            if (window.Social) Social.loadFriends(); // Refresh social state
+            this.loadHistory();
+        });
+
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+            console.log('Push action performed: ' + JSON.stringify(notification));
+            if (notification.notification.data && notification.notification.data.type === 'doodle') {
+                this.setView('history');
+            }
+        });
+
+        PushNotifications.register();
+    },
+
+    async updateFcmToken(token) {
+        if (!this.state.supabase || !this.state.session) return;
+        try {
+            const { error } = await this.state.supabase
+                .from('profiles')
+                .update({ fcm_token: token })
+                .eq('id', this.state.session.user.id);
+            if (error) throw error;
+            console.log("✅ FCM Token updated in profile");
+        } catch (e) {
+            console.error("Failed to update FCM token:", e);
+        }
+    },
+
 
     // --- Actions ---
     editDoodle(imageData) {
