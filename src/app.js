@@ -1171,7 +1171,7 @@ const App = {
             // Intelligent Update for Home View to prevent flickering
             if (this.state.view === 'home') {
                 if (silent) {
-                    this.updateHomeView();
+                    this.renderView();
                 } else {
                     this.renderView();
                 }
@@ -2312,9 +2312,14 @@ const App = {
     // Elite Haptics Helper
     haptic(type = 'light') {
         if (!navigator.vibrate) return;
-        if (type === 'success') navigator.vibrate(10); // Tiny tick
-        if (type === 'medium') navigator.vibrate(20);
-        if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
+        // Prevent console intervention errors if user hasn't interacted
+        if (window.navigator?.userActivation && !window.navigator.userActivation.hasBeenActive) return;
+
+        try {
+            if (type === 'success') navigator.vibrate(10); // Tiny tick
+            if (type === 'medium') navigator.vibrate(20);
+            if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
+        } catch (e) { } // Ignore errors from unsupported platforms
     },
 
     // Fix for zoomed-in screens / high DPI
