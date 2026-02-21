@@ -28,26 +28,7 @@
         }
     </style>
     <title>Kawaii Doodle - Social Drawing</title>
-    <!-- Tailwind Play CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'kawaii-pink': '#FFD1DC',
-                        'kawaii-blue': '#BDE0FE',
-                        'kawaii-mint': '#C1F0C1',
-                        'kawaii-yellow': '#FAFAD2',
-                        'kawaii-purple': '#E6E6FA',
-                    },
-                    borderRadius: {
-                        'bubbly': '2rem',
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="tailwind.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&family=Quicksand:wght@500;700&display=swap"
         rel="stylesheet">
@@ -221,7 +202,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="capacitor.js"></script>
+    <!-- capacitor.js is only available inside the native Capacitor runtime -->
+    <script>
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+            document.write('<scr' + 'ipt src="capacitor.js"></scr' + 'ipt>');
+        }
+    </script>
     <script src="src/canvas.js?v=2.7"></script>
     <script src="src/social.js?v=2.7"></script>
     <script src="src/config.js?v=2.7"></script>

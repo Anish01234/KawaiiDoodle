@@ -28,10 +28,13 @@ function copyRecursiveSync(src, dest) {
     }
 }
 
+const { execSync } = require('child_process');
+
 // Files to copy
 const ASSETS = [
     'index.html',
     'styles.css',
+    'tailwind.css',
     'sw.js',
     'manifest.json'
 ];
@@ -42,6 +45,14 @@ const DIRS = [
 ];
 
 console.log('🏗️  Starting Elite Build Process...');
+
+// 0. Run Tailwind compiler
+console.log('🎨 Compiling Tailwind CSS...');
+try {
+    execSync('npx tailwindcss -i input.css -o tailwind.css --minify', { stdio: 'inherit' });
+} catch (e) {
+    console.warn('⚠️ Tailwind compile failed or skipped. Ensure tailwindcss is installed.');
+}
 
 // 1. Clean (optional but safer)
 console.log('🧹 Cleaning build directory...');

@@ -529,7 +529,7 @@ const App = {
     // --- SAFETY NET ---
     async checkCriticalHealth() {
         try {
-            const statusUrl = 'https://raw.githubusercontent.com/Anish01234/KawaiiDoodle/main/status.json';
+            const statusUrl = 'https://raw.githubusercontent.com/Anish01234/KawaiiDoodle/master/status.json';
             const response = await fetch(`${statusUrl}?t=${Date.now()}`);
             if (!response.ok) return;
 
@@ -1557,7 +1557,6 @@ const App = {
                 const { GoogleAuth } = window.Capacitor.Plugins;
                 if (GoogleAuth) {
                     await GoogleAuth.signOut();
-                    await GoogleAuth.disconnect();
                 }
             }
         } catch (e) {
