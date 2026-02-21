@@ -35,6 +35,20 @@ const App = {
         if (window.consoleOverridden) return;
         window.consoleOverridden = true;
 
+        // Track first user gesture so haptic() can safely call navigator.vibrate.
+        // vibrate is blocked until interaction; this flag lets us skip it cleanly.
+        if (!window._userHasGestured) {
+            const markGesture = () => {
+                window._userHasGestured = true;
+                ['touchstart', 'pointerdown', 'click'].forEach(evt =>
+                    document.removeEventListener(evt, markGesture, { capture: true })
+                );
+            };
+            ['touchstart', 'pointerdown', 'click'].forEach(evt =>
+                document.addEventListener(evt, markGesture, { once: true, capture: true, passive: true })
+            );
+        }
+
         const originalLog = console.log;
         const originalError = console.error;
         const originalWarn = console.warn;
@@ -1306,6 +1320,32 @@ const App = {
             if (window.lucide) lucide.createIcons();
         }
     },
+
+    // Surgically updates only the dynamic parts of the home view (badge + doodle)
+    // without a full re-render so there is no flicker during silent polling.
+    updateHomeView() {
+        // If the home view isn't even rendered yet, bail out.
+        const content = document.getElementById('content');
+        if (!content || this.state.view !== 'home') return;
+
+        // 1. Update the unread badge on the History button
+        const historyBtn = content.querySelector('#btn-history-badge');
+        if (historyBtn) {
+            historyBtn.textContent = this.state.unreadCount > 0 ? this.state.unreadCount : '';
+            historyBtn.style.display = this.state.unreadCount > 0 ? 'flex' : 'none';
+        } else {
+            // Badge element not found (older render) — fall back to a full re-render
+            this.renderView();
+            return;
+        }
+
+        // 2. Update the doodle image if it changed
+        const doodleImg = content.querySelector('img[data-home-doodle]');
+        if (doodleImg && this.state.lastDoodle && doodleImg.src !== this.state.lastDoodle) {
+            doodleImg.src = this.state.lastDoodle;
+        }
+    },
+
     async markAllRead() {
         if (!this.state.supabase || !this.state.session) return;
         if (this.state.unreadCount === 0) return;
@@ -2311,11 +2351,13 @@ const App = {
     },
 
     // Elite Haptics Helper
+    // navigator.vibrate is blocked until the user has interacted with the page.
+    // We track the first gesture ourselves and gate all vibrate calls behind it.
     haptic(type = 'light') {
-        if (!navigator.vibrate) return;
-        if (type === 'success') navigator.vibrate(10); // Tiny tick
-        if (type === 'medium') navigator.vibrate(20);
-        if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
+        if (!navigator.vibrate || !window._userHasGestured) return;
+        if (type === 'success') navigator.vibrate(10);
+        else if (type === 'medium') navigator.vibrate(20);
+        else if (type === 'heavy') navigator.vibrate([30, 50, 30]);
     },
 
     // Fix for zoomed-in screens / high DPI
