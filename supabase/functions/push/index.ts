@@ -171,17 +171,11 @@ serve(async (req) => {
         const result = await fcmResponse.json();
 
         if (!fcmResponse.ok) {
-            // FCM returned an error — most commonly a stale/invalid token.
-            // Log it for debugging but return 200 so the client's fire-and-forget
-            // doesn't surface this as an HTTP failure.
-            const fcmErr = result?.error?.details?.[0]?.errorCode
-                || result?.error?.message
-                || "Unknown FCM error";
-            console.error("FCM Error:", fcmErr, JSON.stringify(result));
-            return new Response(
-                JSON.stringify({ error: "FCM delivery failed", detail: fcmErr }),
-                { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-            );
+            console.error("FCM Error Result:", JSON.stringify(result));
+            return new Response(JSON.stringify({ error: "FCM Error", detail: result }), {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" }
+            });
         }
 
         console.log("✅ FCM Success:", JSON.stringify(result));

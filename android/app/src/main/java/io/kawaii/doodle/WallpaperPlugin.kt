@@ -19,7 +19,7 @@ class WallpaperPlugin : Plugin() {
 
     @PluginMethod
     fun setSeamlessDoodleAsWallpaper(call: PluginCall) {
-        android.util.Log.d("WallpaperPlugin", "Method called: setSeamlessDoodleAsWallpaper")
+        android.util.Log.d(CrashTags.WALLPAPER, "Method called: setSeamlessDoodleAsWallpaper")
         val base64Image = call.getString("image")
         if (base64Image == null) {
             call.reject("No image provided")
@@ -29,14 +29,21 @@ class WallpaperPlugin : Plugin() {
         try {
             // 1. Decode the received doodle (Base64 -> Bitmap)
             val cleanBase64 = if (base64Image.contains(",")) base64Image.split(",")[1] else base64Image
-            val decodedString = Base64.decode(cleanBase64, Base64.DEFAULT)
-            var doodleBitmap = BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+            val decodedString = safeRun(CrashTags.IMAGE, "Base64 decode") {
+                Base64.decode(cleanBase64, Base64.DEFAULT)
+            } ?: run {
+                call.reject("Failed to decode Base64 data")
+                return
+            }
+            var doodleBitmap = safeRun(CrashTags.IMAGE, "BitmapFactory.decodeByteArray") {
+                BitmapFactory.decodeByteArray(decodedString, 0, decodedString.size)
+            }
 
             if (doodleBitmap == null) {
                 call.reject("Failed to decode bitmap")
                 return
             }
-            android.util.Log.d("WallpaperPlugin", "Bitmap decoded successfully. Size: ${doodleBitmap.width}x${doodleBitmap.height}")
+            android.util.Log.d(CrashTags.WALLPAPER, "Bitmap decoded successfully. Size: ${doodleBitmap.width}x${doodleBitmap.height}")
 
             // 2. Get Device Screen Dimensions
             val metrics = context.resources.displayMetrics
@@ -55,7 +62,7 @@ class WallpaperPlugin : Plugin() {
             
             // Log the color
             val hexColor = String.format("#%06X", (0xFFFFFF and pixelColor))
-            android.util.Log.d("WallpaperPlugin", "Sampled color: $hexColor at ($sampleX, $sampleY)")
+            android.util.Log.d(CrashTags.WALLPAPER, "Sampled color: $hexColor at ($sampleX, $sampleY)")
 
             // 5. Fill Background Seamlessly
             canvas.drawColor(pixelColor)
@@ -66,7 +73,7 @@ class WallpaperPlugin : Plugin() {
             val top = (screenHeight - doodleBitmap.height) / 2f
             
             canvas.drawBitmap(doodleBitmap, left, top, null)
-            android.util.Log.d("WallpaperPlugin", "Doodle drawn at $left, $top")
+            android.util.Log.d(CrashTags.WALLPAPER, "Doodle drawn at $left, $top")
 
             // 7. Set as Lock Screen Wallpaper
             val wallpaperManager = WallpaperManager.getInstance(context)
@@ -74,16 +81,16 @@ class WallpaperPlugin : Plugin() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 try {
                     // Try Lock Screen First
-                    android.util.Log.d("WallpaperPlugin", "Attempting to set Lock Screen...")
+                    android.util.Log.d(CrashTags.WALLPAPER, "Attempting to set Lock Screen...")
                     wallpaperManager.setBitmap(wallpaperBitmap, null, true, WallpaperManager.FLAG_LOCK)
-                    android.util.Log.d("WallpaperPlugin", "Lock Screen set successfully.")
+                    android.util.Log.d(CrashTags.WALLPAPER, "Lock Screen set successfully.")
                     
                     // ALSO Try System Screen (Home Screen) just for verification
-                    // android.util.Log.d("WallpaperPlugin", "Attempting to set System Screen...")
+                    // android.util.Log.d(CrashTags.WALLPAPER, "Attempting to set System Screen...")
                     // wallpaperManager.setBitmap(wallpaperBitmap, null, true, WallpaperManager.FLAG_SYSTEM)
                     
                 } catch (e: Exception) {
-                    android.util.Log.e("WallpaperPlugin", "Failed to set Lock Screen: ${e.message}")
+                    android.util.Log.e(CrashTags.WALLPAPER, "Failed to set Lock Screen: ${e.message}", e)
                     // Fallback to setting globally (both)
                     wallpaperManager.setBitmap(wallpaperBitmap)
                 }
@@ -105,9 +112,8 @@ class WallpaperPlugin : Plugin() {
             if (!wallpaperBitmap.isRecycled) wallpaperBitmap.recycle()
 
         } catch (e: Exception) {
-            android.util.Log.e("WallpaperPlugin", "CRITICAL ERROR: ${e.message}")
+            android.util.Log.e(CrashTags.WALLPAPER, "❌ CRITICAL ERROR in setSeamlessDoodleAsWallpaper: ${e.message}", e)
             call.reject("Error setting wallpaper: " + e.message)
-            e.printStackTrace()
         }
     }
 }

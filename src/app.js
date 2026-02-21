@@ -35,20 +35,6 @@ const App = {
         if (window.consoleOverridden) return;
         window.consoleOverridden = true;
 
-        // Track first user gesture so haptic() can safely call navigator.vibrate.
-        // vibrate is blocked until interaction; this flag lets us skip it cleanly.
-        if (!window._userHasGestured) {
-            const markGesture = () => {
-                window._userHasGestured = true;
-                ['touchstart', 'pointerdown', 'click'].forEach(evt =>
-                    document.removeEventListener(evt, markGesture, { capture: true })
-                );
-            };
-            ['touchstart', 'pointerdown', 'click'].forEach(evt =>
-                document.addEventListener(evt, markGesture, { once: true, capture: true, passive: true })
-            );
-        }
-
         const originalLog = console.log;
         const originalError = console.error;
         const originalWarn = console.warn;
@@ -74,9 +60,9 @@ const App = {
             } catch (e) { /* Storage full or error */ }
 
             // Also update UI if visible
-            const logEl = document.getElementById('boot-log');
+            const logEl = document.getElementById('boot-log-content');
             if (logEl) {
-                logEl.innerHTML += `<div class="text-[10px] ${type === 'error' ? 'text-red-400' : 'text-green-300'} font-mono mb-1 border-b border-black/5 pb-1">> ${msg}</div>`;
+                logEl.innerHTML += `<div class="text-[10px] ${type === 'error' ? 'text-red-400' : 'text-green-300'} font-mono mb-1 border-b border-white/5 pb-1">> ${msg}</div>`;
                 logEl.scrollTop = logEl.scrollHeight;
             }
         };
@@ -102,7 +88,7 @@ const App = {
     logBoot(msg) {
         console.log(msg);
         this.state.bootLogs.push(`> ${msg}`);
-        const log = document.getElementById('boot-log');
+        const log = document.getElementById('boot-log-content');
         if (log) {
             log.innerHTML += `> ${msg}<br>`;
             log.scrollTop = log.scrollHeight;
@@ -155,6 +141,390 @@ const App = {
         }
     },
 
+    // --- SAFETY NET ---
+    async checkCriticalHealth() {
+        try {
+            // 1. Fetch Status from GitHub (Use raw content)
+            // Replace with your actual username/repo
+            const statusUrl = 'https://raw.githubusercontent.com/Anish01234/KawaiiDoodle/main/status.json';
+            // Add cache busting
+            const response = await fetch(`${statusUrl}?t=${Date.now()}`);
+            if (!response.ok) return;
+
+            const status = await response.json();
+
+            // 2. Get Current Version
+            let currentVersion = '0.0.0';
+            if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+                const info = await window.Capacitor.Plugins.App.getInfo();
+                currentVersion = info.version;
+            } else {
+                return; // Don't block web/dev functionality
+            }
+
+            // 3. Check for Broken Version or Deprecation
+            const isBroken = (status.broken_versions || []).includes(currentVersion);
+
+            // Semver check for min version
+            const isTooOld = (v1, min) => {
+                const p1 = v1.split('.').map(Number);
+                const pMin = min.split('.').map(Number);
+                for (let i = 0; i < Math.max(p1.length, pMin.length); i++) {
+                    const n1 = p1[i] || 0;
+                    const nMin = pMin[i] || 0;
+                    if (n1 < nMin) return true;
+                    if (n1 > nMin) return false;
+                }
+                return false;
+            };
+
+            const belowMinParam = status.min_supported_version && isTooOld(currentVersion, status.min_supported_version);
+
+            if (isBroken || belowMinParam) {
+                // BLOCKING UI
+                console.error("CRITICAL: App version blocked.", { currentVersion, status });
+                document.body.innerHTML = `
+                <div style="position:fixed; top:0; left:0; width:100%; height:100%; background:#fff0f5; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:2rem; text-align:center;">
+                    <h1 style="font-size:2rem; color:#db2777; margin-bottom:1rem;">⚠️ Update Required</h1>
+                    <p style="font-size:1.1rem; color:#4b5563; margin-bottom:2rem;">${status.critical_message || "This version of the app is no longer supported. Please update to continue sending magic!"}</p>
+                    <button onclick="window.open('${status.force_update_url || 'https://github.com/Anish01234/KawaiiDoodle/releases'}', '_system')"
+                        style="background:#db2777; color:white; padding:1rem 2rem; border-radius:99px; font-weight:bold; font-size:1.2rem; border:none; box-shadow:0 4px 15px rgba(219, 39, 119, 0.3);">
+                        Download Fix 🚀
+                    </button>
+                    <p style="margin-top:2rem; font-size:0.8rem; color:#9ca3af;">Installed: v${currentVersion}</p>
+                </div>
+                `;
+            }
+
+        } catch (e) {
+            console.warn("Safety net check failed (offline?):", e);
+        }
+    },
+
+    // Panic Button: Triple Tap Version
+    versionTaps: 0,
+    versionTapTimer: null,
+    handleVersionTap() {
+        this.versionTaps++;
+        if (this.versionTapTimer) clearTimeout(this.versionTapTimer);
+
+        this.versionTapTimer = setTimeout(() => {
+            this.versionTaps = 0;
+        }, 1000); // Reset after 1 second of inactivity
+
+        if (this.versionTaps >= 3) {
+            // Trigger Panic Mode
+            this.toast('🚑 Panic Link Activated!', 'pink');
+            window.open('https://github.com/Anish01234/KawaiiDoodle/releases', '_system');
+            this.versionTaps = 0;
+        }
+    },
+
+    async checkForUpdates(retryCount = 0) {
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
+
+        try {
+            console.log(`🔄 Checking for updates... (attempt ${retryCount + 1})`);
+
+            // Get current version dynamically
+            let currentVersion = '0.0.0';
+            try {
+                const { App: CapApp } = window.Capacitor.Plugins;
+                const info = await CapApp.getInfo();
+                currentVersion = info.version;
+            } catch (e) { console.warn("Could not get native version", e); }
+
+            // Robust Semver Comparison
+            const isNewer = (v1, v2) => {
+                const parts1 = v1.split('.').map(Number);
+                const parts2 = v2.split('.').map(Number);
+                for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+                    const n1 = parts1[i] || 0;
+                    const n2 = parts2[i] || 0;
+                    if (n1 > n2) return true;
+                    if (n1 < n2) return false;
+                }
+                return false;
+            };
+
+            // Try fetching from GitHub API
+            let data = null;
+            try {
+                const response = await fetch('https://api.github.com/repos/Anish01234/KawaiiDoodle/releases/latest');
+                if (response.ok) {
+                    data = await response.json();
+                    // Cache the release data for reliability
+                    localStorage.setItem('cached-update-data', JSON.stringify({
+                        tag_name: data.tag_name,
+                        body: data.body,
+                        assets: data.assets,
+                        cachedAt: Date.now()
+                    }));
+                } else {
+                    console.warn(`⚠️ Update check HTTP ${response.status} — using cache`);
+                }
+            } catch (fetchErr) {
+                console.warn('⚠️ Update fetch failed:', fetchErr.message);
+            }
+
+            // Fallback to cache if fetch failed
+            if (!data) {
+                try {
+                    const cached = JSON.parse(localStorage.getItem('cached-update-data'));
+                    if (cached && cached.tag_name) {
+                        // Only use cache if it's less than 24 hours old
+                        if (Date.now() - cached.cachedAt < 24 * 60 * 60 * 1000) {
+                            data = cached;
+                            console.log('📦 Using cached update data');
+                        }
+                    }
+                } catch (e) { /* cache parse error, ignore */ }
+            }
+
+            // If still no data, retry once after 5s
+            if (!data && retryCount < 1) {
+                console.log('🔁 Will retry update check in 5s...');
+                setTimeout(() => this.checkForUpdates(retryCount + 1), 5000);
+                return;
+            }
+
+            if (!data) {
+                console.warn('❌ Update check: no data available after retries');
+                return;
+            }
+
+            const latestVersion = data.tag_name?.replace('v', '');
+            console.log(`🚀 Checking updates: Installed=${currentVersion}, Remote=${latestVersion}`);
+
+            // Ensure there is an APK to download!
+            const hasApk = data.assets && data.assets.some(a => a.name.endsWith('.apk'));
+
+            if (latestVersion && latestVersion !== currentVersion && isNewer(latestVersion, currentVersion)) {
+                if (!hasApk) {
+                    console.warn(`Update v${latestVersion} found but has no APK asset. Skipping.`);
+                    return;
+                }
+                console.log(`Update available: ${latestVersion}`);
+                this.state.updateAvailable = true;
+                this.state.latestRelease = data;
+                this.renderView();
+                this.toast(`New Magic Available: v${latestVersion}! 🚀`, 'pink');
+                this.showUpdateModal();
+            } else {
+                console.log("✅ Custom check: App is up to date!");
+            }
+        } catch (e) {
+            console.warn("Update check failed:", e);
+            // Retry once on unexpected errors
+            if (retryCount < 1) {
+                setTimeout(() => this.checkForUpdates(retryCount + 1), 5000);
+            }
+        }
+    },
+
+    async getAppVersion() {
+        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return 'Web Dev Mode';
+        try {
+            // Retrieve info using Capacitor App Plugin
+            const { App: CapApp } = window.Capacitor.Plugins;
+            const info = await CapApp.getInfo();
+            // Format: v2.9.22 (Build: 31)
+            return `v${info.version} (Build: ${info.build})`;
+        } catch (e) {
+            console.error("Version check failed", e);
+            return 'v?.?.? (Unknown)';
+        }
+    },
+
+    async downloadCrashLogs() {
+        // Prefer persistent logs if available, fallback to memory
+        let logs = App.state.bootLogs.join('\n');
+        try {
+            const saved = localStorage.getItem('kawaii_crash_logs');
+            if (saved) logs = JSON.parse(saved).join('\n');
+        } catch (e) { console.warn("Failed to read saved logs", e); }
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `kawaii-crash-logs-${timestamp}.txt`;
+
+        this.toast('Preparing persistent logs... 🐞', 'blue');
+
+        // 1. Try Native Share (Best for Android)
+        if (window.Capacitor && window.Capacitor.Plugins.Share) {
+            try {
+                // Determine directory - Cache is reliable
+                const Filesystem = window.Capacitor.Plugins.Filesystem;
+                const path = `logs/${filename}`;
+
+                // Write file first
+                await Filesystem.writeFile({
+                    path: path,
+                    data: logs,
+                    directory: 'CACHE',
+                    encoding: 'utf8'
+                });
+
+                // Get URI
+                const uriResult = await Filesystem.getUri({
+                    path: path,
+                    directory: 'CACHE'
+                });
+
+                await window.Capacitor.Plugins.Share.share({
+                    title: 'Kawaii Doodle Logs',
+                    text: 'Here are my crash logs! 🐞',
+                    url: uriResult.uri,
+                    dialogTitle: 'Share Logs'
+                });
+                return;
+            } catch (e) {
+                console.error("Share failed:", e);
+                // Fallthrough to clipboard
+            }
+        }
+
+        // 2. Fallback: Clipboard (Universal)
+        try {
+            await navigator.clipboard.writeText(logs);
+            this.toast('Logs copied to clipboard! 📋', 'pink');
+            alert("Logs copied to clipboard! You can paste them now.");
+        } catch (e) {
+            this.toast('Could not copy logs 😭', 'blue');
+            console.error(e);
+        }
+    },
+
+    async downloadAndInstallUpdate(assets) {
+        if (!assets || !assets.length) return;
+        const apkAsset = assets.find(a => a.name.endsWith('.apk'));
+
+        if (!apkAsset) {
+            this.toast('No APK found in this release! 🥺', 'blue');
+            console.error("Update failed: Release has no .apk asset");
+            return;
+        }
+
+        this.toast("Downloading magic update... 📦", "pink");
+        // ... (rest of download logic) ...
+        try {
+            // Robust Plugin Access
+            const Filesystem = window.Capacitor.Plugins.Filesystem;
+
+            if (!Filesystem) {
+                console.warn("Filesystem plugin missing. Falling back to browser.");
+                window.open(apkAsset.browser_download_url, '_system');
+                return;
+            }
+
+            const path = `update.apk`;
+            const url = apkAsset.browser_download_url;
+
+            console.log(`⬇️ Downloading ${url} to ${path}...`);
+
+            const downloadResult = await Filesystem.downloadFile({
+                path: path,
+                directory: 'CACHE',
+                url: url
+            });
+
+            console.log("✅ Download complete:", downloadResult);
+            const fileUri = downloadResult.path;
+
+            this.toast("Installing... ✨", "pink");
+
+            if (window.cordova && window.cordova.plugins && window.cordova.plugins.fileOpener2) {
+                window.cordova.plugins.fileOpener2.open(
+                    fileUri,
+                    'application/vnd.android.package-archive', {
+                    error: (e) => {
+                        console.error('FileOpen Error:', e);
+                        this.toast("Install failed 😭. Please update manually.", "blue");
+                        setTimeout(() => window.open(url, '_system'), 2000);
+                    },
+                    success: () => console.log('Installer opened!')
+                }
+                );
+            } else {
+                console.warn("FileOpener2 not found");
+                this.toast("Installer plugin missing! 😭", "blue");
+                window.open(url, '_system');
+            }
+
+        } catch (e) {
+            console.error("Update download failed:", e);
+            this.confirmKawaii({
+                title: "Update Failed 🥺",
+                message: "The auto-update magic fizzled out (network error). Want to download it manually?",
+                okText: "Yes, Open Browser 🌐",
+                onConfirm: () => window.open(apkAsset.browser_download_url, '_system')
+            });
+        }
+    },
+
+    showUpdateModal() {
+        if (!this.state.latestRelease) return;
+        const release = this.state.latestRelease;
+        const version = release.tag_name;
+        const body = release.body || "A shiny new version is ready for you!";
+
+        // Create Modal
+        const modalId = 'update-modal-overlay';
+        if (document.getElementById(modalId)) return; // Already showing
+
+        const div = document.createElement('div');
+        div.id = modalId;
+        div.className = "fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in";
+        div.innerHTML = `
+            <div class="bg-white w-full max-w-sm rounded-bubbly shadow-2xl p-6 relative flex flex-col gap-4 animate-float border-4 border-pink-200">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                        <i data-lucide="sparkles" class="w-8 h-8 text-pink-500"></i>
+                    </div>
+                    <h3 class="text-2xl font-black text-pink-500">New Magic! ✨</h3>
+                    <p class="text-gray-400 font-bold text-sm">${version}</p>
+                </div>
+                
+                <div class="bg-pink-50 p-4 rounded-xl border border-pink-100 max-h-40 overflow-y-auto text-left">
+                    <p class="text-gray-600 text-sm whitespace-pre-wrap">${body}</p>
+                </div>
+
+                <div class="flex flex-col gap-3 mt-2">
+                    <button id="btn-update-confirm" class="bg-pink-500 text-white py-3 rounded-xl font-black shadow-lg hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                        <i data-lucide="download"></i> Update Now
+                    </button>
+                    <button id="btn-update-later" onclick="document.getElementById('${modalId}').remove()" class="text-gray-400 text-sm font-bold hover:text-gray-600 py-2">
+                        Maybe Later 🐢
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(div);
+        if (window.lucide) lucide.createIcons();
+
+        // Bind download
+        const btn = document.getElementById('btn-update-confirm');
+        const laterBtn = document.getElementById('btn-update-later'); // Need to ID this
+
+        btn.onclick = async () => {
+            // UI Loading State
+            btn.disabled = true;
+            btn.innerHTML = `<i data-lucide="loader-2" class="animate-spin"></i> Downloading...`;
+            btn.classList.add('opacity-75', 'cursor-not-allowed');
+            if (laterBtn) laterBtn.remove(); // Can't cancel once started to avoid currupted files
+
+            // Start Download
+            await this.downloadAndInstallUpdate(release.assets);
+
+            // Only close on error (download function handles installs/redirects)
+            // If we are here, it might have failed or is installing. 
+            // We can leave the modal for a moment or let the installer take over.
+            document.getElementById(modalId).remove();
+        };
+    },
+
+    openLatestRelease() {
+        window.open('https://github.com/Anish01234/KawaiiDoodle/releases', '_system');
+    },
 
     // --- SAFETY NET ---
     async checkCriticalHealth() {
@@ -223,10 +593,9 @@ const App = {
     },
 
     async init() {
-        console.log("🛠️ App.init() started");
         this.enableDebugConsole();
         this.checkCriticalHealth();
-        this.logBoot("✨ Kawaii App Initializing v2.9.83...");
+        this.logBoot("✨ Kawaii App Initializing...");
 
         try {
             // Check Force Offline
@@ -326,42 +695,344 @@ const App = {
 
                     this.toast('Offline Mode ✈️', 'blue');
                     this.loadAppData();
-                    this.setView('home');
+                    if (this.state.pendingDeepLink) {
+                        const target = this.state.pendingDeepLink;
+                        this.state.pendingDeepLink = null;
+                        this.setView(target);
+                    } else {
+                        this.setView('home');
+                    }
                 } else {
-                    // Session exists but no data? Force landing/login
-                    console.warn("Session valid but no profile/local data found.");
-                    this.setView('landing');
+                    // Truly new user or cleared cache
+                    this.setView('setup');
                 }
             } else {
-                // FALLBACK: If Supabase auths but profile fails & no local data, GO TO LANDING
                 this.setView('landing');
             }
+
+            this.finalizeInit();
+
+            // Init Push
+            if (window.Capacitor.isNativePlatform()) {
+                try { this.initPush(); } catch (e) { console.error("Push Init:", e); }
+            }
+
+            // Sync any local drafts saved while offline
+            this.syncLocalDrafts();
+
+            // Android Back Button Handler
+            if (window.Capacitor && window.Capacitor.Plugins.App) {
+                window.Capacitor.Plugins.App.addListener('backButton', () => {
+                    // If on draw view with unsaved work, prompt
+                    if (this.state.view === 'draw' && this.state.isCanvasDirty) {
+                        this.confirmKawaii({
+                            title: 'Save your doodle? 🎨',
+                            message: 'You have unsaved magic! Save as draft before leaving?',
+                            okText: 'Save Draft 💾',
+                            onConfirm: () => {
+                                const canvas = document.getElementById('drawing-canvas');
+                                if (canvas) this.saveDraft(canvas.toDataURL('image/png'));
+                                this.state.isCanvasDirty = false;
+                                this.navigateBack();
+                            },
+                            cancelText: 'Discard 🗑️',
+                            onCancel: () => {
+                                this.state.isCanvasDirty = false;
+                                this.navigateBack();
+                            }
+                        });
+                        return;
+                    }
+                    this.navigateBack();
+                });
+            }
+
+            // Online/Offline Listeners
+            window.addEventListener('online', () => {
+                console.log('🌐 Back online!');
+                this.toast('Back online! 🌐', 'pink');
+                // Remove offline banner
+                const banner = document.getElementById('offline-banner');
+                if (banner) banner.remove();
+                // Sync drafts and reload data
+                this.syncLocalDrafts();
+                if (this.state.session) {
+                    this.loadAppData();
+                }
+                // Re-render current view to clear offline spinners
+                this.renderView();
+            });
+
+            window.addEventListener('offline', () => {
+                this.toast('You\'re offline ✈️', 'blue');
+                // Show persistent offline banner
+                if (!document.getElementById('offline-banner')) {
+                    const banner = document.createElement('div');
+                    banner.id = 'offline-banner';
+                    banner.className = 'fixed top-0 left-0 right-0 z-[9999] bg-gradient-to-r from-gray-700 to-gray-800 text-white text-center text-xs font-bold py-2 px-4 flex items-center justify-center gap-2 animate-slide-down';
+                    banner.innerHTML = '<span class="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span> No internet connection';
+                    document.body.prepend(banner);
+                }
+            });
+
         } catch (e) {
-            console.error("Critical Start Error:", e);
-            this.toast("Startup Error: " + e.message, "blue");
-            this.setView('landing'); // Force landing on error
-        } finally {
-            this.finalizeInit(); // ALWAYS RUN
+            console.error("Critical Init Error:", e);
+            this.toast('Startup failed 🩹', 'blue');
+            this.state.view = 'landing';
+            this.renderView();
+            this.finalizeInit();
+        }
+    },
+
+    async checkIfPushEnabled() {
+        const { PushNotifications } = window.Capacitor.Plugins;
+        if (!PushNotifications) return false;
+        try {
+            const status = await PushNotifications.checkPermissions();
+            this.state.notificationsEnabled = (status.receive === 'granted');
+            return this.state.notificationsEnabled;
+        } catch (e) { return false; }
+    },
+
+    async requestPushPermission() {
+        const { PushNotifications } = window.Capacitor.Plugins;
+        if (!PushNotifications) return false;
+
+        // FORCE native prompt first! 🚀
+        let status = await PushNotifications.requestPermissions();
+
+        if (status.receive === 'granted') {
+            this.toast("Magic is active! 📡✨", "pink");
+            this.state.notificationsEnabled = true;
+            this.initPush();
+            this.renderView();
+            return true;
+        } else {
+            console.log("Magic blocked by OS or User.");
+            this.toast("Please allow notifications in settings! 🥺", "blue");
+            return false;
+        }
+    },
+
+    showPermissionGuide() {
+        // ... (kept for reference, but currently unused/reverted)
+    },
+
+    async requestAllPermissions() {
+        this.toast('Syncing all magic realms... 🔮', 'pink');
+        try {
+            const granted = await this.requestPushPermission();
+
+            // Trigger any other permission prompts if needed
+            if (window.navigator.vibrate) window.navigator.vibrate(20);
+
+            if (granted) {
+                this.toast('All systems Kawaii! 🌈', 'pink');
+            }
+        } catch (e) { console.error(e); }
+    },
+
+    async initPush() {
+        const { PushNotifications } = window.Capacitor.Plugins;
+        if (!PushNotifications) return;
+
+        console.log("🔔 Initializing Push Notifications...");
+
+        // Check & Update Status
+        let status = await PushNotifications.checkPermissions();
+        if (status.receive === 'prompt') {
+            // Only auto-request if we are in a 'fresh' state where it's appropriate
+            // For now, let's try to request, but it might resolve to prompt
+            status = await PushNotifications.requestPermissions();
+        }
+
+        if (status.receive !== 'granted') {
+            console.log("🔕 Push permission not granted");
+            this.state.notificationsEnabled = false;
+            // Render view to show the button
+            if (this.state.view === 'home') this.renderView();
+            return;
+        }
+
+        this.state.notificationsEnabled = true;
+
+        // Register
+        try {
+            await PushNotifications.register();
+        } catch (e) {
+            console.error("Push Native Register Failed:", e);
+            // Don't toast here as it might be a silent failure or race condition
+        }
+
+        // On success
+        PushNotifications.addListener('registration', async (token) => {
+            console.log('🔔 Push Token:', token.value);
+            // Save to Supabase (User needs to add 'fcm_token' column!)
+            if (this.state.session) {
+                try {
+                    await this.state.supabase
+                        .from('profiles')
+                        .update({ fcm_token: token.value })
+                        .eq('id', this.state.session.user.id);
+                    console.log("✅ FCM Token saved to profile");
+                } catch (e) { console.warn("Failed to save FCM token (column missing?)", e); }
+            }
+        });
+
+        // On error
+        PushNotifications.addListener('registrationError', (error) => {
+            console.error('Push registration error: ', error);
+        });
+
+        // On notification received (Foreground)
+        PushNotifications.addListener('pushNotificationReceived', async (notification) => {
+            console.log('🔔 Push received:', notification);
+            this.toast(`New magic in the air! ✨`, 'pink');
+
+            // Refresh history
+            await this.loadHistory();
+
+            // Auto-set wallpaper: find the latest doodle sent TO me
+            try {
+                if (this.state.supabase && this.state.session) {
+                    const { data } = await this.state.supabase
+                        .from('doodles')
+                        .select('*')
+                        .eq('receiver_id', this.state.session.user.id)
+                        .order('created_at', { ascending: false })
+                        .limit(1)
+                        .single();
+                    if (data) this.setSmartWallpaper(data);
+                }
+            } catch (e) { console.warn('Wallpaper auto-set on push failed:', e); }
+        });
+
+        // On notification tapped
+        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+            console.log('🔔 Push tapped:', notification);
+            // Store pending deep link for cold-start (session may not be ready yet)
+            this.state.pendingDeepLink = 'history';
+            // Also try direct navigation (works on warm-start)
+            if (this.state.session) {
+                this.setView('history');
+            }
+        });
+    },
+
+    enableFullscreenMode() {
+        setTimeout(() => {
+            try {
+                const { StatusBar } = window.Capacitor.Plugins;
+                if (StatusBar) StatusBar.hide();
+                if (window.NavigationBar) window.NavigationBar.hide();
+                console.log("✅ Fullscreen mode enabled");
+            } catch (err) { console.log("Fullscreen error:", err); }
+        }, 500);
+    },
+
+    finalizeInit() {
+        this.setupNavigation();
+        if (window.lucide) lucide.createIcons();
+        this.fixZoomedLayout(); // Call the new layout fix
+    },
+
+    generateKawaiiId() {
+        const adjectives = ['Sparkly', 'Bubbly', 'Sweet', 'Fluffy', 'Magic', 'Cuddly'];
+        const nouns = ['Bunny', 'Kitten', 'Star', 'Cloud', 'Heart', 'Berry'];
+        const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const noun = nouns[Math.floor(Math.random() * nouns.length)];
+        const num = Math.floor(1000 + Math.random() * 9000);
+        const id = `${adj}${noun}-${num}`;
+        this.state.user.kawaiiId = id;
+        localStorage.setItem('user-id', id);
+        return id;
+    },
+
+    async completeSetup(username) {
+        if (!username || username.length < 2) {
+            this.toast('Choose a longer name! 🌸', 'blue');
+            return;
+        }
+
+        const id = this.generateKawaiiId();
+        this.state.user.username = username;
+        localStorage.setItem('user-name', username);
+
+        if (this.state.supabase && this.state.session) {
+            try {
+                this.toast('Creating your magic identity... ✨', 'pink');
+                const { error } = await this.state.supabase
+                    .from('profiles')
+                    .upsert({
+                        id: this.state.session.user.id,
+                        username: username,
+                        kawaii_id: id
+                    });
+
+                if (error) throw error;
+                this.setView('home');
+            } catch (e) {
+                console.error("Profile Setup Error:", e);
+                this.toast(`Setup failed: ${e.message || 'Check your SQL Editor'} 😭`, 'blue');
+            }
+        } else {
+            this.setView('home');
         }
     },
 
     initSupabase() {
-        if (!window.supabase) {
-            console.error("Supabase library not found!");
-            return;
-        }
-        const { url, key } = this.state.config;
-        if (url && key) {
-            this.state.supabase = window.supabase.createClient(url, key);
-            console.log("☁️ Supabase client initialized");
+        this.logBoot("🔌 Connecting to Cloud...");
+        if (this.state.config.url && this.state.config.key && window.supabase) {
+            try {
+                this.state.supabase = supabase.createClient(this.state.config.url, this.state.config.key);
+                this.logBoot("✅ Cloud Connected");
+
+                // Global Auth Listener
+                this.state.supabase.auth.onAuthStateChange((event, session) => {
+                    // console.log("🔐 Auth Event:", event);
+                    if (event === 'TokenRefreshError' || event === 'TOKEN_REFRESH_FAILED') {
+                        console.warn("Auth token expired. Redirecting...");
+                        this.signOut();
+                    }
+                    if (event === 'SIGNED_OUT') {
+                        this.state.session = null;
+                        if (this.state.view !== 'landing') this.setView('landing');
+                    }
+                });
+            } catch (e) {
+                this.logBoot("❌ Cloud Connection Failed: " + e.message);
+                console.error("Cloud Sync init failed:", e);
+            }
         } else {
-            console.warn("Supabase config missing");
+            this.logBoot("⚠️ Supabase Config Missing or SDK not loaded");
         }
     },
-    // Fallback alias for misspelled calls in stale caches
-    initSupabse() {
-        console.warn("⚠️ Fallback initSupabse called! (Stale cache detected)");
-        return this.initSupabase();
+
+    async loadAppData() {
+        if (!this.state.supabase || !this.state.session) return;
+
+        // Don't try heavy network operations if offline
+        if (!navigator.onLine) {
+            this.toast('Offline Mode — using cached data ✈️', 'blue');
+            return;
+        }
+
+        this.subscribeToDoodles();
+        this.syncProfile();
+
+        if (window.Social) {
+            Social.loadFriends();
+            Social.listenToSocial();
+        }
+        this.loadHistory();
+
+        // Check for app updates (network is ready here)
+        this.checkForUpdates();
+
+        // 🔄 Polling Fallback: Check for new magic every 30s
+        this.historyInterval = setInterval(async () => {
+            if (navigator.onLine) await this.loadHistory(true);
+        }, 30000);
     },
 
     async loadHistory(silent = false) {
@@ -635,32 +1306,6 @@ const App = {
             if (window.lucide) lucide.createIcons();
         }
     },
-
-    // Surgically updates only the dynamic parts of the home view (badge + doodle)
-    // without a full re-render so there is no flicker during silent polling.
-    updateHomeView() {
-        // If the home view isn't even rendered yet, bail out.
-        const content = document.getElementById('content');
-        if (!content || this.state.view !== 'home') return;
-
-        // 1. Update the unread badge on the History button
-        const historyBtn = content.querySelector('#btn-history-badge');
-        if (historyBtn) {
-            historyBtn.textContent = this.state.unreadCount > 0 ? this.state.unreadCount : '';
-            historyBtn.style.display = this.state.unreadCount > 0 ? 'flex' : 'none';
-        } else {
-            // Badge element not found (older render) — fall back to a full re-render
-            this.renderView();
-            return;
-        }
-
-        // 2. Update the doodle image if it changed
-        const doodleImg = content.querySelector('img[data-home-doodle]');
-        if (doodleImg && this.state.lastDoodle && doodleImg.src !== this.state.lastDoodle) {
-            doodleImg.src = this.state.lastDoodle;
-        }
-    },
-
     async markAllRead() {
         if (!this.state.supabase || !this.state.session) return;
         if (this.state.unreadCount === 0) return;
@@ -994,305 +1639,569 @@ const App = {
             }
             setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 0);
         } else {
-            document.body.classList.remove('draw-mode');
-        }
-
-        // Auto-scroll to top on view change
-        const content = document.getElementById('content');
-        if (content) content.scrollTop = 0;
-
-        this.renderView();
-
-        // Update Nav visibility
-        const nav = document.getElementById('app-nav');
-        if (nav) {
-            if (view === 'landing') {
-                nav.classList.add('hidden');
+            // On home with empty stack: double-tap to exit
+            const now = Date.now();
+            if (now - this.state.lastBackPress < 2000) {
+                if (window.Capacitor && window.Capacitor.Plugins.App) {
+                    window.Capacitor.Plugins.App.exitApp();
+                }
             } else {
-                nav.classList.remove('hidden');
+                this.state.lastBackPress = now;
+                this.toast('Press back again to exit 👋', 'blue');
             }
         }
+    },
+
+    setView(viewName) {
+        if (this.state.view === viewName) return; // Prevent reset if already on view
+        // Push current view to history stack (for back button)
+        if (this.state.view && this.state.view !== 'landing' && this.state.view !== 'setup') {
+            this.state.viewHistory.push(this.state.view);
+            // Keep stack manageable
+            if (this.state.viewHistory.length > 10) this.state.viewHistory.shift();
+        }
+        this.state.view = viewName;
+        this.renderView();
+
+        // Handle widget mode UI (hide header/nav)
+        const appShell = document.getElementById('app');
+        const header = document.querySelector('header');
+        const nav = document.querySelector('nav');
+
+        if (viewName === 'widget' || viewName === 'landing' || viewName === 'setup') {
+            header.style.display = 'none';
+            nav.style.display = 'none';
+            if (viewName === 'widget') {
+                document.body.classList.remove('bg-kawaii-pink');
+                document.body.classList.add('bg-transparent');
+            }
+        } else {
+            header.style.display = 'flex';
+            nav.style.display = 'flex';
+            document.body.classList.add('bg-kawaii-pink');
+            document.body.classList.remove('bg-transparent');
+
+            // Hide Nav for Draw Mode (User Request: "no home button needed")
+            const content = document.getElementById('content');
+            if (viewName === 'draw') {
+                document.body.classList.add('draw-mode');
+                nav.style.display = 'none';
+                if (content) {
+                    content.classList.remove('p-4', 'items-center', 'overflow-y-auto');
+                    content.classList.add('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                }
+            } else {
+                document.body.classList.remove('draw-mode');
+                nav.style.display = 'flex';
+                // Reset minimized state just in case
+                nav.classList.remove('nav-minimized');
+                if (nav.firstElementChild) nav.firstElementChild.style.display = 'flex';
+
+                if (content && viewName !== 'landing') {
+                    // Restore default content style
+                    content.classList.add('p-4', 'items-center', 'overflow-y-auto');
+                    content.classList.remove('h-full', 'w-full', 'p-0', 'overflow-hidden');
+                }
+            }
+        }
+
+        const currentView = this.state.view;
+        setTimeout(() => {
+            if (window.lucide) lucide.createIcons();
+            // Populate dynamic lists
+            if (viewName === 'friends') {
+                if (window.Social) {
+                    Social.loadFriends(); // Fetch fresh data
+                    Social.renderFriendList();
+                }
+                // Explicitly bind search button
+                const searchBtn = document.getElementById('btn-search-friend');
+                if (searchBtn) {
+                    searchBtn.onclick = () => {
+                        App.toast('Button clicked! 🖱️', 'blue'); // Debug toast
+                        window.handleSearchFriend();
+                    };
+                }
+            }
+            if (viewName === 'history') {
+                this.loadHistory();
+                this.markAllRead();
+            }
+        }, 0);
+    },
+
+    setupNavigation() {
+        document.getElementById('nav-draw').addEventListener('click', () => this.setView('draw'));
+        document.getElementById('nav-home').addEventListener('click', () => this.setView('home'));
+        document.getElementById('header-home').addEventListener('click', () => this.setView('home'));
+        document.getElementById('btn-friends').addEventListener('click', () => this.setView('friends'));
+        document.getElementById('btn-profile').addEventListener('click', () => this.setView('profile'));
+
+        // Magic Sequence Listener
+        const title = document.querySelector('header h1');
+        if (title) title.addEventListener('click', () => this.handleMagicSequence());
     },
 
     renderView() {
         const content = document.getElementById('content');
-        if (!content) return;
+        const header = document.querySelector('header');
+        const nav = document.querySelector('nav');
 
-        console.log(`🎨 Rendering view: ${this.state.view}`);
+        // Force Landing if no session
+        if (!this.state.session && this.state.view !== 'landing' && this.state.view !== 'widget') {
+            this.state.view = 'landing';
+        }
 
         switch (this.state.view) {
             case 'landing':
-                content.innerHTML = `
-                    <div class="flex flex-col items-center justify-center min-h-[70vh] gap-8 animate-fade-in text-center px-6">
-                        <div class="w-32 h-32 bg-white rounded-bubbly shadow-xl flex items-center justify-center animate-float">
-                             <i data-lucide="palette" class="w-16 h-16 text-pink-500"></i>
-                        </div>
-                        <div class="space-y-2">
-                            <h2 class="text-3xl font-black text-gray-800">Kawaii Doodle</h2>
-                            <p class="text-gray-500 font-medium">Draw magic and send it to friends! ✨</p>
-                        </div>
-                        <button onclick="App.login()" class="w-full max-w-xs bg-white text-pink-500 py-4 rounded-full font-black shadow-lg hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
-                            <i data-lucide="log-in"></i>
-                            START DRAWING
-                        </button>
-                         <p class="text-[10px] text-pink-400 font-bold tracking-widest uppercase opacity-50">Experimental Beta v2.7</p>
-                    </div>
-                `;
-                break;
+                content.innerHTML = this.templates.landing();
+                header.style.display = 'none';
+                nav.style.display = 'none';
 
-            case 'home':
-                content.innerHTML = `
-                    <div class="w-full max-w-lg mx-auto space-y-6 animate-fade-in pb-20">
-                        <div class="flex justify-between items-center px-2">
-                            <h2 class="text-xl font-black text-gray-800">Recent Magic ✨</h2>
-                            <button onclick="App.loadHistory()" class="p-2 text-pink-400 hover:text-pink-600 transition-colors">
-                                <i data-lucide="refresh-cw" class="${this.state.isLoadingHistory ? 'animate-spin' : ''}"></i>
-                            </button>
-                        </div>
-                        
-                        <div id="history-feed" class="space-y-4">
-                            ${this.state.isLoadingHistory ? `
-                                <div class="py-20 text-center space-y-4">
-                                    <div class="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mx-auto"></div>
-                                    <p class="text-sm font-bold text-pink-300">Summoning doodles...</p>
-                                </div>
-                            ` : this.state.history.length === 0 ? `
-                                <div class="py-20 text-center bg-white/40 rounded-bubbly border-2 border-dashed border-white/60">
-                                    <p class="text-gray-400 font-bold italic">No magic found yet... 🥺</p>
-                                    <button onclick="App.setView('draw')" class="mt-4 text-pink-500 font-black text-xs underline underline-offset-4">START A NEW DOODLE</button>
-                                </div>
-                            ` : this.state.history.map(item => `
-                                <div class="bg-white rounded-bubbly shadow-sm overflow-hidden border-2 border-white group hover:shadow-md transition-all">
-                                    <div class="p-3 flex items-center justify-between border-b border-gray-50 bg-pink-50/30">
-                                        <div class="flex items-center gap-2">
-                                            <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center border border-pink-100 overflow-hidden">
-                                                <i data-lucide="user" class="w-4 h-4 text-pink-300"></i>
-                                            </div>
-                                            <span class="text-xs font-bold text-gray-600">${item.profiles?.username || 'Unknown Artist'}</span>
-                                        </div>
-                                        <span class="text-[9px] font-bold text-pink-300">${new Date(item.created_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <div class="aspect-square bg-gray-50 flex items-center justify-center relative">
-                                        <img src="${item.image_data}" class="w-full h-full object-contain" loading="lazy">
-                                        <div class="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                                             <button onclick="App.editDoodle('${item.image_data}')" class="bg-white/90 p-3 rounded-full shadow-lg text-pink-500 transform hover:scale-110 active:scale-95 transition-all">
-                                                <i data-lucide="edit-3" class="w-5 h-5"></i>
-                                             </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-                break;
+                // Fetch and display version
+                this.getAppVersion().then(v => {
+                    const label = document.getElementById('app-version-label');
+                    if (label) label.textContent = v;
 
+                    const modalLabel = document.getElementById('modal-version-label');
+                    if (modalLabel) modalLabel.textContent = `Version ${v} - The Magic Update! 🦄`;
+                });
+                break;
+            case 'setup':
+                content.innerHTML = this.templates.setup();
+                header.style.display = 'none';
+                nav.style.display = 'none';
+                break;
+            case 'home': content.innerHTML = this.templates.home(); break;
             case 'draw':
-                content.innerHTML = `
-                    <div class="fixed inset-0 bg-white z-[80] flex flex-col animate-fade-in overflow-hidden">
-                        <!-- Toolbar -->
-                        <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-md">
-                            <button onclick="App.setView('home')" class="p-2 bg-gray-50 rounded-full text-gray-400 hover:text-gray-600 transition-colors">
-                                <i data-lucide="chevron-left" class="w-6 h-6"></i>
-                            </button>
-                            <div class="flex gap-2">
-                                <button id="btn-undo" class="p-2 bg-gray-50 rounded-full text-gray-400 disabled:opacity-30 disabled:pointer-events-none">
-                                    <i data-lucide="undo-2" class="w-5 h-5"></i>
-                                </button>
-                                <button id="btn-redo" class="p-2 bg-gray-50 rounded-full text-gray-400 disabled:opacity-30 disabled:pointer-events-none">
-                                    <i data-lucide="redo-2" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                            <button id="send-doodle" class="bg-pink-500 text-white px-6 py-2 rounded-full font-black shadow-lg shadow-pink-200 hover:bg-pink-600 active:scale-95 transition-all flex items-center gap-2">
-                                <span>SEND MAGIC</span>
-                                <i data-lucide="send" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-
-                        <!-- Canvas Area -->
-                        <div class="flex-1 relative bg-gray-100 overflow-hidden touch-none" id="canvas-container">
-                            <canvas id="drawing-canvas" class="bg-white shadow-inner"></canvas>
-                            
-                            <!-- Drawing Controls Overlay -->
-                            <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 w-full px-6 max-w-sm">
-                                <!-- Recipient Picker -->
-                                <div id="friend-bubbles" class="flex gap-2 overflow-x-auto no-scrollbar w-full py-2 px-4 bg-white/60 backdrop-blur-md rounded-full border border-white/50 shadow-lg min-h-[60px] items-center">
-                                    <!-- Populated by Social.js -->
-                                </div>
-                                
-                                <div class="bg-white/90 backdrop-blur-xl p-4 rounded-[2.5rem] shadow-2xl border border-white/50 flex flex-col gap-4 w-full">
-                                    <!-- Brush Size -->
-                                    <div class="flex items-center gap-4 px-2">
-                                        <i data-lucide="brush" class="w-4 h-4 text-gray-400"></i>
-                                        <input type="range" id="brush-size" min="1" max="50" value="5" class="flex-1 accent-pink-500 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
-                                    </div>
-                                    
-                                    <!-- Palette -->
-                                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1" id="palette-container">
-                                        <!-- Populated by canvas.js -->
-                                    </div>
-
-                                    <!-- Action Tools -->
-                                    <div class="flex justify-between items-center border-t border-gray-100 pt-3">
-                                        <div class="flex gap-3">
-                                            <button id="btn-eraser-tool" class="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-pink-500 transition-colors">
-                                                <i data-lucide="eraser" class="w-5 h-5"></i>
-                                            </button>
-                                            <button id="btn-fill-tool" class="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-pink-500 transition-colors">
-                                                <i data-lucide="paint-bucket" class="w-5 h-5"></i>
-                                            </button>
-                                            <button id="clear-canvas" class="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 hover:text-red-400 transition-colors">
-                                                <i data-lucide="trash-2" class="w-5 h-5"></i>
-                                            </button>
-                                        </div>
-                                        <button id="save-draft" class="text-xs font-black text-pink-500 bg-pink-50 px-4 py-2 rounded-full border border-pink-100 active:scale-95 transition-all">
-                                            SAVE DRAFT
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                // Initialize Canvas Logic
+                content.innerHTML = this.templates.draw();
+                // Delay canvas init to fix touch coordinates
                 setTimeout(() => {
                     if (window.initCanvas) window.initCanvas();
-                    if (window.Social) Social.renderRecipientBubbles();
-                }, 50);
-                break;
 
-            case 'friends':
-                content.innerHTML = `
-                    <div class="w-full max-w-lg mx-auto space-y-6 animate-fade-in pb-20">
-                        <div class="bg-white rounded-bubbly shadow-xl p-6 border-4 border-pink-100">
-                            <h3 class="text-xl font-black text-pink-500 mb-4 flex items-center gap-2">
-                                <i data-lucide="user-plus"></i> Find Besties
-                            </h3>
-                            <div class="flex gap-2 p-1 bg-gray-50 rounded-full border-2 border-gray-100">
-                                <input id="friend-id-input" type="text" placeholder="Type Kawaii ID..." class="flex-1 bg-transparent px-4 py-3 outline-none font-bold text-gray-700">
-                                <button onclick="window.handleSearchFriend()" class="bg-pink-500 text-white px-6 py-3 rounded-full font-black shadow-lg hover:bg-pink-600 transition-all">
-                                    ADD
-                                </button>
-                            </div>
-                            <p class="text-[10px] text-gray-400 mt-2 px-2 italic">Tip: Your friends can find your ID in Settings!</p>
-                        </div>
-
-                        <div class="space-y-4">
-                            <h3 class="text-lg font-black text-gray-800 px-2 flex items-center gap-2">
-                                <i data-lucide="users" class="text-pink-400"></i> My Friends
-                            </h3>
-                            <div id="friend-list" class="space-y-2">
-                                <!-- Populated by Social.js -->
-                            </div>
-                        </div>
-                    </div>
-                `;
-                // Initialize Social Logic
-                setTimeout(() => {
-                    if (window.Social) Social.renderFriendList();
-                }, 50);
+                }, 100);
+                // Ensure friends are loaded for recipient picker
+                if (window.Social && (!Social.friends || Social.friends.length === 0)) {
+                    Social.loadFriends().then(() => Social.renderRecipientBubbles());
+                }
                 break;
-
-            case 'history':
-                // For now, history view is redundant with home or can be a specific filtered view
-                this.setView('home');
-                break;
+            case 'friends': content.innerHTML = this.templates.friends(); break;
+            case 'profile': content.innerHTML = this.templates.profile(); break;
+            case 'history': content.innerHTML = this.templates.history(); break;
+            case 'widget': content.innerHTML = this.templates.widget(); break;
+            default: content.innerHTML = `<div>404 - Kawaii Not Found 😭</div>`;
         }
 
-        // Always refresh icons
+        // Add animation class to new content
+        // Add animation class to new content ONLY if view changed
+        if (content.firstElementChild && this.state.view !== this.state.previousView) {
+            content.firstElementChild.classList.add('animate-slide-up');
+        }
+        this.state.previousView = this.state.view;
         if (window.lucide) lucide.createIcons();
     },
 
-    async loadAppData() {
-        console.log("📦 Loading App Data...");
-        await this.loadHistory();
-        if (window.Social) {
-            await Social.loadFriends();
-            Social.listenToSocial();
-        }
-    },
+    templates: {
+        landing: () => `
+            <div class="flex flex-col items-center justify-center min-h-screen gap-8 text-center animate-float p-4">
+                <div class="relative">
+                    <div class="w-48 h-48 bg-white/40 rounded-full border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
+                        <img src="src/assets/logo.png" class="w-full h-full object-cover" alt="Kawaii Doodle Logo" />
+                    </div>
+                </div>
+                <div>
+                    <!-- Removed text title since logo has text -->
+                    <p class="text-white font-bold drop-shadow-md italic mt-4 text-lg">Hand-drawn magic for friends ✨</p>
+                </div>
 
-    async loadHistory() {
-        if (!this.state.supabase || !this.state.session) return;
+                <!-- Google Sign In Button (Official Style) -->
+                <button onclick="App.handleGoogleSignIn()" class="bg-white text-gray-700 px-6 py-3 rounded-full font-medium text-lg shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center gap-4 w-72 justify-center border border-gray-100 relative z-10">
+                    <svg class="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    <span>Sign in with Google</span>
+                </button>
+                
+                <!-- Release Notes Button -->
+                <button onclick="App.toggleReleaseNotes()" class="absolute top-4 left-4 p-2 bg-white/80 rounded-full shadow-md hover:scale-110 active:scale-95 transition-transform border-2 border-yellow-200 z-50">
+                    <i data-lucide="sparkles" class="w-6 h-6 text-yellow-400"></i>
+                </button>
 
-        console.log("📜 Summoning history...");
-        this.state.isLoadingHistory = true;
-        this.renderView(); // Show loader
+                <div class="text-center">
+                    <p class="text-white/90 font-bold drop-shadow-md text-xs max-w-[200px] mx-auto">By continuing, you agree to spread kawaii vibes only! 💖</p>
+                    <p id="app-version-label" onclick="App.openLatestRelease()" class="text-[10px] text-white/50 mt-2 font-mono hover:text-white cursor-pointer underline decoration-dotted underline-offset-2 transition-colors" style="user-select:none;">Loading version...</p>
+                    
+                    <!-- Crash Log Tool -->
+                    <button onclick="App.downloadCrashLogs()" class="mt-4 text-[10px] text-white/40 hover:text-white underline p-2">
+                        🐞 Debug: Copy/Share Logs
+                    </button>
+                </div>
+            </div>
 
-        try {
-            const userId = this.state.session.user.id;
+            <!-- Hidden Release Notes Modal (MOVED OUTSIDE) -->
+            <div id="release-notes-modal" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-8 backdrop-blur-md transition-all" onclick="this.classList.add('hidden')">
+                <div class="bg-white w-full max-w-sm h-3/4 rounded-bubbly shadow-2xl relative flex flex-col transform rotate-1 border-4 border-pink-100" onclick="event.stopPropagation()">
+                    
+                    <!-- Header -->
+                    <div class="p-6 border-b border-pink-50 bg-pink-50/50 rounded-t-bubbly">
+                        <h3 class="font-bold text-xl text-pink-500 flex justify-between items-center">
+                            <span>What's New? ✨</span>
+                            <button onclick="document.getElementById('release-notes-modal').classList.add('hidden')" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1 shadow-sm">
+                                <i data-lucide="x" class="w-5 h-5"></i>
+                            </button>
+                        </h3>
+                        <p id="modal-version-label" class="text-xs text-pink-300 font-bold mt-1">Loading...</p>
+                    </div>
 
-            // Fetch doodles where user is sender or receiver
-            const { data, error } = await this.state.supabase
-                .from('doodles')
-                .select(`
-                    id,
-                    image_data,
-                    created_at,
-                    profiles:sender_id (username, avatar_url)
-                `)
-                .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            if (error) throw error;
-
-            this.state.history = data || [];
-            console.log(`✅ Loaded ${this.state.history.length} doodles`);
-        } catch (e) {
-            console.error("History fetch failed:", e);
-            this.toast("Could not load magic feed 🥺", "blue");
-        } finally {
-            this.state.isLoadingHistory = false;
-            this.renderView();
-        }
-    },
-
-    initPush() {
-        if (!window.Capacitor || !window.Capacitor.isNativePlatform()) return;
-        const { PushNotifications } = window.Capacitor.Plugins;
-        if (!PushNotifications) return;
-
-        PushNotifications.addListener('registration', (token) => {
-            console.log('Push registration success, token: ' + token.value);
-            this.updateFcmToken(token.value);
-        });
-
-        PushNotifications.addListener('registrationError', (error) => {
-            console.error('Error on registration: ' + JSON.stringify(error));
-        });
-
-        PushNotifications.addListener('pushNotificationReceived', (notification) => {
-            console.log('Push received: ' + JSON.stringify(notification));
-            this.toast(notification.title || "New Message!", "pink");
-            if (window.Social) Social.loadFriends(); // Refresh social state
-            this.loadHistory();
-        });
-
-        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-            console.log('Push action performed: ' + JSON.stringify(notification));
-            if (notification.notification.data && notification.notification.data.type === 'doodle') {
-                this.setView('history');
+                    <!-- Scrollable Content -->
+                    <div class="flex-1 p-6 overflow-y-auto text-left space-y-4">
+                        
+                        <div class="bg-pink-50 p-3 rounded-xl border border-pink-100">
+                            <h4 class="font-bold text-pink-500 text-sm mb-1">🧼 Clean Start</h4>
+        `,
+        setup: () => `
+            <div class="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center animate-fade-in">
+                <div class="bg-white/80 p-8 rounded-bubbly shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-float">
+                    <div>
+                        <h2 class="text-2xl font-black text-pink-500 mb-2">Welcome Home! 🏡</h2>
+                        <p class="text-gray-500 text-sm italic">What should your friends call you?</p>
+                    </div>
+                    <div>
+                        <input id="setup-name" type="text" placeholder="Your Sweet Name..." class="w-full bg-pink-50 px-6 py-4 rounded-full border-none focus:ring-4 focus:ring-pink-300 outline-none text-center font-bold text-pink-600 text-lg">
+                    </div>
+                    <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="bg-pink-500 text-white w-full py-4 rounded-full font-black text-lg shadow-lg hover:bg-pink-600 active:scale-95 transition-all">
+                        Let's Go! 🚀
+                    </button>
+                </div>
+            </div>
+        `,
+        home: () => `
+            <div class="flex flex-col items-center gap-6 p-4 w-full max-w-md mx-auto animate-slide-up">
+                <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transform hover:scale-105 transition-transform duration-500">
+                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" />` : `
+                    <div class="flex flex-col items-center justify-center p-4">
+                        <div class="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-3"></div>
+                        <p class="font-bold text-pink-400 text-sm animate-pulse">Loading your magic... ✨</p>
+                        <p class="text-xs text-pink-300 mt-1">${navigator.onLine ? 'Almost there!' : 'Waiting for connection...'}</p>
+                    </div>`}
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <div class="w-16 h-16 rounded-full border-4 border-white/50 shadow-lg overflow-hidden bg-pink-100 flex-shrink-0">
+                        ${App.state.user.avatarUrl ?
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
             }
-        });
+                        <div class="w-full h-full flex items-center justify-center ${App.state.user.avatarUrl ? 'hidden' : ''}"><i data-lucide="user" class="w-8 h-8 text-pink-300"></i></div>
+                    </div>
+                    <div class="text-center">
+                        <h2 class="text-2xl font-bold text-white drop-shadow-md">Stay Kawaii, ${App.state.user.username.split(' ')[0]}! ✨</h2>
+                        <p class="text-[10px] text-white/70">ID: ${App.state.user.kawaiiId}</p>
+                </div>
+                <div class="flex gap-4 flex-wrap justify-center">
+                    <button onclick="App.setView('draw')" class="btn-bubbly btn-primary hover:scale-105 active:scale-95 shrink-0">
+                        <i data-lucide="palette"></i> Doodle! 🎨
+                    </button>
+                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105 active:scale-95 shrink-0 relative">
+                        <i data-lucide="history"></i> History 📜
+                        ${App.state.unreadCount > 0 ? `
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce">
+                            ${App.state.unreadCount}
+                        </span>` : ''}
+                    </button>
+                    ${!App.state.notificationsEnabled ? `
+                    <!-- Unified Signal Activation -->
+                    <button onclick="App.requestAllPermissions()" class="btn-bubbly bg-yellow-100 border-yellow-200 text-yellow-600 hover:scale-105 active:scale-95 shrink-0 text-xs py-2 px-4 shadow-sm">
+                        <i data-lucide="radio" class="w-4 h-4"></i> Activate Notifications 📡
+                    </button>
+                    ` : ''}
+                </div>
+                ${App.state.updateAvailable ? `
+                <div class="w-full max-w-md animate-bounce">
+                    <button id="update-btn" onclick="App.showUpdateModal()" class="w-full bg-white text-pink-500 font-bold py-3 rounded-xl shadow-lg border-2 border-pink-200 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="sparkles"></i> New Magic Available! (v${App.state.latestRelease?.tag_name || '...'})
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+    `,
+        widget: () => `
+            <div class="h-screen w-full flex items-center justify-center p-4">
+                <div class="w-full aspect-square bg-white/40 backdrop-blur-md rounded-bubbly border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden animate-float">
+                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain p-2" />` : `
+                    <div class="text-center p-4">
+                        <i data-lucide="sparkles" class="w-12 h-12 mx-auto text-yellow-300 mb-2 animate-pulse"></i>
+                        <p class="font-bold text-white text-sm drop-shadow-sm">Magic widget ready...</p>
+                    </div>`}
+                </div>
+            </div>
+    `,
+        draw: () => `
+            <div class="h-full w-full relative flex flex-col items-center animate-fade-in overflow-hidden">
+                <!-- Canvas Area -->
+                <div class="flex-1 w-full flex items-center justify-center p-6 min-h-0 relative">
+                    <div class="relative w-full aspect-square max-w-md max-h-full bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white overflow-hidden">
+                        <canvas id="drawing-canvas" class="w-full h-full touch-none"></canvas>
+                    </div>
+                    <button id="btn-reset-zoom" style="display:none" class="absolute top-3 right-3 bg-white/90 backdrop-blur text-pink-500 font-bold text-xs py-2 px-3 rounded-full shadow-lg border border-pink-200 items-center gap-1 hover:bg-pink-50 active:scale-95 transition-all z-50">
+                        <i data-lucide="minimize-2" class="w-4 h-4 inline"></i> Reset Zoom
+                    </button>
+                </div>
+                
+                <!-- Controls Area -->
+                <div class="w-full shrink-0 z-40 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                    <div class="bg-white/95 backdrop-blur-2xl p-4 rounded-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col gap-3 ring-8 ring-white/50 border border-pink-50">
 
-        PushNotifications.register();
+            <!-- 1. Recipient Selection -->
+            <div id="recipient-selection" class="flex items-center gap-2 overflow-x-auto px-4 py-2 border-b border-pink-100/50 no-scrollbar touch-pan-x">
+                <span class="text-[10px] font-black text-pink-400 whitespace-nowrap tracking-wider">TO:</span>
+                <div id="friend-bubbles" class="flex gap-2">
+                    <p class="text-[10px] text-gray-400 font-bold">Loading...</p>
+                </div>
+            </div>
+
+            <!-- 2. Tools Row -->
+            <div class="flex items-center justify-between gap-2">
+                <!-- Palette -->
+                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 flex-1 touch-pan-x">
+                    <div id="palette-container" class="flex gap-2 shrink-0">
+                        <!-- Injected -->
+                    </div>
+                </div>
+
+                <div class="w-[2px] h-6 bg-gray-100 shrink-0 rounded-full"></div>
+
+                <!-- Toggles -->
+                <div class="flex gap-2 shrink-0">
+                    <button id="btn-fill-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
+                        <i data-lucide="paint-bucket" class="w-5 h-5 text-gray-400 transition-colors"></i>
+                    </button>
+                    <button id="btn-eraser-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
+                        <i data-lucide="eraser" class="w-5 h-5 text-gray-400 transition-colors"></i>
+                    </button>
+                    <button id="btn-custom-color" class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
+                        <i data-lucide="plus" class="w-5 h-5 text-white"></i>
+                    </button>
+                    <button onclick="document.getElementById('stamp-modal').classList.remove('hidden')" class="w-10 h-10 rounded-full bg-gradient-to-bl from-yellow-200 via-pink-200 to-purple-200 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform active:rotate-12">
+                        <span class="text-xl filter drop-shadow-sm">🦄</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. Sliders & edits -->
+            <div class="flex items-center gap-3 bg-gray-50/60 p-2 rounded-xl border border-white/50">
+                <i data-lucide="brush" class="w-4 h-4 text-pink-300 shrink-0"></i>
+                <input id="brush-size" type="range" min="2" max="40" value="5" class="flex-1 accent-pink-500 h-2 bg-pink-100 rounded-lg appearance-none cursor-pointer">
+
+                    <div class="w-[1px] h-6 bg-gray-200 shrink-0"></div>
+
+                    <div class="flex gap-1 shrink-0">
+                        <button id="btn-undo" class="p-2 text-gray-400 hover:text-pink-500 hover:bg-white rounded-lg transition-all active:scale-90">
+                            <i data-lucide="undo-2" class="w-5 h-5"></i>
+                        </button>
+                        <button id="btn-redo" class="p-2 text-gray-400 hover:text-blue-500 hover:bg-white rounded-lg transition-all active:scale-90">
+                            <i data-lucide="redo-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+            </div>
+
+            <!-- 4. Actions Footer -->
+            <div class="flex items-center gap-3 mt-1">
+                <button id="clear-canvas" class="p-3 bg-red-50 text-red-400 rounded-full hover:bg-red-100 active:scale-90 transition-all shadow-sm group" title="Clear">
+                    <i data-lucide="trash-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                </button>
+                <button id="save-draft" class="p-3 bg-blue-50 text-blue-400 rounded-full hover:bg-blue-100 active:scale-90 transition-all shadow-sm group" title="Save">
+                    <i data-lucide="save" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                </button>
+                <button id="send-doodle" class="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-full font-black shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 text-base tracking-wide">
+                    <span>SEND MAGIC</span> <i data-lucide="send" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- HIDDEN STAMP MODAL (Absolute Overlay) -->
+            <div id="stamp-modal" class="hidden absolute inset-0 bg-white/95 backdrop-blur-md rounded-[2rem] z-50 flex flex-col p-4 animate-fade-in">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                    <h3 class="font-bold text-gray-500 flex items-center gap-2">
+                        <span class="text-xl">✨</span> Choose a Stamp
+                    </h3>
+                    <button onclick="document.getElementById('stamp-modal').classList.add('hidden')" class="bg-gray-100 text-gray-500 p-1.5 rounded-full hover:bg-gray-200 transition-colors">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-5 gap-3 overflow-y-auto no-scrollbar pb-10 content-start">
+                    ${['🦄', '💖', '⭐', '🌸', '🎀', '🐱', '🐰', '🍄', '🍭', '⚡', '🔥', '🌈', '🍕', '🎉', '🦋', '🌵', '🍩', '🚀', '👽', '💎', '🎨', '🧸', '🎵', '👻', '💩'].map(emoji => `
+                                <button class="stamp-btn text-2xl hover:scale-125 active:scale-90 transition-transform p-2 bg-gray-50 rounded-xl border border-gray-100 shadow-sm aspect-square flex items-center justify-center" 
+                                    data-stamp="${emoji}"
+                                    onclick="document.getElementById('stamp-modal').classList.add('hidden')">
+                                    ${emoji}
+                                </button>
+                            `).join('')}
+                </div>
+            </div>
+        </div>
+    </div>
+`,
+        friends: () => `
+        <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
+                <div class="bg-white/60 p-4 rounded-bubbly shadow-sm">
+                    <h3 class="font-bold mb-3 flex items-center gap-2">
+                        <i data-lucide="search" class="w-4 h-4"></i> Find Friends
+                    </h3>
+                    <div class="flex gap-2">
+                        <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." class="flex-1 bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none">
+                        <button id="btn-search-friend" class="bg-pink-400 text-white p-2 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                            <i data-lucide="user-plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="friend-list" class="flex flex-col gap-2">
+                    <!-- Loaded dynamically -->
+                </div>
+            </div>
+`,
+        profile: () => `
+    <div class="flex flex-col items-center gap-6 w-full max-w-sm animate-slide-up">
+                <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden shrink-0">
+                    ${App.state.user.avatarUrl ?
+                `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
+            }
+                    <i data-lucide="user" class="w-12 h-12 text-gray-300 ${App.state.user.avatarUrl ? 'hidden' : ''}"></i>
+                </div>
+                <div class="text-center">
+                    <p class="text-xl font-bold border-none outline-none py-1">${App.state.user.username}</p>
+                    <div class="flex items-center justify-center gap-3 mt-2">
+                        <p class="text-pink-500 font-bold text-sm tracking-wide bg-pink-50 px-3 py-1 rounded-lg border border-pink-100">${App.state.user.kawaiiId}</p>
+                        <button onclick="navigator.clipboard.writeText('${App.state.user.kawaiiId}').then(() => App.toast('Copied! 📋', 'pink'))" class="p-2 bg-pink-100 rounded-full hover:bg-pink-200 active:scale-95 transition-all shadow-sm">
+                            <i data-lucide="copy" class="w-4 h-4 text-pink-500"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
+                    <p class="text-[10px] font-medium mb-1">Signed in via Google ✨</p>
+                    <button onclick="App.signOut()" class="bg-white border-2 border-red-100 text-red-400 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all w-full">
+                        Sign Out
+                    </button>
+                </div>
+
+                <!-- Hidden Technical Settings -->
+                <div id="admin-settings" class="hidden bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
+                    <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 border-b border-gray-100 pb-2">
+                        <i data-lucide="settings" class="w-4 h-4"></i> Account Connection
+                    </h3>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">CONNECTION URL</label>
+                        <input id="sb-url" type="text" value="${App.state.config.url}" placeholder="https://xyz.supabase.co" class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 ml-2">ACCESS KEY</label>
+                        <input id="sb-key" type="password" value="${App.state.config.key}" placeholder="eyJhbG..." class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
+                    </div>
+                    <button onclick="App.handleSaveConfig()" class="bg-pink-400 text-white px-8 py-2 rounded-full font-bold shadow-md hover:bg-pink-500 active:scale-95 transition-all mt-2">
+                        Save Setup
+                    </button>
+                </div>
+            </div>
+    </div>
+`,
+        history: () => `
+    <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
+                <header class="text-center mb-2">
+                    <h2 class="text-2xl font-black text-white drop-shadow-md">Magic History 📜</h2>
+                    <p class="text-white/70 text-xs italic">All your sent and received doodles ✨</p>
+                </header>
+                <div class="flex flex-col gap-4">
+                    <!-- Drafts Section -->
+                    <div id="drafts-section">
+                    ${(() => {
+                const drafts = App.state.drafts || [];
+                if (drafts.length === 0) return '';
+                return `
+                            <div class="bg-blue-50/50 p-4 rounded-bubbly border border-blue-100">
+                                <h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
+                                    <i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook
+                                </h3>
+                                <div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
+                                    ${drafts.map((d, i) => `
+                                        <div class="bg-white p-2 rounded-xl shadow-sm relative shrink-0 w-32 snap-start">
+                                            <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-lg bg-gray-50/50 border border-gray-100" />
+                                            <div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl backdrop-blur-[1px]">
+                                                <button onclick="App.editDoodleFromUrl('${d.image_data}')" class="bg-white/90 text-blue-500 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                                <button onclick="App.deleteDraft('${d.id}')" class="bg-white/90 text-red-400 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+            })()}
+                    </div>
+                    <!-- History List -->
+                    <div id="history-list-container" class="flex flex-col gap-4">
+                    ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
+                App.state.history.map(d => `
+                        <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
+                            <div class="relative">
+                                <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
+                                <button onclick="App.editDoodle('${d.image_data}')" class="absolute top-2 right-2 bg-white/90 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="App.setWallpaper('${d.image_data}', '${d.id}')" class="absolute top-12 right-2 bg-white/90 text-blue-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
+                                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
+                                <span>
+                                    ${(() => {
+                        const isSent = d.sender_id === App.state.session.user.id;
+                        // The other person's ID (receiver if sent, sender if received)
+                        const otherId = isSent ? d.receiver_id : d.sender_id;
+                        // Use the new Cache first, then Friend list, then generic fallback
+                        const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
+                        const friend = (Social.friends || []).find(f => f.id === otherId);
+
+                        let name = cacheName || (friend ? friend.username : 'Unknown');
+                        if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...'; // Short ID fallback
+
+                        // Multi-recipient formatting
+                        if (isSent && d.recipients && d.recipients.length > 0) {
+                            const names = d.recipients.map(rid => {
+                                const cName = App.state.userCache ? App.state.userCache[rid] : null;
+                                const f = (Social.friends || []).find(fr => fr.id === rid);
+                                return cName || (f ? f.username : rid.substring(0, 5) + '..');
+                            });
+                            // Join all names
+                            return `TO: ${names.join(', ')} 📤`;
+                        }
+
+                        return isSent ? `TO: ${name} 📤` : `
+                                            <div class="flex items-center gap-1">
+                                                <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                                    ${(() => {
+                                const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
+                                return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
+                            })()}
+                                                </div>
+                                                FROM: ${name} 📥
+                                            </div>`;
+                    })()}
+                                </span>
+                                <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                    </div>
+                </div>
+            </div>
+            <!-- Spacer for floating nav -->
+    <div class="h-32 w-full"></div>
+        `
     },
-
-    async updateFcmToken(token) {
-        if (!this.state.supabase || !this.state.session) return;
-        try {
-            const { error } = await this.state.supabase
-                .from('profiles')
-                .update({ fcm_token: token })
-                .eq('id', this.state.session.user.id);
-            if (error) throw error;
-            console.log("✅ FCM Token updated in profile");
-        } catch (e) {
-            console.error("Failed to update FCM token:", e);
-        }
-    },
-
 
     // --- Actions ---
     editDoodle(imageData) {
@@ -1401,94 +2310,12 @@ const App = {
         });
     },
 
-    async testNotification() {
-        const { LocalNotifications } = window.Capacitor.Plugins;
-        if (!LocalNotifications) {
-            this.toast('Not supported on web 💻', 'blue');
-            return;
-        }
-
-        try {
-            await LocalNotifications.schedule({
-                notifications: [{
-                    title: "It Works! 🎉",
-                    body: "This is what a Kawaii Notification looks like!",
-                    id: 1,
-                    schedule: { at: new Date(Date.now() + 1000) },
-                    sound: null,
-                    attachments: null,
-                    actionTypeId: "",
-                    extra: null
-                }]
-            });
-            this.toast('Scheduled in 1s... close app to see! ⏱️', 'pink');
-        } catch (e) {
-            console.error("Test Notif Error:", e);
-            this.toast('Failed to schedule: ' + e.message, 'blue');
-        }
-    },
-
-    async requestPushPermission() {
-        const { PushNotifications } = window.Capacitor.Plugins;
-        if (!PushNotifications) return false;
-
-        // FORCE native prompt first! 🚀
-        let status = await PushNotifications.requestPermissions();
-
-        if (status.receive === 'granted') {
-            this.toast("Magic is active! 📡✨", "pink");
-            this.state.notificationsEnabled = true;
-            this.initPush();
-            this.renderView();
-            return true;
-        } else {
-            console.log("Magic blocked by OS or User.");
-            this.toast("Please allow notifications in settings! 🥺", "blue");
-            return false;
-        }
-    },
-
-    enableFullscreenMode() {
-        setTimeout(() => {
-            try {
-                const { StatusBar } = window.Capacitor.Plugins;
-                if (StatusBar) StatusBar.hide();
-                if (window.NavigationBar) window.NavigationBar.hide();
-                console.log("✅ Fullscreen mode enabled");
-            } catch (err) { console.log("Fullscreen error:", err); }
-        }, 500);
-    },
-
-    setupNavigation() {
-        const navItems = document.querySelectorAll('.nav-item');
-        navItems.forEach(item => {
-            item.addEventListener('click', (e) => {
-                const view = e.currentTarget.dataset.view;
-                this.setView(view);
-                this.haptic('light');
-            });
-        });
-    },
-
-    finalizeInit() {
-        try {
-            console.log("Finalizing Init...");
-            this.setupNavigation();
-            if (window.lucide) lucide.createIcons();
-            this.fixZoomedLayout();
-        } catch (e) {
-            console.error("Finalize Error:", e);
-        }
-    },
-
     // Elite Haptics Helper
-    // navigator.vibrate is blocked until the user has interacted with the page.
-    // We track the first gesture ourselves and gate all vibrate calls behind it.
     haptic(type = 'light') {
-        if (!navigator.vibrate || !window._userHasGestured) return;
-        if (type === 'success') navigator.vibrate(10);
-        else if (type === 'medium') navigator.vibrate(20);
-        else if (type === 'heavy') navigator.vibrate([30, 50, 30]);
+        if (!navigator.vibrate) return;
+        if (type === 'success') navigator.vibrate(10); // Tiny tick
+        if (type === 'medium') navigator.vibrate(20);
+        if (type === 'heavy') navigator.vibrate([30, 50, 30]); // Error/Destructive
     },
 
     // Fix for zoomed-in screens / high DPI
@@ -1699,12 +2526,7 @@ App.toggleReleaseNotes = () => {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-    try {
-        App.init();
-    } catch (e) {
-        console.error("Fatal Init Error:", e);
-        alert("Fatal Error: " + e.message);
-    }
+    App.init();
 
     // 🛑 FORCE UNREGISTER SERVICE WORKER TO FIX CACHE ISSUES
     if ('serviceWorker' in navigator) {

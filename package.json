@@ -1,12 +1,13 @@
 {
     "name": "kawaii-doodle-app",
-    "version": "2.9.83",
+    "version": "2.9.62",
     "description": "Premium Kawaii Drawing App",
     "private": true,
     "scripts": {
         "build": "node scripts/build.js",
         "sync": "npm run build && npx cap sync android && node scripts/patch-android.js",
-        "test": "echo 'No tests yet'"
+        "test": "echo 'No tests yet'",
+        "postinstall": "node scripts/fix-capacitor-proguard.js"
     },
     "dependencies": {
         "@capacitor/android": "^6.2.1",

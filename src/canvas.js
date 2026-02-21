@@ -774,28 +774,22 @@ window.initCanvas = function () {
 
             // 5. Fire-and-forget Push
             targets.forEach(target => {
-                if (!target.fcm_token) return;
-
-                const doodleId = (insertedDoodles?.find(d => d.receiver_id === target.id)?.id ?? '').toString();
-
-                // FCM V1 requires ALL data fields to be strings.
-                App.state.supabase.functions.invoke('push', {
-                    body: {
-                        to: target.fcm_token,
-                        title: 'New Magic! ✨',
-                        body: `You received a doodle from ${App.state.user.username}!`,
-                        data: {
-                            type: 'doodle',
-                            sender: String(App.state.user.username || 'Someone'),
-                            doodle_id: doodleId,
-                            click_action: 'FCM_PLUGIN_ACTIVITY'
+                if (target.fcm_token) {
+                    const doodleId = insertedDoodles.find(d => d.receiver_id === target.id)?.id;
+                    App.state.supabase.functions.invoke('push', {
+                        body: {
+                            to: target.fcm_token,
+                            title: 'New Magic! ✨',
+                            body: `You received a doodle from ${App.state.user.username}!`,
+                            data: {
+                                type: 'doodle',
+                                sender: App.state.user.username,
+                                doodle_id: doodleId,
+                                click_action: 'FCM_PLUGIN_ACTIVITY'
+                            }
                         }
-                    }
-                }).then(({ error, data }) => {
-                    if (error) console.error('Push invoke error:', error);
-                    else if (data?.error) console.warn('Push FCM error (stale token?):', data.error, data.detail ?? '');
-                    else console.log('✅ Push sent to', target.kawaii_id);
-                }).catch(e => console.error('Push fail (network):', e));
+                    }).catch(e => console.error("Push fail:", e));
+                }
             });
 
             // 6. Success

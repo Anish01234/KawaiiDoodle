@@ -1,9 +1,0 @@
-{
-    "critical_message": "This version is obsolete. Please update to continue sending magic! ✨",
-    "min_supported_version": "2.9.20",
-    "broken_versions": [
-        "2.9.15",
-        "2.9.12"
-    ],
-    "force_update_url": "https://github.com/Anish01234/KawaiiDoodle/releases"
-}
