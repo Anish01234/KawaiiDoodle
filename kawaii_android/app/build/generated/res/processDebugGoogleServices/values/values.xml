@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_web_client_id" translatable="false">338129743756-1u308evrhbor1sn79u8u7ceqlh8acvos.apps.googleusercontent.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">338129743756</string>
+    <string name="google_api_key" translatable="false">AIzaSyBdxffLUEnU_ENE7mJoC57cIjiP-C7QlW8</string>
+    <string name="google_app_id" translatable="false">1:338129743756:android:8eabbade845ac4c68170a9</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyBdxffLUEnU_ENE7mJoC57cIjiP-C7QlW8</string>
+    <string name="google_storage_bucket" translatable="false">kawaii-doodle-97054.firebasestorage.app</string>
+    <string name="project_id" translatable="false">kawaii-doodle-97054</string>
+</resources>

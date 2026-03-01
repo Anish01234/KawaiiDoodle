@@ -1,0 +1,1 @@
+-keep,allowobfuscation,allowshrinking class com.kawaii.doodle.presentation.ui.draw.DrawViewModel
