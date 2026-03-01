@@ -39,6 +39,7 @@
 
     <link rel="stylesheet" href="styles.css?v=2.7">
     <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="data:,">
     <!-- Failsafe Error Handler -->
     <script>
         window.onerror = function (msg, url, line, col, error) {
@@ -215,7 +216,11 @@
 
     <script>
         // Initialize Lucide Icons
-        lucide.createIcons();
+        if (window.lucide) {
+            lucide.createIcons();
+        } else {
+            console.warn("Lucide icons failed to load (offline).");
+        }
     </script>
     <!-- Diagnostic Script -->
     <script>

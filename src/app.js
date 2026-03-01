@@ -26,6 +26,12 @@ const App = {
         previousView: null,
         isSending: false,
         isLoadingHistory: false,
+        historyPage: 1,
+        historyOffset: 0,
+        hasMoreHistory: false,
+        draftsPage: 1,
+        draftsOffset: 0,
+        hasMoreDrafts: false,
         viewHistory: [],
         isCanvasDirty: false,
         lastBackPress: 0
@@ -573,7 +579,10 @@ const App = {
                 `;
             }
         } catch (e) {
-            console.warn("Safety net check failed:", e);
+            const isNetworkError = e.message && (e.message.includes('Failed to fetch') || e.message.includes('Network request failed') || e.message.includes('offline'));
+            if (!isNetworkError) {
+                console.warn("Safety net check failed:", e);
+            }
         }
     },
 
@@ -611,7 +620,13 @@ const App = {
             if (window.Capacitor && window.Capacitor.isNativePlatform()) {
                 this.enableFullscreenMode();
                 window.Capacitor.Plugins.App.addListener('appStateChange', ({ isActive }) => {
-                    if (isActive) setTimeout(() => this.enableFullscreenMode(), 500);
+                    if (isActive) {
+                        setTimeout(() => this.enableFullscreenMode(), 500);
+                        // Silent refresh on foreground — like a messaging app
+                        if (this.state.session) {
+                            this.loadHistory(true);
+                        }
+                    }
                 });
             }
 
@@ -748,12 +763,33 @@ const App = {
             }
 
             // Online/Offline Listeners
-            window.addEventListener('online', () => {
+            window.addEventListener('online', async () => {
                 console.log('🌐 Back online!');
                 this.toast('Back online! 🌐', 'pink');
                 // Remove offline banner
                 const banner = document.getElementById('offline-banner');
                 if (banner) banner.remove();
+
+                // If Supabase failed to load initially due to being offline, load it now
+                if (!window.supabase) {
+                    try {
+                        console.log('🔄 Downloading missing Supabase SDK...');
+                        await new Promise((resolve, reject) => {
+                            const script = document.createElement('script');
+                            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+                            script.onload = resolve;
+                            script.onerror = reject;
+                            document.head.appendChild(script);
+                        });
+                        this.initSupabase();
+                    } catch (e) {
+                        console.error('Failed to load Supabase SDK on reconnect', e);
+                    }
+                } else if (!this.state.supabase) {
+                    // SDK is there but wasn't initialized
+                    this.initSupabase();
+                }
+
                 // Sync drafts and reload data
                 this.syncLocalDrafts();
                 if (this.state.session) {
@@ -881,7 +917,12 @@ const App = {
 
         // On error
         PushNotifications.addListener('registrationError', (error) => {
-            console.error('Push registration error: ', error);
+            const errorStr = String(error?.error || error);
+            if (errorStr.includes('SERVICE_NOT_AVAILABLE')) {
+                console.warn('Push registration skipped: Google Play Services unavailable or offline (SERVICE_NOT_AVAILABLE). This is normal on emulators.');
+            } else {
+                console.warn('Push registration error: ', error);
+            }
         });
 
         // On notification received (Foreground)
@@ -908,13 +949,15 @@ const App = {
         });
 
         // On notification tapped
-        PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+        PushNotifications.addListener('pushNotificationActionPerformed', async (notification) => {
             console.log('🔔 Push tapped:', notification);
             // Store pending deep link for cold-start (session may not be ready yet)
             this.state.pendingDeepLink = 'history';
-            // Also try direct navigation (works on warm-start)
+            // Navigate to history and force a fresh load so the new doodle is visible
             if (this.state.session) {
                 this.setView('history');
+                // Force non-silent reload so the new doodle renders immediately
+                await this.loadHistory(false);
             }
         });
     },
@@ -1035,8 +1078,16 @@ const App = {
         }, 30000);
     },
 
-    async loadHistory(silent = false) {
+    async loadHistory(silent = false, loadMore = false) {
         if (!this.state.supabase || !this.state.session) return;
+
+        // Only reset pages on explicit (non-silent) loads — silent = background polls
+        if (!loadMore && !silent) {
+            this.state.historyOffset = 0;
+            this.state.draftsOffset = 0;
+            this.state.history = [];
+            this.state.drafts = [];
+        }
 
         if (!silent) {
             this.state.isLoadingHistory = true;
@@ -1045,31 +1096,35 @@ const App = {
 
         try {
             // 1. Load History (Doodles)
-            if (performance && performance.memory) {
-                console.log(`🧠 Memory Start: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)}MB / ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)}MB`);
-            }
-
+            const HISTORY_PAGE_SIZE = 20;
             let { data: doodles, error: doodleError } = await this.state.supabase
                 .from('doodles')
                 .select('*')
                 .or(`sender_id.eq.${this.state.session.user.id},receiver_id.eq.${this.state.session.user.id}`)
                 .order('created_at', { ascending: false })
-                .limit(20);
+                .range(this.state.historyOffset, this.state.historyOffset + HISTORY_PAGE_SIZE);
 
             if (doodles) {
-                const sizeBytes = JSON.stringify(doodles).length;
-                console.log(`📦 History Packet Size: ${(sizeBytes / 1024).toFixed(2)} KB for ${doodles.length} items`);
+                this.state.hasMoreHistory = doodles.length > HISTORY_PAGE_SIZE;
+                if (this.state.hasMoreHistory) doodles.pop();
 
-                // Auto-set wallpaper if we have a new doodle sent TO us
+                // Auto-set wallpaper only when a genuinely new doodle arrives
+                // Compare the latest received doodle's ID to the last one we processed
                 const latestReceived = doodles.find(d => d.receiver_id === this.state.session.user.id);
-                if (latestReceived) {
+                if (latestReceived && latestReceived.id !== this._lastWallpaperCheckId) {
+                    this._lastWallpaperCheckId = latestReceived.id;
                     this.setSmartWallpaper(latestReceived);
                 }
             }
 
             if (doodleError) {
-                console.warn("History fetch (5) failed, retrying with single item...", doodleError);
-                // Fallback: Try loading just 1 if 5 failed (Critical Memory Mode)
+                const errStr = (doodleError?.message || doodleError?.error || JSON.stringify(doodleError) || '').toLowerCase();
+                const isNetworkError = errStr.includes('fetch') || errStr.includes('network') || errStr.includes('offline') || errStr.includes('abort') || errStr.includes('socket');
+
+                if (isNetworkError) throw doodleError; // Skip low-memory retry if it's just a network/background abort
+
+                console.warn(`History fetch (${HISTORY_PAGE_SIZE}) failed, retrying with single item...`, doodleError);
+                // Fallback: Try loading just 1 if failed (Critical Memory Mode)
                 const { data: retryData, error: retryError } = await this.state.supabase
                     .from('doodles')
                     .select('*')
@@ -1079,39 +1134,44 @@ const App = {
 
                 if (retryError) throw retryError;
                 doodles = retryData;
-                // this.toast("Low memory mode active 💾", "blue");
             }
 
             // 2. Load Drafts (from Cloud)
+            const DRAFTS_PAGE_SIZE = 5;
             const { data: drafts, error: draftError } = await this.state.supabase
                 .from('drafts')
                 .select('*')
                 .eq('user_id', this.state.session.user.id)
                 .order('created_at', { ascending: false })
-                .limit(5);
+                .range(this.state.draftsOffset, this.state.draftsOffset + DRAFTS_PAGE_SIZE);
 
             if (draftError) console.warn("Drafts load error:", draftError);
-            this.state.drafts = drafts || [];
+            let newDrafts = drafts || [];
+            this.state.hasMoreDrafts = newDrafts.length > DRAFTS_PAGE_SIZE;
+            if (this.state.hasMoreDrafts) newDrafts.pop();
+            // Append new drafts to existing (avoid duplicates by id)
+            const existingDraftIds = new Set(this.state.drafts.map(d => d.id));
+            this.state.drafts = [...this.state.drafts, ...newDrafts.filter(d => !existingDraftIds.has(d.id))];
+            this.state.drafts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
             // 3. Process Doodles (Group Sent & Cache Names)
             const userIds = new Set();
             if (doodles) {
-                // Initialize lastDoodle for Home View
-                if (doodles.length > 0) {
-                    this.state.lastDoodle = doodles[0].image_data;
-                }
-
                 doodles.forEach(d => {
                     userIds.add(d.sender_id);
                     userIds.add(d.receiver_id);
                 });
             }
 
-            if (userIds.size > 0) {
-                const { data: profiles, error: profError } = await this.state.supabase
+            // Skip profile fetch for users we already know — avoids redundant DB hit on every poll
+            const cachedIds = new Set(Object.keys(this.state.userCache || {}));
+            const uncachedIds = Array.from(userIds).filter(id => id && !cachedIds.has(id));
+
+            if (uncachedIds.length > 0) {
+                const { data: profiles } = await this.state.supabase
                     .from('profiles')
-                    .select('*')
-                    .in('id', Array.from(userIds));
+                    .select('id,username,avatar_url')
+                    .in('id', uncachedIds);
 
                 if (profiles) {
                     if (!this.state.userCache) this.state.userCache = {};
@@ -1123,36 +1183,46 @@ const App = {
                 }
             }
 
-            // Grouping Logic for SENT doodles
-            const groupedHistory = [];
+            // Grouping Logic for new SENT doodles — append to existing history
+            const newGroupedItems = [];
             const processedImages = new Set();
+            // Pre-populate processedImages with already-shown sent image hashes to avoid duplicates
+            this.state.history.forEach(h => { if (h.isGroup || h.sender_id === this.state.session.user.id) processedImages.add(h.image_data); });
 
             if (doodles) {
                 doodles.forEach(d => {
                     const isSent = d.sender_id === this.state.session.user.id;
                     if (isSent) {
-                        // Use image_data as hash to group
                         if (processedImages.has(d.image_data)) {
-                            // Find existing group
-                            const group = groupedHistory.find(g => g.isGroup && g.image_data === d.image_data);
+                            // Merge into existing group already in state
+                            const group = [...this.state.history, ...newGroupedItems].find(g => g.isGroup && g.image_data === d.image_data);
                             if (group) group.recipients.push(d.receiver_id);
                         } else {
                             processedImages.add(d.image_data);
-                            groupedHistory.push({
-                                ...d,
-                                isGroup: true,
-                                recipients: [d.receiver_id]
-                            });
+                            newGroupedItems.push({ ...d, isGroup: true, recipients: [d.receiver_id] });
                         }
                     } else {
-                        groupedHistory.push(d);
+                        newGroupedItems.push(d);
                     }
                 });
             }
 
+            // Merge new items into existing history (avoid duplicates by id)
+            const existingIds = new Set(this.state.history.map(h => h.id));
+            const mergedHistory = [...this.state.history, ...newGroupedItems.filter(h => !existingIds.has(h.id))];
+
+            // Guarantee chronological order (newest first)
+            mergedHistory.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Initialize lastDoodle for Home View using the absolute newest item
+            if (mergedHistory.length > 0) {
+                this.state.lastDoodle = mergedHistory[0].image_data;
+            }
+
             // CHECK FOR CHANGES TO PREVENT BLINKING
-            const currentHash = JSON.stringify(this.state.history.map(h => h.id));
-            const newHash = JSON.stringify(groupedHistory.map(h => h.id));
+            const currentHash = JSON.stringify({ ids: this.state.history.map(h => h.id), more: this._prevHasMoreHistory });
+            const newHash = JSON.stringify({ ids: mergedHistory.map(h => h.id), more: this.state.hasMoreHistory });
+            this._prevHasMoreHistory = this.state.hasMoreHistory;
 
             // Also check unread count change
             const currentUnread = this.state.unreadCount;
@@ -1165,23 +1235,23 @@ const App = {
                 return;
             }
 
-            this.state.history = groupedHistory;
+            this.state.history = mergedHistory;
             this.state.unreadCount = newUnread;
 
-            // Intelligent Update for Home View to prevent flickering
+            // No full re-render on silent polls — only surgical badge update
             if (this.state.view === 'home') {
                 if (silent) {
-                    this.renderView();
+                    const badge = document.getElementById('home-unread-badge');
+                    if (badge) {
+                        badge.textContent = newUnread > 0 ? newUnread + ' new 💌' : '';
+                        badge.className = newUnread > 0 ? 'text-xs font-bold text-white bg-pink-400 px-2 py-0.5 rounded-full' : '';
+                    }
                 } else {
                     this.renderView();
                 }
             } else if (this.state.view === 'history') {
-                if (silent) {
-                    this.updateHistoryDOM();
-                    this.updateDraftsDOM(); // Manual update for drafts
-                } else {
-                    this.renderView();
-                }
+                if (silent) { this.updateHistoryDOM(); this.updateDraftsDOM(); }
+                else { this.renderView(); }
             }
 
             // Update App Badge
@@ -1190,52 +1260,94 @@ const App = {
             }
 
         } catch (e) {
-            console.error("History Load Error:", e);
-            this.toast(`Failed to load magic: ${e.message || 'Unknown error'} 😭`, 'blue');
+            const errStr = (e?.message || e?.error || JSON.stringify(e) || '').toLowerCase();
+            const isNetworkError = errStr.includes('fetch') || errStr.includes('network') || errStr.includes('offline') || errStr.includes('abort') || errStr.includes('socket') || errStr.includes('timeout');
+
+            if (!isNetworkError) {
+                console.error("History Load Error:", JSON.stringify(e));
+                this.toast(`Failed to load magic: ${e?.message || e?.error_description || 'Unknown error'} 😭`, 'blue');
+            } else {
+                console.log("History fetch skipped (offline/network/background issue).");
+            }
         } finally {
             this.state.isLoadingHistory = false;
-            // Ensure UI removes spinner even if errored
+            // Ensure UI removes spinner and re-renders buttons even on error
             if (this.state.view === 'history') {
                 this.updateHistoryDOM();
+                this.updateDraftsDOM();
+                this.setupHistoryInfiniteScroll();
+                this.setupDraftsInfiniteScroll();
             }
         }
+    },
+
+    async loadMoreHistory() {
+        if (this.state.isLoadingHistory) return; // Prevent double-trigger
+        this.state.historyOffset += 20;
+        await this.loadHistory(true, true);
     },
 
     updateDraftsDOM() {
         const container = document.getElementById('drafts-section');
         if (!container) return;
-
         const drafts = App.state.drafts || [];
-        if (drafts.length === 0) {
-            container.innerHTML = '';
+        if (drafts.length === 0) { container.innerHTML = ''; this._renderedDraftIds = new Set(); return; }
+        if (!this._renderedDraftIds) this._renderedDraftIds = new Set();
+        const scrollRow = document.getElementById('sketchbook-scroll-row');
+
+        if (!scrollRow) {
+            // First render: build from scratch
+            this._renderedDraftIds = new Set();
+            const cardsHtml = drafts.map(d => {
+                this._renderedDraftIds.add(d.id);
+                return '<div class="bg-white p-2 rounded-xl shadow-sm relative shrink-0 w-32 snap-start">' +
+                    '<img src="' + d.image_data + '" class="w-full aspect-square object-contain rounded-lg bg-gray-50/50 border border-gray-100" />' +
+                    '<div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl">' +
+                    '<button onclick="App.editDoodleFromUrl(\'' + d.image_data + '\')" class="bg-white/90 text-blue-500 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>' +
+                    '<button onclick="App.deleteDraft(\'' + d.id + '\')" class="bg-white/90 text-red-400 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>' +
+                    '</div></div>';
+            }).join('');
+            const sentinelHtml = App.state.hasMoreDrafts
+                ? '<div id="drafts-scroll-sentinel" class="shrink-0 flex items-center justify-center w-10 h-full"><div class="w-4 h-4 border-2 border-blue-200 border-t-blue-400 rounded-full animate-spin"></div></div>'
+                : '';
+            container.innerHTML = '<div class="bg-blue-50/50 p-4 rounded-bubbly border border-blue-100">' +
+                '<h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2"><i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook</h3>' +
+                '<div id="sketchbook-scroll-row" class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">' + cardsHtml + sentinelHtml + '</div></div>';
+            if (window.lucide) lucide.createIcons();
             return;
         }
 
-        const newHtml = `
-            <div class="bg-blue-50/50 p-4 rounded-bubbly border border-blue-100">
-                <h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
-                    <i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook
-                </h3>
-                <div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
-                    ${drafts.map((d, i) => `
-                        <div class="bg-white p-2 rounded-xl shadow-sm relative shrink-0 w-32 snap-start">
-                            <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-lg bg-gray-50/50 border border-gray-100" />
-                            <div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl backdrop-blur-[1px]">
-                                <button onclick="App.editDoodleFromUrl('${d.image_data}')" class="bg-white/90 text-blue-500 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
-                                    <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
-                                </button>
-                                <button onclick="App.deleteDraft('${d.id}')" class="bg-white/90 text-red-400 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
-                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>`;
+        // Append-only: only add new cards, never touch existing DOM
+        const sentinel = document.getElementById('drafts-scroll-sentinel');
+        const newDrafts = drafts.filter(d => !this._renderedDraftIds.has(d.id));
+        let iconsNeeded = false;
+        newDrafts.forEach(d => {
+            this._renderedDraftIds.add(d.id);
+            const index = drafts.indexOf(d);
 
-        if (container.innerHTML !== newHtml) {
-            container.innerHTML = newHtml;
-            if (window.lucide) lucide.createIcons();
+            const card = document.createElement('div');
+            card.className = 'bg-white p-2 rounded-xl shadow-sm relative shrink-0 w-32 snap-start';
+            card.innerHTML = '<img src="' + d.image_data + '" class="w-full aspect-square object-contain rounded-lg bg-gray-50/50 border border-gray-100" />' +
+                '<div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl">' +
+                '<button onclick="App.editDoodleFromUrl(\'' + d.image_data + '\')" class="bg-white/90 text-blue-500 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>' +
+                '<button onclick="App.deleteDraft(\'' + d.id + '\')" class="bg-white/90 text-red-400 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>' +
+                '</div>';
+
+            scrollRow.insertBefore(card, scrollRow.children[index] || null);
+            iconsNeeded = true;
+        });
+        if (App.state.hasMoreDrafts && !sentinel) {
+            const el = document.createElement('div');
+            el.id = 'drafts-scroll-sentinel'; el.className = 'shrink-0 flex items-center justify-center w-10 h-full';
+            el.innerHTML = '<div class="w-4 h-4 border-2 border-blue-200 border-t-blue-400 rounded-full animate-spin"></div>';
+            scrollRow.appendChild(el); iconsNeeded = true;
+        } else if (!App.state.hasMoreDrafts && sentinel) { sentinel.remove(); }
+        if (iconsNeeded && window.lucide) lucide.createIcons();
+
+        // Restore scroll position after appending new cards (Fix: scroll reset on loadMore)
+        if (this._savedDraftScroll !== undefined && scrollRow) {
+            scrollRow.scrollLeft = this._savedDraftScroll;
+            this._savedDraftScroll = undefined;
         }
     },
 
@@ -1244,68 +1356,137 @@ const App = {
         if (!container) return;
 
         if (this.state.isLoadingHistory && this.state.history.length === 0) {
-            container.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-20 text-pink-400">
-                    <div class="w-16 h-16 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-4"></div>
-                    <p class="font-bold text-sm animate-pulse">Waiting for connection... ✨</p>
-                    <p class="text-xs text-pink-300 mt-1">Your doodles will appear here</p>
-                </div>
-             `;
+            container.innerHTML = '<div class="flex flex-col gap-3">' + [1, 2, 3].map(() =>
+                '<div class="bg-white/60 rounded-2xl shadow-md overflow-hidden animate-pulse">' +
+                '<div class="w-full aspect-square bg-pink-100/50"></div>' +
+                '<div class="px-3 py-2 flex items-center justify-between gap-2">' +
+                '<div class="h-3 w-24 bg-pink-100 rounded-full"></div>' +
+                '<div class="h-3 w-16 bg-gray-100 rounded-full"></div></div></div>').join('') + '</div>';
+            this._renderedHistoryIds = new Set();
             return;
         }
 
-        // Anti-Flicker: Only update if the LIST of IDs has changed
-        // This ignores trivial updates like "1 min ago" -> "1 min ago" re-renders
-        const currentIdsHash = JSON.stringify(this.state.history.map(d => d.id));
-        if (this._lastHistoryHash === currentIdsHash) return;
-        this._lastHistoryHash = currentIdsHash;
+        if (!this._renderedHistoryIds) this._renderedHistoryIds = new Set();
 
-        const newHtml = this.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
-            this.state.history.map(d => `
-            <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
-                <div class="relative">
-                    <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
-                    <button onclick="App.editDoodle('${d.image_data}')" class="absolute top-2 right-2 bg-white/90 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
-                        <i data-lucide="edit-2" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="App.setWallpaper('${d.image_data}', '${d.id}')" class="absolute top-12 right-2 bg-white/90 text-blue-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
-                        <i data-lucide="smartphone" class="w-4 h-4"></i>
-                    </button>
-                </div>
-                <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
-                    <span>
-                        ${(() => {
-                    const isSent = d.sender_id === App.state.session.user.id;
-                    const otherId = isSent ? d.receiver_id : d.sender_id;
-                    const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
-                    const friend = (Social.friends || []).find(f => f.id === otherId);
+        const renderCard = (d) => {
+            const isSent = d.sender_id === App.state.session?.user?.id;
+            const otherId = isSent ? d.receiver_id : d.sender_id;
+            const cacheName = App.state.userCache?.[otherId];
+            const friend = (Social?.friends || []).find(f => f.id === otherId);
+            let name = cacheName || (friend?.username) || (otherId ? otherId.substring(0, 6) + '...' : '?');
+            let label = '';
+            if (d.isGroup && d.recipients?.length > 0) {
+                const names = d.recipients.map(rid => { const c = App.state.userCache?.[rid]; const fr = (Social?.friends || []).find(f => f.id === rid); return c || (fr?.username) || rid.substring(0, 5) + '..'; });
+                label = '<span class="text-pink-400 font-bold">📤 To: ' + names.join(', ') + '</span>';
+            } else if (isSent) {
+                label = '<span class="text-pink-400 font-bold">📤 To: ' + name + '</span>';
+            } else {
+                const av = App.state.avatarCache?.[otherId];
+                const avatar = av ? '<img src="' + av + '" class="w-4 h-4 rounded-full object-cover shrink-0 border border-indigo-100">' : '<span class="w-4 h-4 rounded-full bg-indigo-100 flex items-center justify-center shrink-0"><i data-lucide="user" class="w-2.5 h-2.5 text-indigo-400"></i></span>';
+                label = '<span class="text-indigo-400 font-bold flex items-center gap-1">' + avatar + ' 📥 From: ' + name + '</span>';
+            }
+            const ts = new Date(d.created_at);
+            const dateStr = ts.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = ts.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+            return '<div class="bg-white/90 rounded-2xl shadow-md overflow-hidden">' +
+                '<div class="relative"><img src="' + d.image_data + '" class="w-full aspect-square object-contain bg-white" loading="lazy" />' +
+                '<div class="absolute top-2 right-2 flex flex-col gap-1.5">' +
+                '<button onclick="App.editDoodle(\'' + d.image_data + '\')" class="bg-white/95 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 active:scale-90"><i data-lucide="edit-2" class="w-3.5 h-3.5"></i></button>' +
+                '<button onclick="App.setWallpaper(\'' + d.image_data + '\', \'' + d.id + '\')" class="bg-white/95 text-blue-400 p-2 rounded-full shadow-md transition-all hover:scale-110 active:scale-90"><i data-lucide="smartphone" class="w-3.5 h-3.5"></i></button>' +
+                '</div></div>' +
+                '<div class="px-3 py-2 flex items-center justify-between gap-2">' +
+                '<div class="text-[10px] flex items-center gap-1 min-w-0 truncate">' + label + '</div>' +
+                '<div class="text-right shrink-0"><div class="text-[9px] text-gray-400 font-medium">' + dateStr + '</div>' +
+                '<div class="text-[9px] text-gray-300">' + timeStr + '</div></div></div></div>';
+        };
 
-                    let name = cacheName || (friend ? friend.username : 'Unknown');
-                    if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...';
+        if (this.state.history.length === 0) {
+            container.innerHTML = '<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>';
+            this._renderedHistoryIds = new Set(); return;
+        }
 
-                    // Group logic
-                    if (d.isGroup) {
-                        const names = d.recipients.map(rid => {
-                            const f = (Social.friends || []).find(fr => fr.id === rid);
-                            const cName = App.state.userCache ? App.state.userCache[rid] : null;
-                            return cName || (f ? f.username : rid.substring(0, 5) + '..');
-                        });
-                        return `TO: ${names.join(', ')} 📤`;
-                    }
+        let cardsList = container.querySelector('.history-cards-list');
+        const sentinel = document.getElementById('history-scroll-sentinel');
+        const endMsg = container.querySelector('.history-end-msg');
 
-                    return isSent ? `TO: ${name} 📤` : `FROM: ${name} 📥`;
-                })()}
-                        </span>
-                        <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
-                    </div>
-                </div>
-            `).join('');
-
-        if (container.innerHTML !== newHtml) {
-            container.innerHTML = newHtml;
+        if (!cardsList) {
+            this._renderedHistoryIds = new Set();
+            const newItems = this.state.history;
+            newItems.forEach(d => this._renderedHistoryIds.add(d.id));
+            const sentinelHtml = App.state.hasMoreHistory
+                ? '<div id="history-scroll-sentinel" class="flex items-center justify-center py-6"><div class="w-5 h-5 border-2 border-pink-200 border-t-pink-400 rounded-full animate-spin"></div></div>'
+                : '<p class="history-end-msg text-center text-white/40 text-xs py-6 italic">You\'ve seen it all ✨</p>';
+            container.innerHTML = '<div class="history-cards-list flex flex-col gap-3">' + newItems.map(renderCard).join('') + '</div>' + sentinelHtml;
             if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        const newItems = this.state.history.filter(d => !this._renderedHistoryIds.has(d.id));
+        if (newItems.length === 0 && (!!sentinel === App.state.hasMoreHistory)) return;
+        newItems.forEach(d => {
+            this._renderedHistoryIds.add(d.id);
+            const index = this.state.history.indexOf(d);
+            const temp = document.createElement('div');
+            temp.innerHTML = renderCard(d);
+            const cardEl = temp.firstElementChild;
+            cardsList.insertBefore(cardEl, cardsList.children[index] || null);
+        });
+
+        if (App.state.hasMoreHistory) {
+            if (!sentinel) container.insertAdjacentHTML('beforeend', '<div id="history-scroll-sentinel" class="flex items-center justify-center py-6"><div class="w-5 h-5 border-2 border-pink-200 border-t-pink-400 rounded-full animate-spin"></div></div>');
+            if (endMsg) endMsg.remove();
+        } else {
+            if (sentinel) sentinel.remove();
+            if (!endMsg) container.insertAdjacentHTML('beforeend', '<p class="history-end-msg text-center text-white/40 text-xs py-6 italic">You\'ve seen it all ✨</p>');
+        }
+        if (newItems.length > 0 && window.lucide) lucide.createIcons();
+    },
+
+    setupHistoryInfiniteScroll() {
+        const sentinel = document.getElementById('history-scroll-sentinel');
+        if (!sentinel) return;
+        // Skip re-wire if we're already observing this exact sentinel node (prevents flicker)
+        if (this._historySentinelNode === sentinel && this._historyObserver) return;
+        if (this._historyObserver) this._historyObserver.disconnect();
+        this._historySentinelNode = sentinel;
+        this._historyObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && App.state.hasMoreHistory && !App.state.isLoadingHistory) {
+                App.loadMoreHistory();
+            }
+        }, { threshold: 0.1 });
+        this._historyObserver.observe(sentinel);
+        // Fire immediately if already in view
+        const rect = sentinel.getBoundingClientRect();
+        if (rect.top < window.innerHeight && rect.bottom > 0 && App.state.hasMoreHistory && !App.state.isLoadingHistory) {
+            App.loadMoreHistory();
         }
     },
+
+    setupDraftsInfiniteScroll() {
+        const sentinel = document.getElementById('drafts-scroll-sentinel');
+        const scrollRow = document.getElementById('sketchbook-scroll-row');
+        if (!sentinel || !scrollRow) return;
+        // Skip re-wire if already observing this exact sentinel (prevents scroll jump)
+        if (this._draftsSentinelNode === sentinel && this._draftsObserver) return;
+        if (this._draftsObserver) this._draftsObserver.disconnect();
+        this._draftsSentinelNode = sentinel;
+        this._draftsObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && App.state.hasMoreDrafts && !App.state.isLoadingHistory) {
+                App.loadMoreDrafts();
+            }
+        }, { root: scrollRow, threshold: 0.1 });
+        this._draftsObserver.observe(sentinel);
+    },
+
+    async loadMoreDrafts(btn) {
+        if (btn && typeof btn === 'object') btn.innerHTML = '<i data-lucide="loader" class="animate-spin w-3 h-3 inline"></i> Loading...';
+        // Save scroll position BEFORE loading so updateDraftsDOM can restore it
+        const scrollRow = document.getElementById('sketchbook-scroll-row');
+        if (scrollRow) this._savedDraftScroll = scrollRow.scrollLeft;
+        this.state.draftsOffset += 5;
+        await this.loadHistory(true, true);
+    },
+
     async markAllRead() {
         if (!this.state.supabase || !this.state.session) return;
         if (this.state.unreadCount === 0) return;
@@ -1458,16 +1639,36 @@ const App = {
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'doodles' }, payload => {
                 console.log('🌈 New Magic Received!', payload);
                 this.state.lastDoodle = payload.new.image_data;
-                this.toast('New doodle from a friend! 💖', 'pink');
 
-                // Auto-set wallpaper via smart logic
+                // Only show toast if doodle is TO me (not from me)
+                if (payload.new.receiver_id === this.state.session?.user?.id ||
+                    (payload.new.isGroup && payload.new.recipients?.includes(this.state.session?.user?.id))) {
+                    this.toast('New doodle from a friend! 💖', 'pink');
+                }
+
+                // Instant lock screen via Realtime (no 30s poll wait)
                 this.setSmartWallpaper(payload.new);
 
-                if (this.state.view === 'home' || this.state.view === 'widget') this.renderView();
+                // Surgical home update — never call renderView() (causes flicker)
+                if (this.state.view === 'home' || this.state.view === 'widget') {
+                    const img = document.getElementById('home-latest-doodle');
+                    if (img && payload.new.image_data) img.src = payload.new.image_data;
+                    const badge = document.getElementById('home-unread-badge');
+                    if (badge) {
+                        const newCount = (this.state.unreadCount || 0) + 1;
+                        this.state.unreadCount = newCount;
+                        badge.textContent = newCount > 0 ? newCount + ' new 💌' : '';
+                        badge.className = newCount > 0 ? 'text-xs font-bold text-white bg-pink-400 px-2 py-0.5 rounded-full' : '';
+                    }
+                }
+                // Silent load to merge new item into history state
+                this.loadHistory(true);
             })
             .subscribe();
 
         this.state.doodleSubscription = channel;
+        // Ensure the realtime connection is actually connected
+        this.state.supabase.realtime.connect();
         console.log("📡 Listening for forest magic...");
     },
 
@@ -1516,7 +1717,7 @@ const App = {
 
                 // Show raw error for debugging
                 const rawError = JSON.stringify(e, Object.getOwnPropertyNames(e));
-                this.toast(`Login Error: ${e.message || e.code || rawError}`, 'blue');
+                this.toast(`Login Error: ${e.message || e.code || rawError} `, 'blue');
             }
             return;
         }
@@ -1652,7 +1853,9 @@ const App = {
     },
 
     setView(viewName) {
-        if (this.state.view === viewName) return; // Prevent reset if already on view
+        const alreadyOnView = this.state.view === viewName;
+        // For home: allow re-nav to silently refresh instead of blocking
+        if (alreadyOnView && viewName !== 'home') return;
         // Push current view to history stack (for back button)
         if (this.state.view && this.state.view !== 'landing' && this.state.view !== 'setup') {
             this.state.viewHistory.push(this.state.view);
@@ -1723,8 +1926,18 @@ const App = {
                 }
             }
             if (viewName === 'history') {
-                this.loadHistory();
-                this.markAllRead();
+                if (this.state.unreadCount > 0) {
+                    this.markAllRead();
+                }
+                // First visit: full load. Re-visit: silent check only (preserve scroll)
+                const firstVisit = !this._historyLoaded;
+                this._historyLoaded = true;
+                this.loadHistory(firstVisit ? false : true);
+            }
+            // Home re-nav: silent refresh only (already rendered, just update data)
+            if (viewName === 'home' && alreadyOnView) {
+                this.loadHistory(true);
+                return;
             }
         }, 0);
     },
@@ -1788,7 +2001,7 @@ const App = {
             case 'profile': content.innerHTML = this.templates.profile(); break;
             case 'history': content.innerHTML = this.templates.history(); break;
             case 'widget': content.innerHTML = this.templates.widget(); break;
-            default: content.innerHTML = `<div>404 - Kawaii Not Found 😭</div>`;
+            default: content.innerHTML = `<div> 404 - Kawaii Not Found 😭</div>`;
         }
 
         // Add animation class to new content
@@ -1802,7 +2015,7 @@ const App = {
 
     templates: {
         landing: () => `
-            <div class="flex flex-col items-center justify-center min-h-screen gap-8 text-center animate-float p-4">
+        <div class="flex flex-col items-center justify-center min-h-screen gap-8 text-center animate-float p-4">
                 <div class="relative">
                     <div class="w-48 h-48 bg-white/40 rounded-full border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden">
                         <img src="src/assets/logo.png" class="w-full h-full object-cover" alt="Kawaii Doodle Logo" />
@@ -1813,7 +2026,7 @@ const App = {
                     <p class="text-white font-bold drop-shadow-md italic mt-4 text-lg">Hand-drawn magic for friends ✨</p>
                 </div>
 
-                <!-- Google Sign In Button (Official Style) -->
+                <!--Google Sign In Button(Official Style)-->
                 <button onclick="App.handleGoogleSignIn()" class="bg-white text-gray-700 px-6 py-3 rounded-full font-medium text-lg shadow-xl hover:shadow-2xl active:scale-95 transition-all flex items-center gap-4 w-72 justify-center border border-gray-100 relative z-10">
                     <svg class="w-6 h-6" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -1824,7 +2037,7 @@ const App = {
                     <span>Sign in with Google</span>
                 </button>
                 
-                <!-- Release Notes Button -->
+                <!--Release Notes Button-->
                 <button onclick="App.toggleReleaseNotes()" class="absolute top-4 left-4 p-2 bg-white/80 rounded-full shadow-md hover:scale-110 active:scale-95 transition-transform border-2 border-yellow-200 z-50">
                     <i data-lucide="sparkles" class="w-6 h-6 text-yellow-400"></i>
                 </button>
@@ -1840,280 +2053,280 @@ const App = {
                 </div>
             </div>
 
-            <!-- Hidden Release Notes Modal (MOVED OUTSIDE) -->
-            <div id="release-notes-modal" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-8 backdrop-blur-md transition-all" onclick="this.classList.add('hidden')">
-                <div class="bg-white w-full max-w-sm h-3/4 rounded-bubbly shadow-2xl relative flex flex-col transform rotate-1 border-4 border-pink-100" onclick="event.stopPropagation()">
-                    
-                    <!-- Header -->
-                    <div class="p-6 border-b border-pink-50 bg-pink-50/50 rounded-t-bubbly">
-                        <h3 class="font-bold text-xl text-pink-500 flex justify-between items-center">
-                            <span>What's New? ✨</span>
-                            <button onclick="document.getElementById('release-notes-modal').classList.add('hidden')" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1 shadow-sm">
-                                <i data-lucide="x" class="w-5 h-5"></i>
-                            </button>
-                        </h3>
-                        <p id="modal-version-label" class="text-xs text-pink-300 font-bold mt-1">Loading...</p>
-                    </div>
+            <!--Hidden Release Notes Modal(MOVED OUTSIDE)-->
+    <div id="release-notes-modal" class="hidden fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-8 backdrop-blur-md transition-all" onclick="this.classList.add('hidden')">
+        <div class="bg-white w-full max-w-sm h-3/4 rounded-bubbly shadow-2xl relative flex flex-col transform rotate-1 border-4 border-pink-100" onclick="event.stopPropagation()">
 
-                    <!-- Scrollable Content -->
-                    <div class="flex-1 p-6 overflow-y-auto text-left space-y-4">
-                        
-                        <div class="bg-pink-50 p-3 rounded-xl border border-pink-100">
-                            <h4 class="font-bold text-pink-500 text-sm mb-1">🧼 Clean Start</h4>
-        `,
-        setup: () => `
-            <div class="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center animate-fade-in">
-                <div class="bg-white/80 p-8 rounded-bubbly shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-float">
-                    <div>
-                        <h2 class="text-2xl font-black text-pink-500 mb-2">Welcome Home! 🏡</h2>
-                        <p class="text-gray-500 text-sm italic">What should your friends call you?</p>
-                    </div>
-                    <div>
-                        <input id="setup-name" type="text" placeholder="Your Sweet Name..." class="w-full bg-pink-50 px-6 py-4 rounded-full border-none focus:ring-4 focus:ring-pink-300 outline-none text-center font-bold text-pink-600 text-lg">
-                    </div>
-                    <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="bg-pink-500 text-white w-full py-4 rounded-full font-black text-lg shadow-lg hover:bg-pink-600 active:scale-95 transition-all">
-                        Let's Go! 🚀
+            <!-- Header -->
+            <div class="p-6 border-b border-pink-50 bg-pink-50/50 rounded-t-bubbly">
+                <h3 class="font-bold text-xl text-pink-500 flex justify-between items-center">
+                    <span>What's New? ✨</span>
+                    <button onclick="document.getElementById('release-notes-modal').classList.add('hidden')" class="text-gray-400 hover:text-red-500 bg-white rounded-full p-1 shadow-sm">
+                        <i data-lucide="x" class="w-5 h-5"></i>
                     </button>
-                </div>
+                </h3>
+                <p id="modal-version-label" class="text-xs text-pink-300 font-bold mt-1">Loading...</p>
             </div>
-        `,
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 p-6 overflow-y-auto text-left space-y-4">
+
+                <div class="bg-pink-50 p-3 rounded-xl border border-pink-100">
+                    <h4 class="font-bold text-pink-500 text-sm mb-1">🧼 Clean Start</h4>
+                    `,
+        setup: () => `
+                    <div class="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center animate-fade-in">
+                        <div class="bg-white/80 p-8 rounded-bubbly shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-float">
+                            <div>
+                                <h2 class="text-2xl font-black text-pink-500 mb-2">Welcome Home! 🏡</h2>
+                                <p class="text-gray-500 text-sm italic">What should your friends call you?</p>
+                            </div>
+                            <div>
+                                <input id="setup-name" type="text" placeholder="Your Sweet Name..." class="w-full bg-pink-50 px-6 py-4 rounded-full border-none focus:ring-4 focus:ring-pink-300 outline-none text-center font-bold text-pink-600 text-lg">
+                            </div>
+                            <button onclick="App.completeSetup(document.getElementById('setup-name').value)" class="bg-pink-500 text-white w-full py-4 rounded-full font-black text-lg shadow-lg hover:bg-pink-600 active:scale-95 transition-all">
+                                Let's Go! 🚀
+                            </button>
+                        </div>
+                    </div>
+                    `,
         home: () => `
-            <div class="flex flex-col items-center gap-6 p-4 w-full max-w-md mx-auto animate-slide-up">
-                <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transform hover:scale-105 transition-transform duration-500">
-                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" />` : `
+                    <div class="flex flex-col items-center gap-6 p-4 w-full max-w-md mx-auto animate-slide-up">
+                        <div class="w-64 h-64 bg-white/60 rounded-bubbly border-4 border-white shadow-xl flex items-center justify-center overflow-hidden transform hover:scale-105 transition-transform duration-500">
+                            ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain opacity-0 transition-opacity duration-700" onload="this.classList.remove('opacity-0')" />` : `
                     <div class="flex flex-col items-center justify-center p-4">
                         <div class="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin mb-3"></div>
                         <p class="font-bold text-pink-400 text-sm animate-pulse">Loading your magic... ✨</p>
                         <p class="text-xs text-pink-300 mt-1">${navigator.onLine ? 'Almost there!' : 'Waiting for connection...'}</p>
                     </div>`}
-                </div>
-                <div class="flex flex-col items-center gap-3">
-                    <div class="w-16 h-16 rounded-full border-4 border-white/50 shadow-lg overflow-hidden bg-pink-100 flex-shrink-0">
-                        ${App.state.user.avatarUrl ?
+                        </div>
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="w-16 h-16 rounded-full border-4 border-white/50 shadow-lg overflow-hidden bg-pink-100 flex-shrink-0">
+                                ${App.state.user.avatarUrl ?
                 `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
             }
-                        <div class="w-full h-full flex items-center justify-center ${App.state.user.avatarUrl ? 'hidden' : ''}"><i data-lucide="user" class="w-8 h-8 text-pink-300"></i></div>
-                    </div>
-                    <div class="text-center">
-                        <h2 class="text-2xl font-bold text-white drop-shadow-md">Stay Kawaii, ${App.state.user.username.split(' ')[0]}! ✨</h2>
-                        <p class="text-[10px] text-white/70">ID: ${App.state.user.kawaiiId}</p>
-                </div>
-                <div class="flex gap-4 flex-wrap justify-center">
-                    <button onclick="App.setView('draw')" class="btn-bubbly btn-primary hover:scale-105 active:scale-95 shrink-0">
-                        <i data-lucide="palette"></i> Doodle! 🎨
-                    </button>
-                    <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105 active:scale-95 shrink-0 relative">
-                        <i data-lucide="history"></i> History 📜
-                        ${App.state.unreadCount > 0 ? `
+                                <div class="w-full h-full flex items-center justify-center ${App.state.user.avatarUrl ? 'hidden' : ''}"><i data-lucide="user" class="w-8 h-8 text-pink-300"></i></div>
+                            </div>
+                            <div class="text-center">
+                                <h2 class="text-2xl font-bold text-white drop-shadow-md">Stay Kawaii, ${App.state.user.username.split(' ')[0]}! ✨</h2>
+                                <p class="text-[10px] text-white/70">ID: ${App.state.user.kawaiiId}</p>
+                            </div>
+                            <div class="flex gap-4 flex-wrap justify-center">
+                                <button onclick="App.setView('draw')" class="btn-bubbly btn-primary hover:scale-105 active:scale-95 shrink-0">
+                                    <i data-lucide="palette"></i> Doodle! 🎨
+                                </button>
+                                <button onclick="App.setView('history')" class="btn-bubbly bg-blue-100 border-blue-200 text-blue-500 hover:scale-105 active:scale-95 shrink-0 relative">
+                                    <i data-lucide="history"></i> History 📜
+                                    ${App.state.unreadCount > 0 ? `
                         <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white animate-bounce">
                             ${App.state.unreadCount}
                         </span>` : ''}
-                    </button>
-                    ${!App.state.notificationsEnabled ? `
+                                </button>
+                                ${!App.state.notificationsEnabled ? `
                     <!-- Unified Signal Activation -->
                     <button onclick="App.requestAllPermissions()" class="btn-bubbly bg-yellow-100 border-yellow-200 text-yellow-600 hover:scale-105 active:scale-95 shrink-0 text-xs py-2 px-4 shadow-sm">
                         <i data-lucide="radio" class="w-4 h-4"></i> Activate Notifications 📡
                     </button>
                     ` : ''}
-                </div>
-                ${App.state.updateAvailable ? `
+                            </div>
+                            ${App.state.updateAvailable ? `
                 <div class="w-full max-w-md animate-bounce">
                     <button id="update-btn" onclick="App.showUpdateModal()" class="w-full bg-white text-pink-500 font-bold py-3 rounded-xl shadow-lg border-2 border-pink-200 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2">
                         <i data-lucide="sparkles"></i> New Magic Available! (v${App.state.latestRelease?.tag_name || '...'})
                     </button>
                 </div>
                 ` : ''}
-            </div>
-    `,
+                        </div>
+                        `,
         widget: () => `
-            <div class="h-screen w-full flex items-center justify-center p-4">
-                <div class="w-full aspect-square bg-white/40 backdrop-blur-md rounded-bubbly border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden animate-float">
-                    ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain p-2" />` : `
+                        <div class="h-screen w-full flex items-center justify-center p-4">
+                            <div class="w-full aspect-square bg-white/40 backdrop-blur-md rounded-bubbly border-4 border-white shadow-2xl flex items-center justify-center overflow-hidden animate-float">
+                                ${App.state.lastDoodle ? `<img src="${App.state.lastDoodle}" class="w-full h-full object-contain p-2" />` : `
                     <div class="text-center p-4">
                         <i data-lucide="sparkles" class="w-12 h-12 mx-auto text-yellow-300 mb-2 animate-pulse"></i>
                         <p class="font-bold text-white text-sm drop-shadow-sm">Magic widget ready...</p>
                     </div>`}
-                </div>
-            </div>
-    `,
+                            </div>
+                        </div>
+                        `,
         draw: () => `
-            <div class="h-full w-full relative flex flex-col items-center animate-fade-in overflow-hidden">
-                <!-- Canvas Area -->
-                <div class="flex-1 w-full flex items-center justify-center p-6 min-h-0 relative">
-                    <div class="relative w-full aspect-square max-w-md max-h-full bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white overflow-hidden">
-                        <canvas id="drawing-canvas" class="w-full h-full touch-none"></canvas>
-                    </div>
-                    <button id="btn-reset-zoom" style="display:none" class="absolute top-3 right-3 bg-white/90 backdrop-blur text-pink-500 font-bold text-xs py-2 px-3 rounded-full shadow-lg border border-pink-200 items-center gap-1 hover:bg-pink-50 active:scale-95 transition-all z-50">
-                        <i data-lucide="minimize-2" class="w-4 h-4 inline"></i> Reset Zoom
-                    </button>
-                </div>
-                
-                <!-- Controls Area -->
-                <div class="w-full shrink-0 z-40 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
-                    <div class="bg-white/95 backdrop-blur-2xl p-4 rounded-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col gap-3 ring-8 ring-white/50 border border-pink-50">
+                        <div class="h-full w-full relative flex flex-col items-center animate-fade-in overflow-hidden">
+                            <!-- Canvas Area -->
+                            <div class="flex-1 w-full flex items-center justify-center p-6 min-h-0 relative">
+                                <div class="relative w-full aspect-square max-w-md max-h-full bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] border-4 border-white overflow-hidden">
+                                    <canvas id="drawing-canvas" class="w-full h-full touch-none"></canvas>
+                                </div>
+                                <button id="btn-reset-zoom" style="display:none" class="absolute top-3 right-3 bg-white/90 backdrop-blur text-pink-500 font-bold text-xs py-2 px-3 rounded-full shadow-lg border border-pink-200 items-center gap-1 hover:bg-pink-50 active:scale-95 transition-all z-50">
+                                    <i data-lucide="minimize-2" class="w-4 h-4 inline"></i> Reset Zoom
+                                </button>
+                            </div>
 
-            <!-- 1. Recipient Selection -->
-            <div id="recipient-selection" class="flex items-center gap-2 overflow-x-auto px-4 py-2 border-b border-pink-100/50 no-scrollbar touch-pan-x">
-                <span class="text-[10px] font-black text-pink-400 whitespace-nowrap tracking-wider">TO:</span>
-                <div id="friend-bubbles" class="flex gap-2">
-                    <p class="text-[10px] text-gray-400 font-bold">Loading...</p>
-                </div>
-            </div>
+                            <!-- Controls Area -->
+                            <div class="w-full shrink-0 z-40 px-4 pb-[calc(2rem+env(safe-area-inset-bottom))]">
+                                <div class="bg-white/95 backdrop-blur-2xl p-4 rounded-[2.5rem] shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col gap-3 ring-8 ring-white/50 border border-pink-50">
 
-            <!-- 2. Tools Row -->
-            <div class="flex items-center justify-between gap-2">
-                <!-- Palette -->
-                <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 flex-1 touch-pan-x">
-                    <div id="palette-container" class="flex gap-2 shrink-0">
-                        <!-- Injected -->
-                    </div>
-                </div>
+                                    <!-- 1. Recipient Selection -->
+                                    <div id="recipient-selection" class="flex items-center gap-2 overflow-x-auto px-4 py-2 border-b border-pink-100/50 no-scrollbar touch-pan-x">
+                                        <span class="text-[10px] font-black text-pink-400 whitespace-nowrap tracking-wider">TO:</span>
+                                        <div id="friend-bubbles" class="flex gap-2">
+                                            <p class="text-[10px] text-gray-400 font-bold">Loading...</p>
+                                        </div>
+                                    </div>
 
-                <div class="w-[2px] h-6 bg-gray-100 shrink-0 rounded-full"></div>
+                                    <!-- 2. Tools Row -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <!-- Palette -->
+                                        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-2 px-1 flex-1 touch-pan-x">
+                                            <div id="palette-container" class="flex gap-2 shrink-0">
+                                                <!-- Injected -->
+                                            </div>
+                                        </div>
 
-                <!-- Toggles -->
-                <div class="flex gap-2 shrink-0">
-                    <button id="btn-fill-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
-                        <i data-lucide="paint-bucket" class="w-5 h-5 text-gray-400 transition-colors"></i>
-                    </button>
-                    <button id="btn-eraser-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
-                        <i data-lucide="eraser" class="w-5 h-5 text-gray-400 transition-colors"></i>
-                    </button>
-                    <button id="btn-custom-color" class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
-                        <i data-lucide="plus" class="w-5 h-5 text-white"></i>
-                    </button>
-                    <button onclick="document.getElementById('stamp-modal').classList.remove('hidden')" class="w-10 h-10 rounded-full bg-gradient-to-bl from-yellow-200 via-pink-200 to-purple-200 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform active:rotate-12">
-                        <span class="text-xl filter drop-shadow-sm">🦄</span>
-                    </button>
-                </div>
-            </div>
+                                        <div class="w-[2px] h-6 bg-gray-100 shrink-0 rounded-full"></div>
 
-            <!-- 3. Sliders & edits -->
-            <div class="flex items-center gap-3 bg-gray-50/60 p-2 rounded-xl border border-white/50">
-                <i data-lucide="brush" class="w-4 h-4 text-pink-300 shrink-0"></i>
-                <input id="brush-size" type="range" min="2" max="40" value="5" class="flex-1 accent-pink-500 h-2 bg-pink-100 rounded-lg appearance-none cursor-pointer">
+                                        <!-- Toggles -->
+                                        <div class="flex gap-2 shrink-0">
+                                            <button id="btn-fill-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
+                                                <i data-lucide="paint-bucket" class="w-5 h-5 text-gray-400 transition-colors"></i>
+                                            </button>
+                                            <button id="btn-eraser-tool" class="w-10 h-10 rounded-full bg-white border-2 border-gray-100 shadow-md flex items-center justify-center transition-transform">
+                                                <i data-lucide="eraser" class="w-5 h-5 text-gray-400 transition-colors"></i>
+                                            </button>
+                                            <button id="btn-custom-color" class="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-400 via-purple-400 to-indigo-400 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
+                                                <i data-lucide="plus" class="w-5 h-5 text-white"></i>
+                                            </button>
+                                            <button onclick="document.getElementById('stamp-modal').classList.remove('hidden')" class="w-10 h-10 rounded-full bg-gradient-to-bl from-yellow-200 via-pink-200 to-purple-200 border-2 border-white shadow-md flex items-center justify-center hover:scale-110 transition-transform active:rotate-12">
+                                                <span class="text-xl filter drop-shadow-sm">🦄</span>
+                                            </button>
+                                        </div>
+                                    </div>
 
-                    <div class="w-[1px] h-6 bg-gray-200 shrink-0"></div>
+                                    <!-- 3. Sliders & edits -->
+                                    <div class="flex items-center gap-3 bg-gray-50/60 p-2 rounded-xl border border-white/50">
+                                        <i data-lucide="brush" class="w-4 h-4 text-pink-300 shrink-0"></i>
+                                        <input id="brush-size" type="range" min="2" max="40" value="5" class="flex-1 accent-pink-500 h-2 bg-pink-100 rounded-lg appearance-none cursor-pointer">
 
-                    <div class="flex gap-1 shrink-0">
-                        <button id="btn-undo" class="p-2 text-gray-400 hover:text-pink-500 hover:bg-white rounded-lg transition-all active:scale-90">
-                            <i data-lucide="undo-2" class="w-5 h-5"></i>
-                        </button>
-                        <button id="btn-redo" class="p-2 text-gray-400 hover:text-blue-500 hover:bg-white rounded-lg transition-all active:scale-90">
-                            <i data-lucide="redo-2" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-            </div>
+                                            <div class="w-[1px] h-6 bg-gray-200 shrink-0"></div>
 
-            <!-- 4. Actions Footer -->
-            <div class="flex items-center gap-3 mt-1">
-                <button id="clear-canvas" class="p-3 bg-red-50 text-red-400 rounded-full hover:bg-red-100 active:scale-90 transition-all shadow-sm group" title="Clear">
-                    <i data-lucide="trash-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
-                </button>
-                <button id="save-draft" class="p-3 bg-blue-50 text-blue-400 rounded-full hover:bg-blue-100 active:scale-90 transition-all shadow-sm group" title="Save">
-                    <i data-lucide="save" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
-                </button>
-                <button id="send-doodle" class="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-full font-black shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 text-base tracking-wide">
-                    <span>SEND MAGIC</span> <i data-lucide="send" class="w-5 h-5"></i>
-                </button>
-            </div>
+                                            <div class="flex gap-1 shrink-0">
+                                                <button id="btn-undo" class="p-2 text-gray-400 hover:text-pink-500 hover:bg-white rounded-lg transition-all active:scale-90">
+                                                    <i data-lucide="undo-2" class="w-5 h-5"></i>
+                                                </button>
+                                                <button id="btn-redo" class="p-2 text-gray-400 hover:text-blue-500 hover:bg-white rounded-lg transition-all active:scale-90">
+                                                    <i data-lucide="redo-2" class="w-5 h-5"></i>
+                                                </button>
+                                            </div>
+                                    </div>
 
-            <!-- HIDDEN STAMP MODAL (Absolute Overlay) -->
-            <div id="stamp-modal" class="hidden absolute inset-0 bg-white/95 backdrop-blur-md rounded-[2rem] z-50 flex flex-col p-4 animate-fade-in">
-                <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
-                    <h3 class="font-bold text-gray-500 flex items-center gap-2">
-                        <span class="text-xl">✨</span> Choose a Stamp
-                    </h3>
-                    <button onclick="document.getElementById('stamp-modal').classList.add('hidden')" class="bg-gray-100 text-gray-500 p-1.5 rounded-full hover:bg-gray-200 transition-colors">
-                        <i data-lucide="x" class="w-5 h-5"></i>
-                    </button>
-                </div>
-                <div class="grid grid-cols-5 gap-3 overflow-y-auto no-scrollbar pb-10 content-start">
-                    ${['🦄', '💖', '⭐', '🌸', '🎀', '🐱', '🐰', '🍄', '🍭', '⚡', '🔥', '🌈', '🍕', '🎉', '🦋', '🌵', '🍩', '🚀', '👽', '💎', '🎨', '🧸', '🎵', '👻', '💩'].map(emoji => `
+                                    <!-- 4. Actions Footer -->
+                                    <div class="flex items-center gap-3 mt-1">
+                                        <button id="clear-canvas" class="p-3 bg-red-50 text-red-400 rounded-full hover:bg-red-100 active:scale-90 transition-all shadow-sm group" title="Clear">
+                                            <i data-lucide="trash-2" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                                        </button>
+                                        <button id="save-draft" class="p-3 bg-blue-50 text-blue-400 rounded-full hover:bg-blue-100 active:scale-90 transition-all shadow-sm group" title="Save">
+                                            <i data-lucide="save" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                                        </button>
+                                        <button id="send-doodle" class="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 text-white py-3 rounded-full font-black shadow-lg shadow-pink-200 hover:shadow-xl hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 text-base tracking-wide">
+                                            <span>SEND MAGIC</span> <i data-lucide="send" class="w-5 h-5"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- HIDDEN STAMP MODAL (Absolute Overlay) -->
+                                    <div id="stamp-modal" class="hidden absolute inset-0 bg-white/95 backdrop-blur-md rounded-[2rem] z-50 flex flex-col p-4 animate-fade-in">
+                                        <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-2">
+                                            <h3 class="font-bold text-gray-500 flex items-center gap-2">
+                                                <span class="text-xl">✨</span> Choose a Stamp
+                                            </h3>
+                                            <button onclick="document.getElementById('stamp-modal').classList.add('hidden')" class="bg-gray-100 text-gray-500 p-1.5 rounded-full hover:bg-gray-200 transition-colors">
+                                                <i data-lucide="x" class="w-5 h-5"></i>
+                                            </button>
+                                        </div>
+                                        <div class="grid grid-cols-5 gap-3 overflow-y-auto no-scrollbar pb-10 content-start">
+                                            ${['🦄', '💖', '⭐', '🌸', '🎀', '🐱', '🐰', '🍄', '🍭', '⚡', '🔥', '🌈', '🍕', '🎉', '🦋', '🌵', '🍩', '🚀', '👽', '💎', '🎨', '🧸', '🎵', '👻', '💩'].map(emoji => `
                                 <button class="stamp-btn text-2xl hover:scale-125 active:scale-90 transition-transform p-2 bg-gray-50 rounded-xl border border-gray-100 shadow-sm aspect-square flex items-center justify-center" 
                                     data-stamp="${emoji}"
                                     onclick="document.getElementById('stamp-modal').classList.add('hidden')">
                                     ${emoji}
                                 </button>
                             `).join('')}
-                </div>
-            </div>
-        </div>
-    </div>
-`,
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            `,
         friends: () => `
-        <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
-                <div class="bg-white/60 p-4 rounded-bubbly shadow-sm">
-                    <h3 class="font-bold mb-3 flex items-center gap-2">
-                        <i data-lucide="search" class="w-4 h-4"></i> Find Friends
-                    </h3>
-                    <div class="flex gap-2">
-                        <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." class="flex-1 bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none">
-                        <button id="btn-search-friend" class="bg-pink-400 text-white p-2 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
-                            <i data-lucide="user-plus"></i>
-                        </button>
-                    </div>
-                </div>
-                <div id="friend-list" class="flex flex-col gap-2">
-                    <!-- Loaded dynamically -->
-                </div>
-            </div>
-`,
+                            <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
+                                <div class="bg-white/60 p-4 rounded-bubbly shadow-sm">
+                                    <h3 class="font-bold mb-3 flex items-center gap-2">
+                                        <i data-lucide="search" class="w-4 h-4"></i> Find Friends
+                                    </h3>
+                                    <div class="flex gap-2">
+                                        <input id="friend-id-input" type="text" placeholder="Enter Kawaii ID..." class="flex-1 bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none">
+                                            <button id="btn-search-friend" class="bg-pink-400 text-white p-2 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
+                                                <i data-lucide="user-plus"></i>
+                                            </button>
+                                    </div>
+                                </div>
+                                <div id="friend-list" class="flex flex-col gap-2">
+                                    <!-- Loaded dynamically -->
+                                </div>
+                            </div>
+                            `,
         profile: () => `
-    <div class="flex flex-col items-center gap-6 w-full max-w-sm animate-slide-up">
-                <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden shrink-0">
-                    ${App.state.user.avatarUrl ?
+                            <div class="flex flex-col items-center gap-6 w-full max-w-sm animate-slide-up">
+                                <div class="w-24 h-24 bg-white rounded-full border-4 border-white shadow-md flex items-center justify-center overflow-hidden shrink-0">
+                                    ${App.state.user.avatarUrl ?
                 `<img src="${App.state.user.avatarUrl}" class="w-full h-full object-cover" referrerpolicy="no-referrer" onerror="this.classList.add('hidden'); if(this.nextElementSibling) this.nextElementSibling.classList.remove('hidden');">` : ''
             }
-                    <i data-lucide="user" class="w-12 h-12 text-gray-300 ${App.state.user.avatarUrl ? 'hidden' : ''}"></i>
-                </div>
-                <div class="text-center">
-                    <p class="text-xl font-bold border-none outline-none py-1">${App.state.user.username}</p>
-                    <div class="flex items-center justify-center gap-3 mt-2">
-                        <p class="text-pink-500 font-bold text-sm tracking-wide bg-pink-50 px-3 py-1 rounded-lg border border-pink-100">${App.state.user.kawaiiId}</p>
-                        <button onclick="navigator.clipboard.writeText('${App.state.user.kawaiiId}').then(() => App.toast('Copied! 📋', 'pink'))" class="p-2 bg-pink-100 rounded-full hover:bg-pink-200 active:scale-95 transition-all shadow-sm">
-                            <i data-lucide="copy" class="w-4 h-4 text-pink-500"></i>
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
-                    <p class="text-[10px] font-medium mb-1">Signed in via Google ✨</p>
-                    <button onclick="App.signOut()" class="bg-white border-2 border-red-100 text-red-400 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all w-full">
-                        Sign Out
-                    </button>
-                </div>
+                                    <i data-lucide="user" class="w-12 h-12 text-gray-300 ${App.state.user.avatarUrl ? 'hidden' : ''}"></i>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xl font-bold border-none outline-none py-1">${App.state.user.username}</p>
+                                    <div class="flex items-center justify-center gap-3 mt-2">
+                                        <p class="text-pink-500 font-bold text-sm tracking-wide bg-pink-50 px-3 py-1 rounded-lg border border-pink-100">${App.state.user.kawaiiId}</p>
+                                        <button onclick="navigator.clipboard.writeText('${App.state.user.kawaiiId}').then(() => App.toast('Copied! 📋', 'pink'))" class="p-2 bg-pink-100 rounded-full hover:bg-pink-200 active:scale-95 transition-all shadow-sm">
+                                            <i data-lucide="copy" class="w-4 h-4 text-pink-500"></i>
+                                        </button>
+                                    </div>
+                                </div>
 
-                <!-- Hidden Technical Settings -->
-                <div id="admin-settings" class="hidden bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
-                    <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 border-b border-gray-100 pb-2">
-                        <i data-lucide="settings" class="w-4 h-4"></i> Account Connection
-                    </h3>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">CONNECTION URL</label>
-                        <input id="sb-url" type="text" value="${App.state.config.url}" placeholder="https://xyz.supabase.co" class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 ml-2">ACCESS KEY</label>
-                        <input id="sb-key" type="password" value="${App.state.config.key}" placeholder="eyJhbG..." class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
-                    </div>
-                    <button onclick="App.handleSaveConfig()" class="bg-pink-400 text-white px-8 py-2 rounded-full font-bold shadow-md hover:bg-pink-500 active:scale-95 transition-all mt-2">
-                        Save Setup
-                    </button>
-                </div>
-            </div>
-    </div>
-`,
+                                <div class="bg-white/60 p-4 rounded-bubbly w-full max-w-xs text-center flex flex-col gap-2">
+                                    <p class="text-[10px] font-medium mb-1">Signed in via Google ✨</p>
+                                    <button onclick="App.signOut()" class="bg-white border-2 border-red-100 text-red-400 px-6 py-2 rounded-full font-bold shadow-sm text-xs hover:bg-red-50 hover:border-red-200 active:scale-95 transition-all w-full">
+                                        Sign Out
+                                    </button>
+                                </div>
+
+                                <!-- Hidden Technical Settings -->
+                                <div id="admin-settings" class="hidden bg-white/60 p-6 rounded-bubbly w-full shadow-sm flex flex-col gap-4">
+                                    <h3 class="font-bold text-sm text-gray-500 flex items-center gap-2 border-b border-gray-100 pb-2">
+                                        <i data-lucide="settings" class="w-4 h-4"></i> Account Connection
+                                    </h3>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-gray-400 ml-2">CONNECTION URL</label>
+                                        <input id="sb-url" type="text" value="${App.state.config.url}" placeholder="https://xyz.supabase.co" class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-bold text-gray-400 ml-2">ACCESS KEY</label>
+                                        <input id="sb-key" type="password" value="${App.state.config.key}" placeholder="eyJhbG..." class="w-full bg-white px-4 py-2 rounded-full border-none focus:ring-2 focus:ring-pink-300 outline-none text-sm mt-1">
+                                    </div>
+                                    <button onclick="App.handleSaveConfig()" class="bg-pink-400 text-white px-8 py-2 rounded-full font-bold shadow-md hover:bg-pink-500 active:scale-95 transition-all mt-2">
+                                        Save Setup
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        `,
         history: () => `
-    <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
-                <header class="text-center mb-2">
-                    <h2 class="text-2xl font-black text-white drop-shadow-md">Magic History 📜</h2>
-                    <p class="text-white/70 text-xs italic">All your sent and received doodles ✨</p>
-                </header>
-                <div class="flex flex-col gap-4">
-                    <!-- Drafts Section -->
-                    <div id="drafts-section">
-                    ${(() => {
+                        <div class="w-full max-w-md flex flex-col gap-4 animate-slide-up">
+                            <header class="text-center mb-2">
+                                <h2 class="text-2xl font-black text-white drop-shadow-md">Magic History 📜</h2>
+                                <p class="text-white/70 text-xs italic">All your sent and received doodles ✨</p>
+                            </header>
+                            <div class="flex flex-col gap-4">
+                                <!-- Drafts Section -->
+                                <div id="drafts-section">
+                                    ${(() => {
                 const drafts = App.state.drafts || [];
                 if (drafts.length === 0) return '';
                 return `
@@ -2121,11 +2334,11 @@ const App = {
                                 <h3 class="font-bold text-blue-400 text-sm mb-2 flex items-center gap-2">
                                     <i data-lucide="book-heart" class="w-4 h-4"></i> My Sketchbook
                                 </h3>
-                                <div class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
-                                    ${drafts.map((d, i) => `
+                                <div id="sketchbook-scroll-row" class="flex overflow-x-auto gap-3 pb-2 no-scrollbar snap-x">
+                                    ${drafts.map(d => `
                                         <div class="bg-white p-2 rounded-xl shadow-sm relative shrink-0 w-32 snap-start">
                                             <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-lg bg-gray-50/50 border border-gray-100" />
-                                            <div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl backdrop-blur-[1px]">
+                                            <div class="absolute inset-0 flex items-center justify-center gap-1 bg-black/10 rounded-xl">
                                                 <button onclick="App.editDoodleFromUrl('${d.image_data}')" class="bg-white/90 text-blue-500 p-1.5 rounded-full shadow-sm hover:scale-110 active:scale-95 transition-all">
                                                     <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
                                                 </button>
@@ -2135,71 +2348,25 @@ const App = {
                                             </div>
                                         </div>
                                     `).join('')}
+                                    ${App.state.hasMoreDrafts ? `
+                                        <div id="drafts-scroll-sentinel" class="shrink-0 flex items-center justify-center w-10 h-full">
+                                            <div class="w-4 h-4 border-2 border-blue-200 border-t-blue-400 rounded-full animate-spin"></div>
+                                        </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;
             })()}
-                    </div>
-                    <!-- History List -->
-                    <div id="history-list-container" class="flex flex-col gap-4">
-                    ${App.state.history.length === 0 ? `<p class="text-center text-white/60 py-20">No magic found yet... 🥺</p>` :
-                App.state.history.map(d => `
-                        <div class="bg-white/80 p-4 rounded-bubbly shadow-lg animate-float">
-                            <div class="relative">
-                                <img src="${d.image_data}" class="w-full aspect-square object-contain rounded-xl mb-3 bg-white shadow-inner" />
-                                <button onclick="App.editDoodle('${d.image_data}')" class="absolute top-2 right-2 bg-white/90 text-pink-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
-                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
-                                </button>
-                                <button onclick="App.setWallpaper('${d.image_data}', '${d.id}')" class="absolute top-12 right-2 bg-white/90 text-blue-500 p-2 rounded-full shadow-md transition-all hover:scale-110 z-10 active:scale-95">
-                                    <i data-lucide="smartphone" class="w-4 h-4"></i>
-                                </button>
-                            </div>
-                            <div class="flex justify-between items-center text-[10px] font-bold text-pink-400">
-                                <span>
-                                    ${(() => {
-                        const isSent = d.sender_id === App.state.session.user.id;
-                        // The other person's ID (receiver if sent, sender if received)
-                        const otherId = isSent ? d.receiver_id : d.sender_id;
-                        // Use the new Cache first, then Friend list, then generic fallback
-                        const cacheName = App.state.userCache ? App.state.userCache[otherId] : null;
-                        const friend = (Social.friends || []).find(f => f.id === otherId);
-
-                        let name = cacheName || (friend ? friend.username : 'Unknown');
-                        if (name === 'Unknown' && otherId) name = otherId.substring(0, 6) + '...'; // Short ID fallback
-
-                        // Multi-recipient formatting
-                        if (isSent && d.recipients && d.recipients.length > 0) {
-                            const names = d.recipients.map(rid => {
-                                const cName = App.state.userCache ? App.state.userCache[rid] : null;
-                                const f = (Social.friends || []).find(fr => fr.id === rid);
-                                return cName || (f ? f.username : rid.substring(0, 5) + '..');
-                            });
-                            // Join all names
-                            return `TO: ${names.join(', ')} 📤`;
-                        }
-
-                        return isSent ? `TO: ${name} 📤` : `
-                                            <div class="flex items-center gap-1">
-                                                <div class="w-4 h-4 rounded-full bg-gray-200 overflow-hidden shrink-0">
-                                                    ${(() => {
-                                const av = App.state.avatarCache ? App.state.avatarCache[otherId] : null;
-                                return av ? `<img src="${av}" class="w-full h-full object-cover">` : '<i data-lucide="user" class="w-3 h-3 m-auto mt-0.5 text-gray-400"></i>';
-                            })()}
-                                                </div>
-                                                FROM: ${name} 📥
-                                            </div>`;
-                    })()}
-                                </span>
-                                <span class="text-gray-400">${new Date(d.created_at).toLocaleDateString()}</span>
+                                </div>
+                                <!-- History List: populated by updateHistoryDOM() after render -->
+                                <div id="history-list-container" class="flex flex-col gap-3">
+                                </div>
                             </div>
                         </div>
-                    `).join('')}
-                    </div>
-                </div>
-            </div>
-            <!-- Spacer for floating nav -->
-    <div class="h-32 w-full"></div>
-        `
+                        <!-- Spacer for floating nav -->
+                        <div class="h-32 w-full"></div>
+                        `
+
     },
 
     // --- Actions ---
@@ -2387,7 +2554,6 @@ const App = {
         }
 
         const toast = document.createElement('div');
-        // Pill shape, centered, subtle blur
         toast.className = `toast-enter px-6 py-3 rounded-full shadow-2xl mb-4 font-bold flex items-center gap-3 text-white z-[100] backdrop-blur-sm border border-white/20`;
 
         // Elite Color Palette (Vibrant & Clean)
@@ -2419,8 +2585,8 @@ const App = {
     createSparkle(x, y) {
         const s = document.createElement('div');
         s.className = 'sparkle-particle';
-        s.style.left = `${x - 7}px`;
-        s.style.top = `${y - 7}px`;
+        s.style.left = `${x - 7} px`;
+        s.style.top = `${y - 7} px`;
         s.style.background = ['#FFD1DC', '#BDE0FE', '#FAFAD2', 'white'][Math.floor(Math.random() * 4)];
         document.body.appendChild(s);
         setTimeout(() => s.remove(), 800);
@@ -2449,20 +2615,20 @@ const App = {
                 const isPending = f.status === 'pending';
                 const canSelect = !isPending || f.id === 'kawaii-6789';
                 return `
-                <button onclick="${canSelect ? `App.handlePickerSelect('${f.id}', '${f.username}')` : ''}"
-                        class="flex items-center gap-4 w-full p-3 rounded-2xl border-2 border-transparent ${canSelect ? 'hover:border-pink-300 hover:bg-pink-50' : 'opacity-50 cursor-not-allowed bg-gray-50'} transition-all text-left">
-                    <div class="w-10 h-10 ${canSelect ? 'bg-pink-100 text-pink-500' : 'bg-gray-200 text-gray-400'} rounded-full flex items-center justify-center overflow-hidden">
-                        ${(() => {
+    < button onclick = "${canSelect ? `App.handlePickerSelect('${f.id}', '${f.username}')` : ''}"
+class="flex items-center gap-4 w-full p-3 rounded-2xl border-2 border-transparent ${canSelect ? 'hover:border-pink-300 hover:bg-pink-50' : 'opacity-50 cursor-not-allowed bg-gray-50'} transition-all text-left" >
+                            <div class="w-10 h-10 ${canSelect ? 'bg-pink-100 text-pink-500' : 'bg-gray-200 text-gray-400'} rounded-full flex items-center justify-center overflow-hidden">
+                                ${(() => {
                         const av = App.state.avatarCache ? App.state.avatarCache[f.id] : null;
                         return av ? `<img src="${av}" class="w-full h-full object-cover">` : `<i data-lucide="user" class="w-5 h-5"></i>`;
-                    })()} 
-                    </div>
-                    <div class="flex-1">
-                        <p class="font-bold text-gray-700">${f.username}</p>
-                        <p class="text-[10px] ${canSelect ? 'text-pink-400' : 'text-gray-400'}">${f.id} ${isPending ? '(Pending ⏳)' : ''}</p>
-                    </div>
-                    ${canSelect ? `<i data-lucide="send" class="text-pink-300 w-5 h-5"></i>` : ''}
-                </button>
+                    })()}
+                            </div>
+                            <div class="flex-1">
+                                <p class="font-bold text-gray-700">${f.username}</p>
+                                <p class="text-[10px] ${canSelect ? 'text-pink-400' : 'text-gray-400'}">${f.id} ${isPending ? '(Pending ⏳)' : ''}</p>
+                            </div>
+                            ${canSelect ? `<i data-lucide="send" class="text-pink-300 w-5 h-5"></i>` : ''}
+                        </button >
     `}).join('');
 
         if (list.innerHTML === '') {
