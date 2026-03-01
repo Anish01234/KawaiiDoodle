@@ -1,0 +1,351 @@
+--------- beginning of system
+02-17 07:49:56.778  2743  3104 E Watchdog: !@Sync: 684 heap(MB): 168 / 182 FD: 1323 [2026-02-17 07:49:56.778]
+--------- beginning of main
+02-17 07:49:57.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293897
+02-17 07:49:57.130  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:49:58.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293898
+02-17 07:49:58.131  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:49:59.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293899
+02-17 07:49:59.131  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:49:59.798  1752  1818 E BatteryDump: !@new_battery_dump : 4122,84,300,550,91,306,271,339,306,0,321,345,0,Charging,NO_CHARGING,Normal,Good,USB,1,Normal,0,0,9300,0x8000,0x30000,0x0,0,0,0000,0000,00000000,0,0,0,0,1332,4121,8925,979,0,
+02-17 07:49:59.933 14003 14003 E com.whatsapp: Not starting debugger since process cannot load the jdwp agent.
+02-17 07:49:59.955 14011 14011 E e.glanceweather: Not starting debugger since process cannot load the jdwp agent.
+02-17 07:50:00.049 14003 14036 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+02-17 07:50:00.071 14011 14041 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+02-17 07:50:00.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293900
+02-17 07:50:00.131  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:00.435 14003 14101 E msys    : E[ADNSUCTIMH WAJMNSRuntime]WAJContextInitMNSRuntime(427)=>[LogLevel:I] Secondary DNS resolver enabled
+02-17 07:50:00.439 14003 14118 E msys    : E[N mns]_OnDiskCacheGetData(632)=>Start post callback cache refresh DNS resolution
+02-17 07:50:00.439 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(35)=>[LogLevel:I] DNS Resolution Successful with 2 IPs, Persistent Cache Hit: 1, secondary resolver used: 0
+02-17 07:50:00.439 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(55)=>[LogLevel:I] Resolved IP Address: 2a03:2880:f311:121:face:b00c:0:7260
+02-17 07:50:00.439 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(55)=>[LogLevel:I] Resolved IP Address: 57.144.49.33
+02-17 07:50:00.457 14003 14118 E msys    : E[N mns]_OnSystemDNSSuccessCallback(340)=>Cache refresh succeeded with system DNS resolver. IP count: 2
+02-17 07:50:00.515  2743  6661 E BatteryStatsService: Invalid uid for waking network packet: -1
+02-17 07:50:01.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293901
+02-17 07:50:01.129  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:02.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293902
+02-17 07:50:02.132  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:02.988 14003 14118 E msys    : E[N mns]_OnDiskCacheGetData(632)=>Start post callback cache refresh DNS resolution
+02-17 07:50:02.989 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(35)=>[LogLevel:I] DNS Resolution Successful with 4 IPs, Persistent Cache Hit: 1, secondary resolver used: 0
+02-17 07:50:02.989 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(55)=>[LogLevel:I] Resolved IP Address: 2606:4700:f1::123
+02-17 07:50:02.989 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(55)=>[LogLevel:I] Resolved IP Address: 2606:4700:f1::1
+02-17 07:50:02.989 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(55)=>[LogLevel:I] Resolved IP Address: 162.159.200.1
+02-17 07:50:02.989 14003 14118 E msys    : E[ADNSUCTIMH WAJMNSDNSResolver]_MNSDNSResolutionSuccess(55)=>[LogLevel:I] Resolved IP Address: 162.159.200.123
+02-17 07:50:03.005 14003 14118 E msys    : E[N mns]_OnSystemDNSSuccessCallback(340)=>Cache refresh succeeded with system DNS resolver. IP count: 4
+02-17 07:50:03.019  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.056  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.119  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293903
+02-17 07:50:03.133  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:03.137  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - ActivityRecord{218862219 u0 io.kawaii.doodle/com.google.android.gms.auth.api.signin.internal.SignInHubActivity t8294}#5609
+02-17 07:50:03.137  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - ActivityRecord{7226378 u0 com.google.android.gms/.auth.api.signin.ui.SignInActivity t8294}#5610
+02-17 07:50:03.137  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 1.000 - ActivityRecord{218862219 u0 io.kawaii.doodle/com.google.android.gms.auth.api.signin.internal.SignInHubActivity t8294}#5609
+02-17 07:50:03.137  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 1.000 - ActivityRecord{7226378 u0 com.google.android.gms/.auth.api.signin.ui.SignInActivity t8294}#5610
+02-17 07:50:03.138  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.157  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.181 13362 13404 E jccc    : *~*~*~ Previous channel {0} was garbage collected without being shut down! ~*~*~*
+02-17 07:50:03.181 13362 13404 E jccc    :     Make sure to call shutdown()/shutdownNow()
+02-17 07:50:03.181 13362 13404 E jccc    : java.lang.RuntimeException: ManagedChannel allocation site
+02-17 07:50:03.181 13362 13404 E jccc    : 	at jccb.<init>(:com.google.android.gms@260438035@26.04.38 (260400-867839860):21)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at jccc.<init>(:com.google.android.gms@260438035@26.04.38 (260400-867839860):10)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at jcca.a(:com.google.android.gms@260438035@26.04.38 (260400-867839860):300)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at jbma.a(:com.google.android.gms@260438035@26.04.38 (260400-867839860):5)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at bfck.a(:com.google.android.gms@260438035@26.04.38 (260400-867839860):85)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at bfcb.t(:com.google.android.gms@260438035@26.04.38 (260400-867839860):119)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at bfcb.G(:com.google.android.gms@260438035@26.04.38 (260400-867839860):5)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at ezcg.call(:com.google.android.gms@260438035@26.04.38 (260400-867839860):265)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at java.util.concurrent.FutureTask.run(FutureTask.java:317)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at bfin.c(:com.google.android.gms@260438035@26.04.38 (260400-867839860):50)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at bfin.run(:com.google.android.gms@260438035@26.04.38 (260400-867839860):73)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1156)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:651)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at bfoe.run(:com.google.android.gms@260438035@26.04.38 (260400-867839860):8)
+02-17 07:50:03.181 13362 13404 E jccc    : 	at java.lang.Thread.run(Thread.java:1119)
+02-17 07:50:03.198  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.204  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - ActivityRecord{229280795 u0 com.google.android.gms/.signin.activity.SignInActivity t8294}#5623
+02-17 07:50:03.204  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - ActivityRecord{68638215 u0 com.google.android.gms/.common.api.GoogleApiActivity t8294}#5621
+02-17 07:50:03.204  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 1.000 - ActivityRecord{68638215 u0 com.google.android.gms/.common.api.GoogleApiActivity t8294}#5621
+02-17 07:50:03.204  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 1.000 - ActivityRecord{229280795 u0 com.google.android.gms/.signin.activity.SignInActivity t8294}#5623
+02-17 07:50:03.204  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=4456659 StatusBar)/@0xae9ce1a - animation-leash of insets_animation#5630
+02-17 07:50:03.221  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5633
+02-17 07:50:03.229  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.011 - Surface(name=4456659 StatusBar)/@0xae9ce1a - animation-leash of insets_animation#5630
+02-17 07:50:03.454  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.467 13362 13362 E .android.gms.ui: Invalid resource ID 0x00000000.
+02-17 07:50:03.499  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:03.502 13362 13362 E .android.gms.ui: Invalid resource ID 0x00000000.
+02-17 07:50:03.504  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - ActivityRecord{7901636 u0 com.google.android.gms/.common.account.AccountPickerActivity t8294}#5634
+02-17 07:50:03.504  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 1.000 - ActivityRecord{7901636 u0 com.google.android.gms/.common.account.AccountPickerActivity t8294}#5634
+02-17 07:50:03.504  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Dim Layer for - Task=8294#5643
+02-17 07:50:03.521  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.048 - Dim Layer for - Task=8294#5643
+02-17 07:50:03.529  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5645
+02-17 07:50:04.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293904
+02-17 07:50:04.130  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:04.222  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5649
+02-17 07:50:04.230  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5650
+02-17 07:50:04.272  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5658
+02-17 07:50:04.272  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5659
+02-17 07:50:04.297  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5662
+02-17 07:50:04.322  1819  1819 E SurfaceFlinger: alpha changed 0.048 -> 0.000 - Dim Layer for - Task=8294#5643
+02-17 07:50:04.339  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5665
+02-17 07:50:04.381  1819  1819 E SurfaceFlinger: alpha changed 0.062 -> 0.000 - ActivityRecord{218862219 u0 io.kawaii.doodle/com.google.android.gms.auth.api.signin.internal.SignInHubActivity t8294}#5609
+02-17 07:50:04.381  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 1.000 - ActivityRecord{218862219 u0 io.kawaii.doodle/com.google.android.gms.auth.api.signin.internal.SignInHubActivity t8294}#5609
+02-17 07:50:05.020 13836 13874 E Capacitor: Unable to open asset URL: https://localhost/capacitor.js
+02-17 07:50:05.020 13836 13875 E Capacitor: Unable to open asset URL: https://localhost/capacitor.js
+02-17 07:50:05.021 13836 13875 E Capacitor: Unable to open asset URL: https://localhost/capacitor.js
+02-17 07:50:05.021 13836 13875 E Capacitor: Unable to open asset URL: https://localhost/capacitor.js
+02-17 07:50:05.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293905
+02-17 07:50:05.129  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:06.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293906
+02-17 07:50:06.130  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:06.647 12287 12287 E SLPASVC : disconnect key: -1146534185                                                                         [at com.samsung.euicc.lpaService.worker.RxHandler.preProcessRequest(RxHandler.java:298)]
+02-17 07:50:06.659 12287 12287 E SLPASVC : disconnect key: 1348482573                                                                          [at com.samsung.euicc.lpaService.worker.RxHandler.preProcessRequest(RxHandler.java:298)]
+02-17 07:50:06.659 12287 12287 E SLPASVC : To Client messenger is NULL                                                                         [at com.samsung.euicc.lpaService.worker.RxHandler.sendToClient(RxHandler.java:380)]
+02-17 07:50:07.017 12287 12287 E SLPASVC : initHandlerIfNeed                                                                                   [at com.samsung.euicc.lpaService.bootstrap.VsimNetworkRequester.initHandlerIfNeed(VsimNetworkRequester.java:47)]
+02-17 07:50:07.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293907
+02-17 07:50:07.129  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:08.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293908
+02-17 07:50:08.128  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:09.127  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293909
+02-17 07:50:09.133  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:09.965  1752  1818 E BatteryDump: !@new_battery_dump : 4120,22,300,550,91,304,271,333,304,0,322,339,0,Charging,NO_CHARGING,Normal,Good,USB,1,Normal,0,0,9300,0x8000,0x30000,0x0,0,0,0000,0000,00000000,0,0,0,0,1332,4121,8924,979,0,
+02-17 07:50:10.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293910
+02-17 07:50:10.131  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:10.472  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:10.562  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:10.562  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - ActivityRecord{65585935 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity t8294}#5666
+02-17 07:50:10.562  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 1.000 - ActivityRecord{65585935 u0 com.google.android.permissioncontroller/com.android.permissioncontroller.permission.ui.GrantPermissionsActivity t8294}#5666
+02-17 07:50:10.588  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Dim Layer for - Task=8294#5673
+02-17 07:50:10.604  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.052 - Dim Layer for - Task=8294#5673
+02-17 07:50:10.604  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5674
+02-17 07:50:10.687  1819  1819 E SurfaceFlinger: alpha changed 0.016 -> 0.000 - Surface(name=bbf2a91 com.rethink.arc)/@0x9639b3 - animation-leash of window_animation#5670
+02-17 07:50:11.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293911
+02-17 07:50:11.130  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:12.127  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293912
+02-17 07:50:12.133  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:13.094 13836 13914 E Capacitor: Serious error executing plugin
+02-17 07:50:13.094 13836 13914 E Capacitor: java.lang.reflect.InvocationTargetException
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at java.lang.reflect.Method.invoke(Native Method)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at com.getcapacitor.PluginHandle.invoke(PluginHandle.java:138)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at com.getcapacitor.Bridge.lambda$callPluginMethod$0(Bridge.java:821)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at com.getcapacitor.Bridge.$r8$lambda$FNYM7cvgeBk0k8YXQH7M96Mrf-c(Unknown Source:0)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at com.getcapacitor.Bridge$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at android.os.Handler.handleCallback(Handler.java:995)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at android.os.Handler.dispatchMessage(Handler.java:103)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at android.os.Looper.loopOnce(Looper.java:273)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at android.os.Looper.loop(Looper.java:363)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+02-17 07:50:13.094 13836 13914 E Capacitor: Caused by: java.lang.IllegalStateException: Default FirebaseApp is not initialized in this process io.kawaii.doodle. Make sure to call FirebaseApp.initializeApp(Context) first.
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at com.google.firebase.FirebaseApp.getInstance(FirebaseApp.java:179)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at com.google.firebase.messaging.FirebaseMessaging.getInstance(FirebaseMessaging.java:120)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	at com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin.register(PushNotificationsPlugin.java:103)
+02-17 07:50:13.094 13836 13914 E Capacitor: 	... 10 more
+--------- beginning of crash
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: FATAL EXCEPTION: CapacitorPlugins
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: Process: io.kawaii.doodle, PID: 13836
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: java.lang.RuntimeException: java.lang.reflect.InvocationTargetException
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.getcapacitor.Bridge.lambda$callPluginMethod$0(Bridge.java:830)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.getcapacitor.Bridge.$r8$lambda$FNYM7cvgeBk0k8YXQH7M96Mrf-c(Unknown Source:0)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.getcapacitor.Bridge$$ExternalSyntheticLambda0.run(D8$$SyntheticClass:0)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at android.os.Handler.handleCallback(Handler.java:995)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at android.os.Handler.dispatchMessage(Handler.java:103)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at android.os.Looper.loopOnce(Looper.java:273)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at android.os.Looper.loop(Looper.java:363)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at android.os.HandlerThread.run(HandlerThread.java:85)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: Caused by: java.lang.reflect.InvocationTargetException
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at java.lang.reflect.Method.invoke(Native Method)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.getcapacitor.PluginHandle.invoke(PluginHandle.java:138)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.getcapacitor.Bridge.lambda$callPluginMethod$0(Bridge.java:821)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	... 7 more
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: Caused by: java.lang.IllegalStateException: Default FirebaseApp is not initialized in this process io.kawaii.doodle. Make sure to call FirebaseApp.initializeApp(Context) first.
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.google.firebase.FirebaseApp.getInstance(FirebaseApp.java:179)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.google.firebase.messaging.FirebaseMessaging.getInstance(FirebaseMessaging.java:120)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	at com.capacitorjs.plugins.pushnotifications.PushNotificationsPlugin.register(PushNotificationsPlugin.java:103)
+02-17 07:50:13.095 13836 13914 E AndroidRuntime: 	... 10 more
+02-17 07:50:13.115  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5677
+02-17 07:50:13.124  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5678
+02-17 07:50:13.128  2743  6479 E KioskModeService: There's no matched data
+02-17 07:50:13.131  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293913
+02-17 07:50:13.133  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:13.147  2743  4135 E ActivityManager: Sending non-protected broadcast com.sec.android.intent.action.APP_HQM_SEND_REQ from system 6400:com.sec.android.diagmonagent/1000 pkg com.sec.android.diagmonagent
+02-17 07:50:13.147  2743  4135 E ActivityManager: java.lang.Throwable
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at com.android.server.am.BroadcastController.checkBroadcastFromSystem(qb/105193696 5e487efc8cb4b3937d6f2abd5bf50c3d6cb4f0ae89abff276ceca0bd626164e0:252)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at com.android.server.am.BroadcastController.broadcastIntentLockedTraced(qb/105193696 5e487efc8cb4b3937d6f2abd5bf50c3d6cb4f0ae89abff276ceca0bd626164e0:344)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at com.android.server.am.BroadcastController.broadcastIntentLocked(qb/105193696 5e487efc8cb4b3937d6f2abd5bf50c3d6cb4f0ae89abff276ceca0bd626164e0:18)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at com.android.server.am.ActivityManagerService.broadcastIntentWithFeature(qb/105193696 5e487efc8cb4b3937d6f2abd5bf50c3d6cb4f0ae89abff276ceca0bd626164e0:149)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at android.app.IActivityManager$Stub.onTransact$broadcastIntentWithFeature$(IActivityManager.java:12378)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:3197)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at com.android.server.am.ActivityManagerService.onTransact(qb/105193696 5e487efc8cb4b3937d6f2abd5bf50c3d6cb4f0ae89abff276ceca0bd626164e0:425)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at android.os.Binder.execTransactInternal(Binder.java:1457)
+02-17 07:50:13.147  2743  4135 E ActivityManager: 	at android.os.Binder.execTransact(Binder.java:1401)
+02-17 07:50:13.170 14292 14292 E ng.android.lool: Not starting debugger since process cannot load the jdwp agent.
+02-17 07:50:13.207  1819  1819 E SurfaceFlinger: alpha changed 0.052 -> 0.000 - Dim Layer for - Task=8294#5673
+02-17 07:50:13.254  2743  4476 E KioskModeService: There's no matched data
+02-17 07:50:13.274  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=4456659 StatusBar)/@0xae9ce1a - animation-leash of insets_animation#5681
+02-17 07:50:13.286 14292 14321 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+02-17 07:50:13.307  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - DimTransitionLayer for Surface(name=Task=8294)/@0x18b3ac3#5684
+02-17 07:50:13.316  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.180 - DimTransitionLayer for Surface(name=Task=8294)/@0x18b3ac3#5684
+02-17 07:50:13.340  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.013 - Surface(name=4456659 StatusBar)/@0xae9ce1a - animation-leash of insets_animation#5681
+02-17 07:50:13.347  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:13.357  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=d47c4bc InputMethod)/@0x6595b66 - animation-leash of insets_animation#5687
+02-17 07:50:13.391  1819  1819 E SurfaceFlinger: alpha changed 0.022 -> 0.000 - DimTransitionLayer for Surface(name=Task=8294)/@0x18b3ac3#5684
+02-17 07:50:13.399  1819  1819 E SurfaceFlinger: alpha changed 0.016 -> 0.000 - Surface(name=bbf2a91 com.rethink.arc)/@0x9639b3 - animation-leash of window_animation#5682
+02-17 07:50:13.441 14292 14292 E IDS_TAG : System UID: no SharedPreferences here, no IDS
+02-17 07:50:13.441 14292 14292 E IDS_TAG : System UID: no SharedPreferences here, no IDS
+02-17 07:50:13.449 14292 14292 E BufferQueueProducer: Unable to open libpenguin.so: dlopen failed: library "libpenguin.so" not found.
+02-17 07:50:13.449 14292 14292 E ng.android.lool: Unable to open libpenguin.so: dlopen failed: library "libpenguin.so" not found.
+02-17 07:50:13.489  4961  4961 E pageboostd: Received HALT command code 2
+02-17 07:50:13.491  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Dim Layer for - Task=8295#5697
+02-17 07:50:13.491  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Surface(name=3db3349 com.samsung.android.lool/com.samsung.android.sm.iafd.dialog.AppErrorDialogActivity)/@0xfbacd5d - animation-leash of window_animation#5694
+02-17 07:50:13.499  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.035 - Dim Layer for - Task=8295#5697
+02-17 07:50:13.499  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.206 - Surface(name=3db3349 com.samsung.android.lool/com.samsung.android.sm.iafd.dialog.AppErrorDialogActivity)/@0xfbacd5d - animation-leash of window_animation#5694
+02-17 07:50:13.499  1819  1819 E SurfaceFlinger: alpha changed 0.206 -> 0.000 - Surface(name=3db3349 com.samsung.android.lool/com.samsung.android.sm.iafd.dialog.AppErrorDialogActivity)/@0xfbacd5d - animation-leash of window_animation#5694
+02-17 07:50:13.499  1819  1819 E SurfaceFlinger: alpha changed 1.000 -> 0.000 - Task=8295#5685
+02-17 07:50:13.499  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.000 - Task=8295#5685
+02-17 07:50:13.507  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.492 - Surface(name=3db3349 com.samsung.android.lool/com.samsung.android.sm.iafd.dialog.AppErrorDialogActivity)/@0xfbacd5d - animation-leash of window_animation#5694
+02-17 07:50:13.508  1819  1819 E SurfaceFlinger: alpha changed 0.074 -> 0.000 - Dim Layer for - Task=8295#5697
+02-17 07:50:13.509  1819  1819 E BpTransactionCompletedListener: Failed to transact (-32)
+02-17 07:50:13.516  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.062 - Task=8295#5685
+02-17 07:50:13.516  1819  1819 E SurfaceFlinger: alpha changed 0.000 -> 0.108 - Dim Layer for - Task=8295#5697
+02-17 07:50:14.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293914
+02-17 07:50:14.130  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:15.026  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.028  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.029  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.033  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.033  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.034  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.038  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.042  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.042  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.050  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.051  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.051  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.052  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : use_usim_on_invalid_isim
+02-17 07:50:15.054  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : use_usim_on_invalid_isim
+02-17 07:50:15.061  4197  4357 E #IMSCR  : 02-17 07:50:15 0x11020001:1,REGI:11:InitialRegi : rat = 13
+02-17 07:50:15.066  4197  4357 E TelephonyManagerWrapper: backup domain: null
+02-17 07:50:15.066  4197  4357 E GlobalSettingsRepoBase: globalsettings No matched key : support_vowifi_deprioritize_nr5g
+02-17 07:50:15.066  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : support_vowifi_deprioritize_nr5g
+02-17 07:50:15.066  4197  4357 E GlobalSettingsRepoBase: globalsettings No matched key : support_disable_vowifi_5gsa
+02-17 07:50:15.066  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : support_disable_vowifi_5gsa
+02-17 07:50:15.066  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : nr5g_mode_in_vowifi
+02-17 07:50:15.067  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.067  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : rcs_ft_chunk_size
+02-17 07:50:15.067  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : rcs_ish_chunk_size
+02-17 07:50:15.067  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : msrp_cema
+02-17 07:50:15.067  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : conf_subscribe_enabled
+02-17 07:50:15.067  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : support_cancel_message
+02-17 07:50:15.067  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : aggr_imdn_supported
+02-17 07:50:15.068  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : msrp_discard_port
+02-17 07:50:15.068  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : supported_bot_versions
+02-17 07:50:15.068  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.078  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : is_server_header_enabled
+02-17 07:50:15.078  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : srvcc_version
+02-17 07:50:15.078  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : ignore_display_name
+02-17 07:50:15.078  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : keep_alive_factor
+02-17 07:50:15.079  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : support_uac
+02-17 07:50:15.081  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : is_support_update_sa_mode_on_start
+02-17 07:50:15.081  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : is_support_update_sa_mode_on_airplane_mode
+02-17 07:50:15.083  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : use_mss_by_pdn
+02-17 07:50:15.083  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.085  4197  4357 E #IMSREGI: (1, Ncell VoLTE) SEND SIP REGISTER <+10621.116s>
+02-17 07:50:15.093  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.094  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.094  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.097  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.097  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.097  2743  6486 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.101  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.102  1819  4074 E HWComposer: getLuts: getLuts failed for display 4630947059332006275: UNSUPPORTED (8)
+02-17 07:50:15.104  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.104  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.106  4197  4357 E PdnController<1>: requestStopNetwork: callback not found
+02-17 07:50:15.106  4197  4357 E #IMSCR  : 02-17 07:50:15 0x1101000B:1,FILTERED ALL:1
+02-17 07:50:15.111  4197  4390 E SimpleEventLog: PdnController resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.112  4197  4390 E SimpleEventLog: PdnController resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.114  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.114  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.114  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.117  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.117  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.118  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.122  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : dual_rcs_policy
+02-17 07:50:15.123  4197  4553 E GlobalSettingsRepoBase: globalgcsettings No matched key : ss_callwaiting_by_network
+02-17 07:50:15.124  4197  4553 E UserAgent[1]: Unexpected event 39. current state is RegisteringState
+02-17 07:50:15.124  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.124  2743  6661 E PhoneRestrictionPolicy: getEmergencyCall >>false
+02-17 07:50:15.126  1810  1827 E HeatmapThread: ECT Thread time in milliseconds: 1771293915
+02-17 07:50:15.127  4197  4357 E PdnController<1>: requestStopNetwork: callback not found
+02-17 07:50:15.127  4197  4357 E #IMSCR  : 02-17 07:50:15 0x1101000B:1,FILTERED ALL:1
+02-17 07:50:15.128  4197  4390 E SimpleEventLog: PdnController resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.128  4197  4390 E SimpleEventLog: PdnController resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.128  1810  1827 E HeatmapThread: !@ CAM New BSOH: 99
+02-17 07:50:15.129  4197  4390 E SimpleEventLog: PdnController resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.253  1684  1684 E SensorsGrip: [grip_sensor] enable: mEnabled : 1, first_grip_event : 1
+02-17 07:50:15.425  4197  4581 E ResipRegiMgr: onRegistrationError: UA handle 16601 errorCode 404 - Not Found -  retryAfterMs 120000
+02-17 07:50:15.427  4197  4357 E #IMSCR  : 02-17 07:50:15 0x11010009:1,REG ERR:Ncell_NP:ims:404 - Not Found - :120000
+02-17 07:50:15.427  4197  4357 E RegiGvnSwa: onRegistrationError: state CONNECTED error 404 - Not Found -  retryAfterMs 120000 mCurPcscfIpIdx 0 mNumOfPcscfIp 2 mFailureCounter 88 mIsPermanentStopped false
+02-17 07:50:15.436  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.436  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.436  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.437  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.437  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.437  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.440  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.440  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.440  4197  4357 E ImsUri  : parse: illegal Uri - xxxxx
+02-17 07:50:15.441  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.444  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.445  4197  4357 E #IMSCR  : 02-17 07:50:15 0x13000009:1,EC:404,CNT:0
+02-17 07:50:15.446  4197  4357 E CmcServiceHelper: disallow Call Service
+02-17 07:50:15.446  4197  4357 E CmcServiceHelper: disallow Call Service
+02-17 07:50:15.446  4197  4357 E CmcServiceHelper: disallow Call Service
+02-17 07:50:15.447  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : ss_domain_setting
+02-17 07:50:15.447  4197  4357 E CapabilityUtil<1>: checkModuleReady: mConfig.isAvailable == false
+02-17 07:50:15.447  4197  4357 E CapabilityUtil<1>: checkModuleReady: mConfig.isAvailable == false
+02-17 07:50:15.448  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.448  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.448  4197  4357 E #IMSCR  : 02-17 07:50:15 0x3000000D:1,404
+02-17 07:50:15.451  4197  4357 E CmcServiceHelper: disallow Call Service
+02-17 07:50:15.451  4197  4357 E CmcServiceHelper: disallow Call Service
+02-17 07:50:15.451  4197  4357 E CmcServiceHelper: disallow Call Service
+02-17 07:50:15.451  4197  4357 E GlobalSettingsRepoBase: globalgcsettings No matched key : ss_domain_setting
+02-17 07:50:15.451  4197  4357 E CapabilityUtil<1>: checkModuleReady: mConfig.isAvailable == false
+02-17 07:50:15.451  4197  4357 E CapabilityUtil<1>: checkModuleReady: mConfig.isAvailable == false
+02-17 07:50:15.452  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.452  4197  4357 E SecImsServiceConnector: connect to local SecImsService #1 attempt
+02-17 07:50:15.453  4197  4793 E SimpleEventLog: SecImsNotifier resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.453  4197  4793 E SimpleEventLog: SecImsNotifier resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.454  4197  4793 E SimpleEventLog: SecImsNotifier resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.454  4197  4793 E SimpleEventLog: SecImsNotifier resize failed! java.nio.charset.MalformedInputException: Input length = 1
+02-17 07:50:15.460  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5815 went down
+02-17 07:50:15.461  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5815 went down
+02-17 07:50:15.462  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5816 went down
+02-17 07:50:15.462  4197  4357 E #IMSREGI: (1, Ncell VoLTE) REGISTRATION FAILED : 404 - Not Found - 
+02-17 07:50:15.462  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5816 went down
+02-17 07:50:15.462  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5817 went down
+02-17 07:50:15.462  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5817 went down
+02-17 07:50:15.465  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5819 went down
+02-17 07:50:15.465  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5819 went down
+02-17 07:50:15.466  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581a went down
+02-17 07:50:15.466  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581a went down
+02-17 07:50:15.467  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581b went down
+02-17 07:50:15.467  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581b went down
+02-17 07:50:15.468  3876  3876 E SatelliteController: registerForSatelliteModemStateChanged: mSatelliteSessionController is not initialized yet
+02-17 07:50:15.473  4197  4581 E #IMSCR  : 02-17 07:50:15 0x40100000:300
+02-17 07:50:15.490  3876  3876 E SatelliteController: registerForSatelliteModemStateChanged: mSatelliteSessionController is not initialized yet
+02-17 07:50:15.496  3876  3876 E SatelliteController: registerForSatelliteModemStateChanged: mSatelliteSessionController is not initialized yet
+02-17 07:50:15.506 14348 14348 E .sec.unifiedwfc: Not starting debugger since process cannot load the jdwp agent.
+02-17 07:50:15.600 14348 14348 E ashmem  : Pinning is deprecated since Android Q. Please use trim or other methods.
+02-17 07:50:15.628 14348 14363 E [UNWFC]-- WfcAutoUpdate: imsupdate.json not found.
+02-17 07:50:15.629 14348 14363 E [UNWFC]-- WfcAutoUpdate: imsupdate.json not found.
+02-17 07:50:15.633 14348 14363 E [UNWFC]-- WfcAutoUpdate: imsupdate.json not found.
+02-17 07:50:15.634 14348 14363 E [UNWFC]-- WfcAutoUpdate: imsupdate.json not found.
+02-17 07:50:15.862  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581d went down
+02-17 07:50:15.862  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581d went down
+02-17 07:50:15.864  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581e went down
+02-17 07:50:15.864  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581e went down
+02-17 07:50:15.865  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581f went down
+02-17 07:50:15.866  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 581f went down
+02-17 07:50:15.868  1650  1755 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5820 went down
+02-17 07:50:15.868  1650  1762 E minksocket: MinkIPC_QRTR_Service: client with node 1 port 5820 went down

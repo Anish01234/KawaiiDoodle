@@ -1,0 +1,1328 @@
+﻿build	UNKNOWN STEP	・ｿ2026-02-16T15:08:35.7080909Z Current runner version: '2.331.0'
+build	UNKNOWN STEP	2026-02-16T15:08:35.7114978Z ##[group]Runner Image Provisioner
+build	UNKNOWN STEP	2026-02-16T15:08:35.7116637Z Hosted Compute Agent
+build	UNKNOWN STEP	2026-02-16T15:08:35.7117673Z Version: 20260123.484
+build	UNKNOWN STEP	2026-02-16T15:08:35.7118659Z Commit: 6bd6555ca37d84114959e1c76d2c01448ff61c5d
+build	UNKNOWN STEP	2026-02-16T15:08:35.7120026Z Build Date: 2026-01-23T19:41:17Z
+build	UNKNOWN STEP	2026-02-16T15:08:35.7121281Z Worker ID: {3253b80e-2dde-4492-a788-7925ed6d8330}
+build	UNKNOWN STEP	2026-02-16T15:08:35.7122549Z Azure Region: eastus
+build	UNKNOWN STEP	2026-02-16T15:08:35.7123591Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:35.7125903Z ##[group]Operating System
+build	UNKNOWN STEP	2026-02-16T15:08:35.7127125Z Ubuntu
+build	UNKNOWN STEP	2026-02-16T15:08:35.7127987Z 24.04.3
+build	UNKNOWN STEP	2026-02-16T15:08:35.7128716Z LTS
+build	UNKNOWN STEP	2026-02-16T15:08:35.7129401Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:35.7130349Z ##[group]Runner Image
+build	UNKNOWN STEP	2026-02-16T15:08:35.7131208Z Image: ubuntu-24.04
+build	UNKNOWN STEP	2026-02-16T15:08:35.7132005Z Version: 20260209.23.1
+build	UNKNOWN STEP	2026-02-16T15:08:35.7134164Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260209.23/images/ubuntu/Ubuntu2404-Readme.md
+build	UNKNOWN STEP	2026-02-16T15:08:35.7137250Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260209.23
+build	UNKNOWN STEP	2026-02-16T15:08:35.7138899Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:35.7141377Z ##[group]GITHUB_TOKEN Permissions
+build	UNKNOWN STEP	2026-02-16T15:08:35.7144265Z Contents: write
+build	UNKNOWN STEP	2026-02-16T15:08:35.7145227Z Metadata: read
+build	UNKNOWN STEP	2026-02-16T15:08:35.7146306Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:35.7149356Z Secret source: Actions
+build	UNKNOWN STEP	2026-02-16T15:08:35.7150818Z Prepare workflow directory
+build	UNKNOWN STEP	2026-02-16T15:08:35.7626714Z Prepare all required actions
+build	UNKNOWN STEP	2026-02-16T15:08:35.7683743Z Getting action download info
+build	UNKNOWN STEP	2026-02-16T15:08:36.0973251Z Download action repository 'actions/checkout@v3' (SHA:f43a0e5ff2bd294095638e18286ca9a3d1956744)
+build	UNKNOWN STEP	2026-02-16T15:08:36.2317116Z Download action repository 'actions/setup-node@v3' (SHA:3235b876344d2a9aa001b8d1453c930bba69e610)
+build	UNKNOWN STEP	2026-02-16T15:08:36.3825977Z Download action repository 'actions/setup-java@v3' (SHA:17f84c3641ba7b8f6deff6309fc4c864478f5d62)
+build	UNKNOWN STEP	2026-02-16T15:08:36.6892197Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+build	UNKNOWN STEP	2026-02-16T15:08:36.8013986Z Download action repository 'softprops/action-gh-release@v1' (SHA:de2c0eb89ae2a093876385947365aca7b0e5f844)
+build	UNKNOWN STEP	2026-02-16T15:08:37.0840472Z Complete job name: build
+build	UNKNOWN STEP	2026-02-16T15:08:37.1475719Z ##[group]Run git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+build	UNKNOWN STEP	2026-02-16T15:08:37.1477045Z [36;1mgit config --global url."https://github.com/".insteadOf ssh://git@github.com/[0m
+build	UNKNOWN STEP	2026-02-16T15:08:37.1529628Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:37.1530367Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.1859134Z ##[group]Run actions/checkout@v3
+build	UNKNOWN STEP	2026-02-16T15:08:37.1859696Z with:
+build	UNKNOWN STEP	2026-02-16T15:08:37.1860058Z   repository: Anish01234/KawaiiDoodle
+build	UNKNOWN STEP	2026-02-16T15:08:37.1860708Z   token: ***
+build	UNKNOWN STEP	2026-02-16T15:08:37.1861064Z   ssh-strict: true
+build	UNKNOWN STEP	2026-02-16T15:08:37.1861443Z   persist-credentials: true
+build	UNKNOWN STEP	2026-02-16T15:08:37.1861859Z   clean: true
+build	UNKNOWN STEP	2026-02-16T15:08:37.1862225Z   sparse-checkout-cone-mode: true
+build	UNKNOWN STEP	2026-02-16T15:08:37.1862693Z   fetch-depth: 1
+build	UNKNOWN STEP	2026-02-16T15:08:37.1863048Z   fetch-tags: false
+build	UNKNOWN STEP	2026-02-16T15:08:37.1863411Z   lfs: false
+build	UNKNOWN STEP	2026-02-16T15:08:37.1863778Z   submodules: false
+build	UNKNOWN STEP	2026-02-16T15:08:37.1864159Z   set-safe-directory: true
+build	UNKNOWN STEP	2026-02-16T15:08:37.1864554Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.2700971Z Syncing repository: Anish01234/KawaiiDoodle
+build	UNKNOWN STEP	2026-02-16T15:08:37.2702596Z ##[group]Getting Git version info
+build	UNKNOWN STEP	2026-02-16T15:08:37.2703315Z Working directory is '/home/runner/work/KawaiiDoodle/KawaiiDoodle'
+build	UNKNOWN STEP	2026-02-16T15:08:37.2704256Z [command]/usr/bin/git version
+build	UNKNOWN STEP	2026-02-16T15:08:37.2713924Z git version 2.52.0
+build	UNKNOWN STEP	2026-02-16T15:08:37.2740501Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.2750443Z Copying '/home/runner/.gitconfig' to '/home/runner/work/_temp/c04ab021-53f5-4124-a35b-c3c42454edc3/.gitconfig'
+build	UNKNOWN STEP	2026-02-16T15:08:37.2761063Z Temporarily overriding HOME='/home/runner/work/_temp/c04ab021-53f5-4124-a35b-c3c42454edc3' before making global git config changes
+build	UNKNOWN STEP	2026-02-16T15:08:37.2762542Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-02-16T15:08:37.2764387Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/KawaiiDoodle/KawaiiDoodle
+build	UNKNOWN STEP	2026-02-16T15:08:37.2794969Z Deleting the contents of '/home/runner/work/KawaiiDoodle/KawaiiDoodle'
+build	UNKNOWN STEP	2026-02-16T15:08:37.2799024Z ##[group]Initializing the repository
+build	UNKNOWN STEP	2026-02-16T15:08:37.2801863Z [command]/usr/bin/git init /home/runner/work/KawaiiDoodle/KawaiiDoodle
+build	UNKNOWN STEP	2026-02-16T15:08:37.2903046Z hint: Using 'master' as the name for the initial branch. This default branch name
+build	UNKNOWN STEP	2026-02-16T15:08:37.2904384Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+build	UNKNOWN STEP	2026-02-16T15:08:37.2905362Z hint: to use in all of your new repositories, which will suppress this warning,
+build	UNKNOWN STEP	2026-02-16T15:08:37.2906265Z hint: call:
+build	UNKNOWN STEP	2026-02-16T15:08:37.2907105Z hint:
+build	UNKNOWN STEP	2026-02-16T15:08:37.2907921Z hint: 	git config --global init.defaultBranch <name>
+build	UNKNOWN STEP	2026-02-16T15:08:37.2908733Z hint:
+build	UNKNOWN STEP	2026-02-16T15:08:37.2909352Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+build	UNKNOWN STEP	2026-02-16T15:08:37.2910349Z hint: 'development'. The just-created branch can be renamed via this command:
+build	UNKNOWN STEP	2026-02-16T15:08:37.2911145Z hint:
+build	UNKNOWN STEP	2026-02-16T15:08:37.2911593Z hint: 	git branch -m <name>
+build	UNKNOWN STEP	2026-02-16T15:08:37.2912355Z hint:
+build	UNKNOWN STEP	2026-02-16T15:08:37.2913326Z hint: Disable this message with "git config set advice.defaultBranchName false"
+build	UNKNOWN STEP	2026-02-16T15:08:37.2914463Z Initialized empty Git repository in /home/runner/work/KawaiiDoodle/KawaiiDoodle/.git/
+build	UNKNOWN STEP	2026-02-16T15:08:37.2917196Z [command]/usr/bin/git remote add origin https://github.com/Anish01234/KawaiiDoodle
+build	UNKNOWN STEP	2026-02-16T15:08:37.2949592Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.2950254Z ##[group]Disabling automatic garbage collection
+build	UNKNOWN STEP	2026-02-16T15:08:37.2952319Z [command]/usr/bin/git config --local gc.auto 0
+build	UNKNOWN STEP	2026-02-16T15:08:37.2978991Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.2979626Z ##[group]Setting up auth
+build	UNKNOWN STEP	2026-02-16T15:08:37.2984228Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-02-16T15:08:37.3012126Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	UNKNOWN STEP	2026-02-16T15:08:37.3354834Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-02-16T15:08:37.3384731Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	UNKNOWN STEP	2026-02-16T15:08:37.3616609Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+build	UNKNOWN STEP	2026-02-16T15:08:37.3652729Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.3653946Z ##[group]Fetching the repository
+build	UNKNOWN STEP	2026-02-16T15:08:37.3661895Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --progress --no-recurse-submodules --depth=1 origin +cda108512ac3821dd7990bee9f30a301dcc974dd:refs/remotes/origin/master
+build	UNKNOWN STEP	2026-02-16T15:08:37.5450381Z remote: Enumerating objects: 153, done.        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5452249Z remote: Counting objects:   0% (1/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5453291Z remote: Counting objects:   1% (2/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5454049Z remote: Counting objects:   2% (4/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5454683Z remote: Counting objects:   3% (5/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5455304Z remote: Counting objects:   4% (7/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5455928Z remote: Counting objects:   5% (8/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5456840Z remote: Counting objects:   6% (10/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5457551Z remote: Counting objects:   7% (11/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5458183Z remote: Counting objects:   8% (13/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5458807Z remote: Counting objects:   9% (14/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5459436Z remote: Counting objects:  10% (16/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5460135Z remote: Counting objects:  11% (17/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5461025Z remote: Counting objects:  12% (19/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5462321Z remote: Counting objects:  13% (20/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5463282Z remote: Counting objects:  14% (22/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5464243Z remote: Counting objects:  15% (23/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5464994Z remote: Counting objects:  16% (25/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5465547Z remote: Counting objects:  17% (27/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5466085Z remote: Counting objects:  18% (28/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5466773Z remote: Counting objects:  19% (30/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5467327Z remote: Counting objects:  20% (31/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5467858Z remote: Counting objects:  21% (33/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5468401Z remote: Counting objects:  22% (34/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5468932Z remote: Counting objects:  23% (36/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5469490Z remote: Counting objects:  24% (37/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5470020Z remote: Counting objects:  25% (39/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5470569Z remote: Counting objects:  26% (40/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5471100Z remote: Counting objects:  27% (42/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5471637Z remote: Counting objects:  28% (43/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5472168Z remote: Counting objects:  29% (45/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5472698Z remote: Counting objects:  30% (46/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5473239Z remote: Counting objects:  31% (48/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5473765Z remote: Counting objects:  32% (49/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5474306Z remote: Counting objects:  33% (51/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5474836Z remote: Counting objects:  34% (53/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5475392Z remote: Counting objects:  35% (54/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5475926Z remote: Counting objects:  36% (56/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5539949Z remote: Counting objects:  37% (57/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5540703Z remote: Counting objects:  38% (59/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5541348Z remote: Counting objects:  39% (60/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5541965Z remote: Counting objects:  40% (62/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5542930Z remote: Counting objects:  41% (63/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5543789Z remote: Counting objects:  42% (65/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5544899Z remote: Counting objects:  43% (66/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5545512Z remote: Counting objects:  44% (68/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5546058Z remote: Counting objects:  45% (69/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5547083Z remote: Counting objects:  46% (71/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5547747Z remote: Counting objects:  47% (72/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5548294Z remote: Counting objects:  48% (74/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5548844Z remote: Counting objects:  49% (75/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5549377Z remote: Counting objects:  50% (77/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5549923Z remote: Counting objects:  51% (79/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5550460Z remote: Counting objects:  52% (80/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5551013Z remote: Counting objects:  53% (82/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5551559Z remote: Counting objects:  54% (83/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5552092Z remote: Counting objects:  55% (85/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5553021Z remote: Counting objects:  56% (86/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5554103Z remote: Counting objects:  57% (88/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5554981Z remote: Counting objects:  58% (89/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5555742Z remote: Counting objects:  59% (91/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5556895Z remote: Counting objects:  60% (92/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5557697Z remote: Counting objects:  61% (94/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5558256Z remote: Counting objects:  62% (95/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5558802Z remote: Counting objects:  63% (97/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5559342Z remote: Counting objects:  64% (98/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5559892Z remote: Counting objects:  65% (100/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5560672Z remote: Counting objects:  66% (101/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5561235Z remote: Counting objects:  67% (103/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5561785Z remote: Counting objects:  68% (105/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5562325Z remote: Counting objects:  69% (106/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5562873Z remote: Counting objects:  70% (108/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5563416Z remote: Counting objects:  71% (109/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5563975Z remote: Counting objects:  72% (111/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5564534Z remote: Counting objects:  73% (112/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5565085Z remote: Counting objects:  74% (114/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5565631Z remote: Counting objects:  75% (115/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5566170Z remote: Counting objects:  76% (117/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5566985Z remote: Counting objects:  77% (118/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5567557Z remote: Counting objects:  78% (120/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5568110Z remote: Counting objects:  79% (121/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5568680Z remote: Counting objects:  80% (123/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5569236Z remote: Counting objects:  81% (124/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5569777Z remote: Counting objects:  82% (126/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5570366Z remote: Counting objects:  83% (127/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5570980Z remote: Counting objects:  84% (129/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5572023Z remote: Counting objects:  85% (131/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5572890Z remote: Counting objects:  86% (132/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5573490Z remote: Counting objects:  87% (134/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5574043Z remote: Counting objects:  88% (135/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5574590Z remote: Counting objects:  89% (137/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5575164Z remote: Counting objects:  90% (138/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5575739Z remote: Counting objects:  91% (140/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5576282Z remote: Counting objects:  92% (141/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5576985Z remote: Counting objects:  93% (143/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5577566Z remote: Counting objects:  94% (144/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5578119Z remote: Counting objects:  95% (146/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5578736Z remote: Counting objects:  96% (147/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5579605Z remote: Counting objects:  97% (149/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5580329Z remote: Counting objects:  98% (150/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5581496Z remote: Counting objects:  99% (152/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5582083Z remote: Counting objects: 100% (153/153)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5583038Z remote: Counting objects: 100% (153/153), done.        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5583875Z remote: Compressing objects:   1% (1/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5584838Z remote: Compressing objects:   2% (2/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5585653Z remote: Compressing objects:   3% (3/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5586533Z remote: Compressing objects:   4% (4/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5587521Z remote: Compressing objects:   5% (5/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5588239Z remote: Compressing objects:   6% (6/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5588965Z remote: Compressing objects:   7% (7/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5590071Z remote: Compressing objects:   8% (8/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5591053Z remote: Compressing objects:   9% (9/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5591818Z remote: Compressing objects:  10% (10/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5592693Z remote: Compressing objects:  11% (11/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5593519Z remote: Compressing objects:  12% (12/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5594485Z remote: Compressing objects:  13% (13/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5595221Z remote: Compressing objects:  14% (14/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5595787Z remote: Compressing objects:  15% (15/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5596608Z remote: Compressing objects:  16% (16/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5597512Z remote: Compressing objects:  17% (17/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5598087Z remote: Compressing objects:  18% (18/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5598655Z remote: Compressing objects:  19% (19/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5599257Z remote: Compressing objects:  20% (20/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5599823Z remote: Compressing objects:  21% (21/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5600388Z remote: Compressing objects:  22% (22/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5600950Z remote: Compressing objects:  23% (23/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5601521Z remote: Compressing objects:  24% (24/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5602076Z remote: Compressing objects:  25% (25/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5602664Z remote: Compressing objects:  26% (26/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5603219Z remote: Compressing objects:  27% (27/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5603779Z remote: Compressing objects:  28% (28/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5604342Z remote: Compressing objects:  29% (29/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5604902Z remote: Compressing objects:  30% (30/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5605457Z remote: Compressing objects:  31% (31/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5606002Z remote: Compressing objects:  32% (32/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5606791Z remote: Compressing objects:  33% (33/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5607393Z remote: Compressing objects:  34% (34/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5607944Z remote: Compressing objects:  35% (35/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5608496Z remote: Compressing objects:  36% (36/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5609058Z remote: Compressing objects:  37% (37/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5609620Z remote: Compressing objects:  38% (38/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5610176Z remote: Compressing objects:  39% (39/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5610738Z remote: Compressing objects:  40% (40/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5611285Z remote: Compressing objects:  41% (41/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5611833Z remote: Compressing objects:  42% (42/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5612390Z remote: Compressing objects:  43% (43/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5612949Z remote: Compressing objects:  44% (44/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5613511Z remote: Compressing objects:  45% (45/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5614062Z remote: Compressing objects:  46% (46/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5614616Z remote: Compressing objects:  47% (47/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5619679Z remote: Compressing objects:  48% (48/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5625958Z remote: Compressing objects:  50% (49/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5630266Z remote: Compressing objects:  51% (50/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5635828Z remote: Compressing objects:  52% (51/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5639524Z remote: Compressing objects:  53% (52/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5641577Z remote: Compressing objects:  54% (53/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5642887Z remote: Compressing objects:  55% (54/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5645121Z remote: Compressing objects:  56% (55/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5646582Z remote: Compressing objects:  57% (56/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5647518Z remote: Compressing objects:  58% (57/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5648177Z remote: Compressing objects:  59% (58/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5648809Z remote: Compressing objects:  60% (59/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5649739Z remote: Compressing objects:  61% (60/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5651060Z remote: Compressing objects:  62% (61/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5652444Z remote: Compressing objects:  63% (62/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5653837Z remote: Compressing objects:  64% (63/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5655410Z remote: Compressing objects:  65% (64/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5657003Z remote: Compressing objects:  66% (65/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5658326Z remote: Compressing objects:  67% (66/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5659192Z remote: Compressing objects:  68% (67/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5659798Z remote: Compressing objects:  69% (68/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5660589Z remote: Compressing objects:  70% (69/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5661159Z remote: Compressing objects:  71% (70/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5661763Z remote: Compressing objects:  72% (71/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5662327Z remote: Compressing objects:  73% (72/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5662915Z remote: Compressing objects:  74% (73/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5663479Z remote: Compressing objects:  75% (74/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5664040Z remote: Compressing objects:  76% (75/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5664601Z remote: Compressing objects:  77% (76/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5665164Z remote: Compressing objects:  78% (77/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5665726Z remote: Compressing objects:  79% (78/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5666281Z remote: Compressing objects:  80% (79/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5667138Z remote: Compressing objects:  81% (80/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5667695Z remote: Compressing objects:  82% (81/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5668280Z remote: Compressing objects:  83% (82/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5668837Z remote: Compressing objects:  84% (83/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5669395Z remote: Compressing objects:  85% (84/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5669946Z remote: Compressing objects:  86% (85/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5670489Z remote: Compressing objects:  87% (86/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5671052Z remote: Compressing objects:  88% (87/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5671612Z remote: Compressing objects:  89% (88/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5672171Z remote: Compressing objects:  90% (89/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5673436Z remote: Compressing objects:  91% (90/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5674716Z remote: Compressing objects:  92% (91/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5675376Z remote: Compressing objects:  93% (92/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5677541Z remote: Compressing objects:  94% (93/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5679193Z remote: Compressing objects:  95% (94/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5680093Z remote: Compressing objects:  96% (95/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5681036Z remote: Compressing objects:  97% (96/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5682010Z remote: Compressing objects:  98% (97/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5683056Z remote: Compressing objects: 100% (98/98)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5684139Z remote: Compressing objects: 100% (98/98), done.        
+build	UNKNOWN STEP	2026-02-16T15:08:37.5706021Z Receiving objects:   0% (1/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5707169Z Receiving objects:   1% (2/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5708311Z Receiving objects:   2% (4/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5709285Z Receiving objects:   3% (5/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5710136Z Receiving objects:   4% (7/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5711009Z Receiving objects:   5% (8/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5711857Z Receiving objects:   6% (10/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5712677Z Receiving objects:   7% (11/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5713500Z Receiving objects:   8% (13/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5714026Z Receiving objects:   9% (14/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5714651Z Receiving objects:  10% (16/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5715346Z Receiving objects:  11% (17/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5715873Z Receiving objects:  12% (19/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5716318Z Receiving objects:  13% (20/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5717076Z Receiving objects:  14% (22/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5717674Z Receiving objects:  15% (23/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5718124Z Receiving objects:  16% (25/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5718667Z Receiving objects:  17% (27/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5719198Z Receiving objects:  18% (28/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5719698Z Receiving objects:  19% (30/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5720273Z Receiving objects:  20% (31/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5720731Z Receiving objects:  21% (33/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5721361Z Receiving objects:  22% (34/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5722240Z Receiving objects:  23% (36/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5723060Z Receiving objects:  24% (37/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5723890Z Receiving objects:  25% (39/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5724999Z Receiving objects:  26% (40/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5725470Z Receiving objects:  27% (42/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5725937Z Receiving objects:  28% (43/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5726612Z Receiving objects:  29% (45/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5727348Z Receiving objects:  30% (46/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5728237Z Receiving objects:  31% (48/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5728850Z Receiving objects:  32% (49/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5729311Z Receiving objects:  33% (51/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5730164Z Receiving objects:  34% (53/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5730815Z Receiving objects:  35% (54/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5731701Z Receiving objects:  36% (56/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5732206Z Receiving objects:  37% (57/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5732658Z Receiving objects:  38% (59/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5733107Z Receiving objects:  39% (60/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5733545Z Receiving objects:  40% (62/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5734019Z Receiving objects:  41% (63/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5734859Z Receiving objects:  42% (65/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5735773Z Receiving objects:  43% (66/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5736820Z Receiving objects:  44% (68/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5737529Z Receiving objects:  45% (69/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5738239Z Receiving objects:  46% (71/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5739165Z Receiving objects:  47% (72/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5739759Z Receiving objects:  48% (74/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5740210Z Receiving objects:  49% (75/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5740659Z Receiving objects:  50% (77/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5741099Z Receiving objects:  51% (79/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5741864Z Receiving objects:  52% (80/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5742637Z Receiving objects:  53% (82/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5743238Z Receiving objects:  54% (83/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5744068Z Receiving objects:  55% (85/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5744959Z Receiving objects:  56% (86/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5745867Z Receiving objects:  57% (88/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5746557Z Receiving objects:  58% (89/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5747114Z Receiving objects:  59% (91/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5775452Z Receiving objects:  60% (92/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5802390Z Receiving objects:  61% (94/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5809000Z Receiving objects:  62% (95/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5809919Z Receiving objects:  63% (97/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5810503Z Receiving objects:  64% (98/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5810962Z Receiving objects:  65% (100/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5811449Z Receiving objects:  66% (101/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5811894Z Receiving objects:  67% (103/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5812539Z Receiving objects:  68% (105/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5825629Z Receiving objects:  69% (106/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5826992Z Receiving objects:  70% (108/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5827792Z Receiving objects:  71% (109/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5828565Z Receiving objects:  72% (111/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5855206Z Receiving objects:  73% (112/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5857684Z Receiving objects:  74% (114/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5861598Z Receiving objects:  75% (115/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5867176Z Receiving objects:  76% (117/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5868675Z Receiving objects:  77% (118/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5870403Z Receiving objects:  78% (120/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5872689Z Receiving objects:  79% (121/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5874191Z Receiving objects:  80% (123/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5876735Z Receiving objects:  81% (124/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5877591Z Receiving objects:  82% (126/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5878401Z Receiving objects:  83% (127/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5879218Z Receiving objects:  84% (129/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5884504Z Receiving objects:  85% (131/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.5885323Z Receiving objects:  86% (132/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7112284Z Receiving objects:  87% (134/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7177275Z Receiving objects:  88% (135/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7180864Z remote: Total 153 (delta 15), reused 122 (delta 13), pack-reused 0 (from 0)        
+build	UNKNOWN STEP	2026-02-16T15:08:37.7182130Z Receiving objects:  89% (137/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7189747Z Receiving objects:  90% (138/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7194536Z Receiving objects:  91% (140/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7196146Z Receiving objects:  92% (141/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7199918Z Receiving objects:  93% (143/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7201360Z Receiving objects:  94% (144/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7203677Z Receiving objects:  95% (146/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7204462Z Receiving objects:  96% (147/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7205212Z Receiving objects:  97% (149/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7205945Z Receiving objects:  98% (150/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7207355Z Receiving objects:  99% (152/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7208124Z Receiving objects: 100% (153/153)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7209112Z Receiving objects: 100% (153/153), 1.78 MiB | 11.93 MiB/s, done.
+build	UNKNOWN STEP	2026-02-16T15:08:37.7210135Z Resolving deltas:   0% (0/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7210866Z Resolving deltas:   6% (1/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7227800Z Resolving deltas:  13% (2/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7236226Z Resolving deltas:  20% (3/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7240489Z Resolving deltas:  26% (4/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7244015Z Resolving deltas:  33% (5/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7247140Z Resolving deltas:  40% (6/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7252833Z Resolving deltas:  46% (7/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7257917Z Resolving deltas:  53% (8/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7260774Z Resolving deltas:  60% (9/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7264033Z Resolving deltas:  66% (10/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7267466Z Resolving deltas:  73% (11/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7277679Z Resolving deltas:  80% (12/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7285394Z Resolving deltas:  86% (13/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7297070Z Resolving deltas:  93% (14/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7298711Z Resolving deltas: 100% (15/15)
+build	UNKNOWN STEP	2026-02-16T15:08:37.7299277Z Resolving deltas: 100% (15/15), done.
+build	UNKNOWN STEP	2026-02-16T15:08:37.7406321Z From https://github.com/Anish01234/KawaiiDoodle
+build	UNKNOWN STEP	2026-02-16T15:08:37.7409140Z  * [new ref]         cda108512ac3821dd7990bee9f30a301dcc974dd -> origin/master
+build	UNKNOWN STEP	2026-02-16T15:08:37.7444507Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.7445751Z ##[group]Determining the checkout info
+build	UNKNOWN STEP	2026-02-16T15:08:37.7447613Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.7448840Z ##[group]Checking out the ref
+build	UNKNOWN STEP	2026-02-16T15:08:37.7452220Z [command]/usr/bin/git checkout --progress --force -B master refs/remotes/origin/master
+build	UNKNOWN STEP	2026-02-16T15:08:37.7706841Z Reset branch 'master'
+build	UNKNOWN STEP	2026-02-16T15:08:37.7709432Z branch 'master' set up to track 'origin/master'.
+build	UNKNOWN STEP	2026-02-16T15:08:37.7717862Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.7753479Z [command]/usr/bin/git log -1 --format='%H'
+build	UNKNOWN STEP	2026-02-16T15:08:37.7775848Z 'cda108512ac3821dd7990bee9f30a301dcc974dd'
+build	UNKNOWN STEP	2026-02-16T15:08:37.7963887Z ##[group]Run actions/setup-node@v3
+build	UNKNOWN STEP	2026-02-16T15:08:37.7964392Z with:
+build	UNKNOWN STEP	2026-02-16T15:08:37.7964722Z   node-version: 18
+build	UNKNOWN STEP	2026-02-16T15:08:37.7965077Z   always-auth: false
+build	UNKNOWN STEP	2026-02-16T15:08:37.7965464Z   check-latest: false
+build	UNKNOWN STEP	2026-02-16T15:08:37.7965983Z   token: ***
+build	UNKNOWN STEP	2026-02-16T15:08:37.7966511Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:37.9959367Z Attempting to download 18...
+build	UNKNOWN STEP	2026-02-16T15:08:38.3424571Z Acquiring 18.20.8 - x64 from https://github.com/actions/node-versions/releases/download/18.20.8-14110393767/node-18.20.8-linux-x64.tar.gz
+build	UNKNOWN STEP	2026-02-16T15:08:38.7435435Z Extracting ...
+build	UNKNOWN STEP	2026-02-16T15:08:38.7543081Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword -C /home/runner/work/_temp/50d740b4-6bdf-4a10-941a-dbf644d225f9 -f /home/runner/work/_temp/96c79162-cb84-439f-a690-00b83382b54a
+build	UNKNOWN STEP	2026-02-16T15:08:39.7137422Z Adding to the cache ...
+build	UNKNOWN STEP	2026-02-16T15:08:41.3994017Z ##[group]Environment details
+build	UNKNOWN STEP	2026-02-16T15:08:41.6774298Z node: v18.20.8
+build	UNKNOWN STEP	2026-02-16T15:08:41.6775649Z npm: 10.8.2
+build	UNKNOWN STEP	2026-02-16T15:08:41.6776906Z yarn: 1.22.22
+build	UNKNOWN STEP	2026-02-16T15:08:41.6778287Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:41.7003420Z ##[group]Run actions/setup-java@v3
+build	UNKNOWN STEP	2026-02-16T15:08:41.7003747Z with:
+build	UNKNOWN STEP	2026-02-16T15:08:41.7003967Z   distribution: zulu
+build	UNKNOWN STEP	2026-02-16T15:08:41.7004209Z   java-version: 17
+build	UNKNOWN STEP	2026-02-16T15:08:41.7004441Z   java-package: jdk
+build	UNKNOWN STEP	2026-02-16T15:08:41.7004673Z   check-latest: false
+build	UNKNOWN STEP	2026-02-16T15:08:41.7004905Z   server-id: github
+build	UNKNOWN STEP	2026-02-16T15:08:41.7005310Z   server-username: GITHUB_ACTOR
+build	UNKNOWN STEP	2026-02-16T15:08:41.7005587Z   server-password: GITHUB_TOKEN
+build	UNKNOWN STEP	2026-02-16T15:08:41.7005846Z   overwrite-settings: true
+build	UNKNOWN STEP	2026-02-16T15:08:41.7006097Z   job-status: success
+build	UNKNOWN STEP	2026-02-16T15:08:41.7006677Z   token: ***
+build	UNKNOWN STEP	2026-02-16T15:08:41.7006902Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:41.9003682Z ##[group]Installed distributions
+build	UNKNOWN STEP	2026-02-16T15:08:41.9036170Z Trying to resolve the latest version from remote
+build	UNKNOWN STEP	2026-02-16T15:08:41.9818634Z Resolved latest version as 17.0.18+8
+build	UNKNOWN STEP	2026-02-16T15:08:41.9819258Z Trying to download...
+build	UNKNOWN STEP	2026-02-16T15:08:41.9820472Z Downloading Java 17.0.18+8 (Zulu) from https://cdn.azul.com/zulu/bin/zulu17.64.17-ca-jdk17.0.18-linux_x64.tar.gz ...
+build	UNKNOWN STEP	2026-02-16T15:08:43.8998462Z Extracting Java archive...
+build	UNKNOWN STEP	2026-02-16T15:08:43.9122388Z [command]/usr/bin/tar xz --warning=no-unknown-keyword -C /home/runner/work/_temp/ad74d33f-bfd0-4cb5-8bf1-30752fa9bae6 -f /home/runner/work/_temp/6125da30-a41e-4b14-bc29-c87fe0c2b4a1
+build	UNKNOWN STEP	2026-02-16T15:08:46.5370275Z Java 17.0.18+8 was downloaded
+build	UNKNOWN STEP	2026-02-16T15:08:46.5371007Z Setting Java 17.0.18+8 as the default
+build	UNKNOWN STEP	2026-02-16T15:08:46.5380437Z Creating toolchains.xml for JDK version 17 from zulu
+build	UNKNOWN STEP	2026-02-16T15:08:46.5453964Z Writing to /home/runner/.m2/toolchains.xml
+build	UNKNOWN STEP	2026-02-16T15:08:46.5454654Z 
+build	UNKNOWN STEP	2026-02-16T15:08:46.5455118Z Java configuration:
+build	UNKNOWN STEP	2026-02-16T15:08:46.5455604Z   Distribution: zulu
+build	UNKNOWN STEP	2026-02-16T15:08:46.5455982Z   Version: 17.0.18+8
+build	UNKNOWN STEP	2026-02-16T15:08:46.5456766Z   Path: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:46.5457232Z 
+build	UNKNOWN STEP	2026-02-16T15:08:46.5457717Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:46.5463147Z Creating settings.xml with server-id: github
+build	UNKNOWN STEP	2026-02-16T15:08:46.5474663Z Writing to /home/runner/.m2/settings.xml
+build	UNKNOWN STEP	2026-02-16T15:08:46.5614471Z ##[group]Run npm install --legacy-peer-deps
+build	UNKNOWN STEP	2026-02-16T15:08:46.5614855Z [36;1mnpm install --legacy-peer-deps[0m
+build	UNKNOWN STEP	2026-02-16T15:08:46.5664977Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:46.5665226Z env:
+build	UNKNOWN STEP	2026-02-16T15:08:46.5665486Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:46.5665908Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:46.5666246Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:47.9760344Z npm warn deprecated tar@6.2.1: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+build	UNKNOWN STEP	2026-02-16T15:08:48.0484540Z npm warn deprecated glob@9.3.5: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+build	UNKNOWN STEP	2026-02-16T15:08:48.3799658Z 
+build	UNKNOWN STEP	2026-02-16T15:08:48.3800525Z added 107 packages, and audited 108 packages in 2s
+build	UNKNOWN STEP	2026-02-16T15:08:48.3800897Z 
+build	UNKNOWN STEP	2026-02-16T15:08:48.3801399Z 11 packages are looking for funding
+build	UNKNOWN STEP	2026-02-16T15:08:48.3801950Z   run `npm fund` for details
+build	UNKNOWN STEP	2026-02-16T15:08:48.3979100Z 
+build	UNKNOWN STEP	2026-02-16T15:08:48.3985203Z 2 high severity vulnerabilities
+build	UNKNOWN STEP	2026-02-16T15:08:48.3986002Z 
+build	UNKNOWN STEP	2026-02-16T15:08:48.3986972Z To address all issues (including breaking changes), run:
+build	UNKNOWN STEP	2026-02-16T15:08:48.3987921Z   npm audit fix --force
+build	UNKNOWN STEP	2026-02-16T15:08:48.3988526Z 
+build	UNKNOWN STEP	2026-02-16T15:08:48.3990588Z Run `npm audit` for details.
+build	UNKNOWN STEP	2026-02-16T15:08:48.4160668Z ##[group]Run npm run build
+build	UNKNOWN STEP	2026-02-16T15:08:48.4161173Z [36;1mnpm run build[0m
+build	UNKNOWN STEP	2026-02-16T15:08:48.4213563Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:48.4213795Z env:
+build	UNKNOWN STEP	2026-02-16T15:08:48.4214045Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:48.4214445Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:48.4214768Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:48.5485630Z 
+build	UNKNOWN STEP	2026-02-16T15:08:48.5486299Z > kawaii-doodle-app@2.9.18 build
+build	UNKNOWN STEP	2026-02-16T15:08:48.5487039Z > node scripts/build.js
+build	UNKNOWN STEP	2026-02-16T15:08:48.5487193Z 
+build	UNKNOWN STEP	2026-02-16T15:08:48.5802607Z 女・・ Starting Elite Build Process...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5807022Z ｧｹ Cleaning build directory...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5814839Z 逃 Copying index.html...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5818221Z 逃 Copying styles.css...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5821293Z 逃 Copying sw.js...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5823054Z 逃 Copying manifest.json...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5825684Z 唐 Copying src/...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5850775Z 唐 Copying resources/...
+build	UNKNOWN STEP	2026-02-16T15:08:48.5880092Z 笨・Build Complete! Ready for Capacitor Sync.
+build	UNKNOWN STEP	2026-02-16T15:08:48.6010532Z ##[group]Run npx cap add android || true
+build	UNKNOWN STEP	2026-02-16T15:08:48.6010855Z [36;1mnpx cap add android || true[0m
+build	UNKNOWN STEP	2026-02-16T15:08:48.6011110Z [36;1mnpx cap sync android[0m
+build	UNKNOWN STEP	2026-02-16T15:08:48.6061934Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:48.6062157Z env:
+build	UNKNOWN STEP	2026-02-16T15:08:48.6062398Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:48.6062806Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:48.6063127Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:49.2447034Z [error] android platform already exists.
+build	UNKNOWN STEP	2026-02-16T15:08:49.2447943Z         To re-add this platform, first remove ./android, then run this command again.
+build	UNKNOWN STEP	2026-02-16T15:08:49.2448590Z         WARNING: Your native project will be completely removed.
+build	UNKNOWN STEP	2026-02-16T15:08:49.8764728Z 笨・Copying web assets from www to android/app/src/main/assets/public in 16.97ms
+build	UNKNOWN STEP	2026-02-16T15:08:49.8777233Z 笨・Creating capacitor.config.json in android/app/src/main/assets in 908.59ﾎｼs
+build	UNKNOWN STEP	2026-02-16T15:08:49.8858751Z [info] Found 3 Cordova plugins for android:
+build	UNKNOWN STEP	2026-02-16T15:08:49.8859378Z        cordova-plugin-file-opener2@4.0.0
+build	UNKNOWN STEP	2026-02-16T15:08:49.8859969Z        cordova-plugin-navigationbar@1.0.31
+build	UNKNOWN STEP	2026-02-16T15:08:49.8860536Z        cordova-plugin-wallpaper@0.1.1
+build	UNKNOWN STEP	2026-02-16T15:08:49.9043619Z 笨・copy android in 60.21ms
+build	UNKNOWN STEP	2026-02-16T15:08:49.9219639Z 笨・Updating Android plugins in 5.84ms
+build	UNKNOWN STEP	2026-02-16T15:08:49.9224294Z [info] Found 5 Capacitor plugins for android:
+build	UNKNOWN STEP	2026-02-16T15:08:49.9224849Z        @capacitor/app@6.0.3
+build	UNKNOWN STEP	2026-02-16T15:08:49.9225298Z        @capacitor/filesystem@6.0.4
+build	UNKNOWN STEP	2026-02-16T15:08:49.9225856Z        @capacitor/push-notifications@6.0.5
+build	UNKNOWN STEP	2026-02-16T15:08:49.9226594Z        @capacitor/status-bar@6.0.3
+build	UNKNOWN STEP	2026-02-16T15:08:49.9227173Z        @codetrix-studio/capacitor-google-auth@3.3.6
+build	UNKNOWN STEP	2026-02-16T15:08:49.9555521Z [info] Found 3 Cordova plugins for android:
+build	UNKNOWN STEP	2026-02-16T15:08:49.9556171Z        cordova-plugin-file-opener2@4.0.0
+build	UNKNOWN STEP	2026-02-16T15:08:49.9556991Z        cordova-plugin-navigationbar@1.0.31
+build	UNKNOWN STEP	2026-02-16T15:08:49.9557586Z        cordova-plugin-wallpaper@0.1.1
+build	UNKNOWN STEP	2026-02-16T15:08:49.9702445Z 笨・update android in 59.63ms
+build	UNKNOWN STEP	2026-02-16T15:08:49.9744639Z [info] Sync finished in 0.147s
+build	UNKNOWN STEP	2026-02-16T15:08:50.0008066Z ##[group]Run chmod +x android/gradlew
+build	UNKNOWN STEP	2026-02-16T15:08:50.0008375Z [36;1mchmod +x android/gradlew[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0058547Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:50.0058782Z env:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0059022Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0059422Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0059778Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:50.0160277Z ##[group]Run mkdir -p android/app/src/main/res/xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0160660Z [36;1mmkdir -p android/app/src/main/res/xml[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0161068Z [36;1mcat > android/app/src/main/res/xml/network_security_config.xml << 'EOF'[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0161487Z [36;1m<?xml version="1.0" encoding="utf-8"?>[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0161765Z [36;1m<network-security-config>[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0162063Z [36;1m    <base-config cleartextTrafficPermitted="true">[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0162361Z [36;1m        <trust-anchors>[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0162613Z [36;1m            <certificates src="system" />[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0162881Z [36;1m        </trust-anchors>[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0163104Z [36;1m    </base-config>[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0163326Z [36;1m</network-security-config>[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0163550Z [36;1mEOF[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0207891Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:50.0208117Z env:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0208552Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0208965Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0209285Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:50.0320653Z ##[group]Run node scripts/patch-android.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0320972Z [36;1mnode scripts/patch-android.js[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0365673Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:50.0365941Z env:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0366182Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0366770Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0367083Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:50.0710567Z 邃ｹ・・AndroidManifest.xml already patched
+build	UNKNOWN STEP	2026-02-16T15:08:50.0715015Z 邃ｹ・・styles.xml already patched
+build	UNKNOWN STEP	2026-02-16T15:08:50.0717487Z 邃ｹ・・MainActivity.java already patched
+build	UNKNOWN STEP	2026-02-16T15:08:50.0725769Z 笨・Patched capacitor-cordova-android-plugins/build.gradle (AGPBI warning)
+build	UNKNOWN STEP	2026-02-16T15:08:50.0790982Z ##[group]Run cd android
+build	UNKNOWN STEP	2026-02-16T15:08:50.0791285Z [36;1mcd android[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0791512Z [36;1mecho "Listing android directory..."[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0791781Z [36;1mls -R[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0791954Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0792177Z [36;1m# Create the keystore that build.gradle expects[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0792667Z [36;1m# Check if keystore exists (e.g., committed to repo), otherwise generate a new ephemeral one[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0793203Z [36;1mif [ ! -f "app/release-key.keystore" ]; then[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0793746Z [36;1m    echo "笞・・Keystore not found! Generating a new ephemeral key (Updates will require uninstalling old app)..."[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0794908Z [36;1m    keytool -genkey -v -keystore app/release-key.keystore -alias kawaii -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0795827Z [36;1melse[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0796103Z [36;1m    echo "笨・Found existing keystore! Using for consistent signing."[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0796657Z [36;1mfi[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0796821Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0796978Z [36;1m# Build APK[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0797194Z [36;1m./gradlew assembleDebug --stacktrace[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0797446Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0797597Z [36;1m# Find tools[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0797955Z [36;1mAPKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -r | head -n 1)[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0798512Z [36;1mZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | sort -r | head -n 1)[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0798893Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0799080Z [36;1mecho "Found apksigner at: $APKSIGNER"[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0799355Z [36;1mecho "Found zipalign at: $ZIPALIGN"[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0799596Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0799802Z [36;1mif [ -z "$APKSIGNER" ] || [ -z "$ZIPALIGN" ]; then[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0800132Z [36;1m  echo "Error: Signing tools not found!"[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0800399Z [36;1m  exit 1[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0800571Z [36;1mfi[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0800727Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0800959Z [36;1mAPK_PATH="app/build/outputs/apk/debug/app-debug.apk"[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0801287Z [36;1mif [ ! -f "$APK_PATH" ]; then[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0801599Z [36;1m  # Check if it's named differently due to build type config[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0802025Z [36;1m  APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -n 1)[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0802410Z [36;1m  echo "Falling back to found APK: $APK_PATH"[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0802676Z [36;1mfi[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0802839Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0803048Z [36;1mif [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0803369Z [36;1m  echo "Error: No APK found after build!"[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0803619Z [36;1m  exit 1[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0803784Z [36;1mfi[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0803938Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0804095Z [36;1m# Align the APK[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0804607Z [36;1m"$ZIPALIGN" -v -p 4 "$APK_PATH" app/build/outputs/apk/debug/app-debug-aligned.apk[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0804984Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0805189Z [36;1m# Sign using apksigner with correct credentials[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0806090Z [36;1m"$APKSIGNER" sign --ks app/release-key.keystore --ks-pass pass:password123 --key-pass pass:password123 --out app/build/outputs/apk/debug/app-debug-signed.apk app/build/outputs/apk/debug/app-debug-aligned.apk[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0807292Z [36;1m[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0807451Z [36;1m# Verify Signature[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0807838Z [36;1m"$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/app-debug-signed.apk[0m
+build	UNKNOWN STEP	2026-02-16T15:08:50.0856601Z shell: /usr/bin/bash -e {0}
+build	UNKNOWN STEP	2026-02-16T15:08:50.0856847Z env:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0857092Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0857708Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	UNKNOWN STEP	2026-02-16T15:08:50.0858053Z ##[endgroup]
+build	UNKNOWN STEP	2026-02-16T15:08:50.0925638Z Listing android directory...
+build	UNKNOWN STEP	2026-02-16T15:08:50.0945384Z .:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0945686Z app
+build	UNKNOWN STEP	2026-02-16T15:08:50.0945960Z build.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0946587Z capacitor-cordova-android-plugins
+build	UNKNOWN STEP	2026-02-16T15:08:50.0947116Z capacitor.settings.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0947362Z gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0947551Z gradle.properties
+build	UNKNOWN STEP	2026-02-16T15:08:50.0947739Z gradlew
+build	UNKNOWN STEP	2026-02-16T15:08:50.0947896Z gradlew.bat
+build	UNKNOWN STEP	2026-02-16T15:08:50.0948196Z settings.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0948496Z variables.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0948691Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0948806Z ./app:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0949073Z build.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0949368Z capacitor.build.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0949634Z proguard-rules.pro
+build	UNKNOWN STEP	2026-02-16T15:08:50.0949855Z release-key.keystore
+build	UNKNOWN STEP	2026-02-16T15:08:50.0950041Z src
+build	UNKNOWN STEP	2026-02-16T15:08:50.0950128Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0950314Z ./app/src:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0950562Z androidTest
+build	UNKNOWN STEP	2026-02-16T15:08:50.0950743Z main
+build	UNKNOWN STEP	2026-02-16T15:08:50.0950894Z test
+build	UNKNOWN STEP	2026-02-16T15:08:50.0950988Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0951085Z ./app/src/androidTest:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0951333Z java
+build	UNKNOWN STEP	2026-02-16T15:08:50.0951417Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0951603Z ./app/src/androidTest/java:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0951991Z com
+build	UNKNOWN STEP	2026-02-16T15:08:50.0952145Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0952387Z ./app/src/androidTest/java/com:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0952784Z getcapacitor
+build	UNKNOWN STEP	2026-02-16T15:08:50.0952967Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0953247Z ./app/src/androidTest/java/com/getcapacitor:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0953627Z myapp
+build	UNKNOWN STEP	2026-02-16T15:08:50.0953720Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0953903Z ./app/src/androidTest/java/com/getcapacitor/myapp:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0954228Z ExampleInstrumentedTest.java
+build	UNKNOWN STEP	2026-02-16T15:08:50.0954386Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0954464Z ./app/src/main:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0954655Z AndroidManifest.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0954837Z assets
+build	UNKNOWN STEP	2026-02-16T15:08:50.0954984Z java
+build	UNKNOWN STEP	2026-02-16T15:08:50.0955129Z res
+build	UNKNOWN STEP	2026-02-16T15:08:50.0955213Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0955317Z ./app/src/main/assets:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0955532Z capacitor.config.json
+build	UNKNOWN STEP	2026-02-16T15:08:50.0955746Z capacitor.plugins.json
+build	UNKNOWN STEP	2026-02-16T15:08:50.0955927Z public
+build	UNKNOWN STEP	2026-02-16T15:08:50.0956022Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0956125Z ./app/src/main/assets/public:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0956522Z cordova.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0956719Z cordova_plugins.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0956901Z index.html
+build	UNKNOWN STEP	2026-02-16T15:08:50.0957075Z manifest.json
+build	UNKNOWN STEP	2026-02-16T15:08:50.0957238Z plugins
+build	UNKNOWN STEP	2026-02-16T15:08:50.0957398Z resources
+build	UNKNOWN STEP	2026-02-16T15:08:50.0957545Z src
+build	UNKNOWN STEP	2026-02-16T15:08:50.0957696Z styles.css
+build	UNKNOWN STEP	2026-02-16T15:08:50.0957850Z sw.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0957937Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0958071Z ./app/src/main/assets/public/plugins:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0958355Z cordova-plugin-file-opener2
+build	UNKNOWN STEP	2026-02-16T15:08:50.0958602Z cordova-plugin-navigationbar
+build	UNKNOWN STEP	2026-02-16T15:08:50.0958848Z cordova-plugin-wallpaper
+build	UNKNOWN STEP	2026-02-16T15:08:50.0958988Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0959240Z ./app/src/main/assets/public/plugins/cordova-plugin-file-opener2:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0959577Z www
+build	UNKNOWN STEP	2026-02-16T15:08:50.0959670Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0960134Z ./app/src/main/assets/public/plugins/cordova-plugin-file-opener2/www:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0960525Z plugins.FileOpener2.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0960651Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0960898Z ./app/src/main/assets/public/plugins/cordova-plugin-navigationbar:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0961229Z www
+build	UNKNOWN STEP	2026-02-16T15:08:50.0961313Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0961576Z ./app/src/main/assets/public/plugins/cordova-plugin-navigationbar/www:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0961923Z navigationbar.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0962040Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0962269Z ./app/src/main/assets/public/plugins/cordova-plugin-wallpaper:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0962587Z www
+build	UNKNOWN STEP	2026-02-16T15:08:50.0962669Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0962912Z ./app/src/main/assets/public/plugins/cordova-plugin-wallpaper/www:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0963246Z wallpaper.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0963348Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0963492Z ./app/src/main/assets/public/resources:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0963735Z android
+build	UNKNOWN STEP	2026-02-16T15:08:50.0963893Z icon.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0964185Z icon_source.jpg
+build	UNKNOWN STEP	2026-02-16T15:08:50.0964383Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0964478Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0964644Z ./app/src/main/assets/public/resources/android:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0964897Z icon
+build	UNKNOWN STEP	2026-02-16T15:08:50.0964988Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0965165Z ./app/src/main/assets/public/resources/android/icon:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0965472Z drawable-hdpi-icon.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0965694Z drawable-ldpi-icon.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0965913Z drawable-mdpi-icon.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0966122Z drawable-xhdpi-icon.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0966531Z drawable-xxhdpi-icon.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0966783Z drawable-xxxhdpi-icon.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0966929Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0967058Z ./app/src/main/assets/public/src:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0967284Z app.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0967434Z assets
+build	UNKNOWN STEP	2026-02-16T15:08:50.0967586Z canvas.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0967742Z config.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0967887Z social.js
+build	UNKNOWN STEP	2026-02-16T15:08:50.0967980Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0968122Z ./app/src/main/assets/public/src/assets:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0968369Z logo.jpg
+build	UNKNOWN STEP	2026-02-16T15:08:50.0968517Z logo.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0968603Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0968697Z ./app/src/main/java:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0968872Z io
+build	UNKNOWN STEP	2026-02-16T15:08:50.0968962Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0969050Z ./app/src/main/java/io:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0969235Z kawaii
+build	UNKNOWN STEP	2026-02-16T15:08:50.0969320Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0969435Z ./app/src/main/java/io/kawaii:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0969646Z doodle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0969729Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0969862Z ./app/src/main/java/io/kawaii/doodle:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0970111Z MainActivity.java
+build	UNKNOWN STEP	2026-02-16T15:08:50.0970313Z WallpaperPlugin.kt
+build	UNKNOWN STEP	2026-02-16T15:08:50.0970507Z WallpaperWorker.kt
+build	UNKNOWN STEP	2026-02-16T15:08:50.0970623Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0970709Z ./app/src/main/res:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0970886Z drawable
+build	UNKNOWN STEP	2026-02-16T15:08:50.0971055Z drawable-land-hdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0971250Z drawable-land-mdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0971444Z drawable-land-xhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0971644Z drawable-land-xxhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0971859Z drawable-land-xxxhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0972067Z drawable-port-hdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0972265Z drawable-port-mdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0972459Z drawable-port-xhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0972654Z drawable-port-xxhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0972863Z drawable-port-xxxhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0973051Z drawable-v24
+build	UNKNOWN STEP	2026-02-16T15:08:50.0973217Z layout
+build	UNKNOWN STEP	2026-02-16T15:08:50.0973379Z mipmap-hdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0973537Z mipmap-mdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0973703Z mipmap-xhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0973870Z mipmap-xxhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0974044Z mipmap-xxxhdpi
+build	UNKNOWN STEP	2026-02-16T15:08:50.0974210Z values
+build	UNKNOWN STEP	2026-02-16T15:08:50.0974359Z values-v27
+build	UNKNOWN STEP	2026-02-16T15:08:50.0974514Z xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0974600Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0974702Z ./app/src/main/res/drawable:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0974945Z ic_launcher_background.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0975152Z ic_pencil.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0975311Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0975412Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0975549Z ./app/src/main/res/drawable-land-hdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0975792Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0975883Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0976146Z ./app/src/main/res/drawable-land-mdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0976585Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0976701Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0976866Z ./app/src/main/res/drawable-land-xhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0977116Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0977209Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0977354Z ./app/src/main/res/drawable-land-xxhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0977591Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0977686Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0977829Z ./app/src/main/res/drawable-land-xxxhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0978080Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0978169Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0978303Z ./app/src/main/res/drawable-port-hdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0978541Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0978631Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0978768Z ./app/src/main/res/drawable-port-mdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0978995Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0979094Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0979228Z ./app/src/main/res/drawable-port-xhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0979464Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0979552Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0979861Z ./app/src/main/res/drawable-port-xxhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0980341Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0980514Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0980791Z ./app/src/main/res/drawable-port-xxxhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0981230Z splash.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0981383Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0981616Z ./app/src/main/res/drawable-v24:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0982062Z ic_launcher_foreground.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0982314Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0982488Z ./app/src/main/res/layout:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0982889Z activity_main.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0983092Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0983320Z ./app/src/main/res/mipmap-hdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0983822Z ic_launcher.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0984204Z ic_launcher_foreground.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0984620Z ic_launcher_round.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0984852Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0985083Z ./app/src/main/res/mipmap-mdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0985476Z ic_launcher.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0985839Z ic_launcher_foreground.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0986245Z ic_launcher_round.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0986770Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0987024Z ./app/src/main/res/mipmap-xhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0987449Z ic_launcher.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0987814Z ic_launcher_foreground.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0988226Z ic_launcher_round.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0988486Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0988725Z ./app/src/main/res/mipmap-xxhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0989246Z ic_launcher.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0989618Z ic_launcher_foreground.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0990032Z ic_launcher_round.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0990253Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0990493Z ./app/src/main/res/mipmap-xxxhdpi:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0990928Z ic_launcher.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0991687Z ic_launcher_foreground.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0992113Z ic_launcher_round.png
+build	UNKNOWN STEP	2026-02-16T15:08:50.0992352Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0992531Z ./app/src/main/res/values:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0992897Z colors.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0993239Z ic_launcher_background.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0993605Z strings.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0993877Z styles.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0994049Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0994280Z ./app/src/main/res/values-v27:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0994659Z styles.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0994853Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0995018Z ./app/src/main/res/xml:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0995220Z config.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0995383Z file_paths.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0995598Z network_security_config.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.0995740Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0995817Z ./app/src/test:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0995981Z java
+build	UNKNOWN STEP	2026-02-16T15:08:50.0996074Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0996160Z ./app/src/test/java:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0996536Z com
+build	UNKNOWN STEP	2026-02-16T15:08:50.0996649Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0996746Z ./app/src/test/java/com:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0996959Z getcapacitor
+build	UNKNOWN STEP	2026-02-16T15:08:50.0997063Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0997210Z ./app/src/test/java/com/getcapacitor:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0997444Z myapp
+build	UNKNOWN STEP	2026-02-16T15:08:50.0997538Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0997691Z ./app/src/test/java/com/getcapacitor/myapp:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0997970Z ExampleUnitTest.java
+build	UNKNOWN STEP	2026-02-16T15:08:50.0998102Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0998251Z ./capacitor-cordova-android-plugins:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0998703Z build.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0998896Z cordova.variables.gradle
+build	UNKNOWN STEP	2026-02-16T15:08:50.0999095Z src
+build	UNKNOWN STEP	2026-02-16T15:08:50.0999179Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0999336Z ./capacitor-cordova-android-plugins/src:
+build	UNKNOWN STEP	2026-02-16T15:08:50.0999587Z main
+build	UNKNOWN STEP	2026-02-16T15:08:50.0999677Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.0999846Z ./capacitor-cordova-android-plugins/src/main:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1000143Z AndroidManifest.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.1000319Z java
+build	UNKNOWN STEP	2026-02-16T15:08:50.1000469Z res
+build	UNKNOWN STEP	2026-02-16T15:08:50.1000554Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1000768Z ./capacitor-cordova-android-plugins/src/main/java:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1001244Z com
+build	UNKNOWN STEP	2026-02-16T15:08:50.1001396Z fc
+build	UNKNOWN STEP	2026-02-16T15:08:50.1001536Z io
+build	UNKNOWN STEP	2026-02-16T15:08:50.1001628Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1001828Z ./capacitor-cordova-android-plugins/src/main/java/com:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1002126Z cranberrygame
+build	UNKNOWN STEP	2026-02-16T15:08:50.1002240Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1002512Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1002999Z cordova
+build	UNKNOWN STEP	2026-02-16T15:08:50.1003102Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1022521Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame/cordova:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1023252Z plugin
+build	UNKNOWN STEP	2026-02-16T15:08:50.1023423Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1023916Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame/cordova/plugin:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1024370Z navigationbar
+build	UNKNOWN STEP	2026-02-16T15:08:50.1024503Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1024918Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame/cordova/plugin/navigationbar:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1025432Z NavigationBar.java
+build	UNKNOWN STEP	2026-02-16T15:08:50.1025560Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1025764Z ./capacitor-cordova-android-plugins/src/main/java/fc:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1026067Z fcstudio
+build	UNKNOWN STEP	2026-02-16T15:08:50.1026163Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1026653Z ./capacitor-cordova-android-plugins/src/main/java/fc/fcstudio:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1027003Z wallpaper.java
+build	UNKNOWN STEP	2026-02-16T15:08:50.1027113Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1027318Z ./capacitor-cordova-android-plugins/src/main/java/io:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1027613Z github
+build	UNKNOWN STEP	2026-02-16T15:08:50.1027714Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1027944Z ./capacitor-cordova-android-plugins/src/main/java/io/github:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1028262Z pwlin
+build	UNKNOWN STEP	2026-02-16T15:08:50.1028355Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1028605Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1028950Z cordova
+build	UNKNOWN STEP	2026-02-16T15:08:50.1029040Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1029332Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin/cordova:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1029702Z plugins
+build	UNKNOWN STEP	2026-02-16T15:08:50.1029798Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1030110Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin/cordova/plugins:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1030512Z fileopener2
+build	UNKNOWN STEP	2026-02-16T15:08:50.1030610Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1030983Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin/cordova/plugins/fileopener2:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1031442Z FileOpener2.java
+build	UNKNOWN STEP	2026-02-16T15:08:50.1031646Z FileProvider.java
+build	UNKNOWN STEP	2026-02-16T15:08:50.1031759Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1031940Z ./capacitor-cordova-android-plugins/src/main/res:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1032228Z xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.1032316Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1032515Z ./capacitor-cordova-android-plugins/src/main/res/xml:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1032807Z opener_paths.xml
+build	UNKNOWN STEP	2026-02-16T15:08:50.1032917Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1032992Z ./gradle:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1033148Z wrapper
+build	UNKNOWN STEP	2026-02-16T15:08:50.1033243Z 
+build	UNKNOWN STEP	2026-02-16T15:08:50.1033329Z ./gradle/wrapper:
+build	UNKNOWN STEP	2026-02-16T15:08:50.1033540Z gradle-wrapper.jar
+build	UNKNOWN STEP	2026-02-16T15:08:50.1033762Z gradle-wrapper.properties
+build	UNKNOWN STEP	2026-02-16T15:08:50.1034281Z 笨・Found existing keystore! Using for consistent signing.
+build	UNKNOWN STEP	2026-02-16T15:08:50.1727489Z Downloading https://services.gradle.org/distributions/gradle-8.13-all.zip
+build	UNKNOWN STEP	2026-02-16T15:08:51.9488517Z ......................10%......................20%......................30%......................40%......................50%......................60%......................70%.......................80%......................90%......................100%
+build	UNKNOWN STEP	2026-02-16T15:08:55.2574118Z 
+build	UNKNOWN STEP	2026-02-16T15:08:55.2582975Z Welcome to Gradle 8.13!
+build	UNKNOWN STEP	2026-02-16T15:08:55.2583969Z 
+build	UNKNOWN STEP	2026-02-16T15:08:55.2584575Z Here are the highlights of this release:
+build	UNKNOWN STEP	2026-02-16T15:08:55.2585437Z  - Daemon JVM auto-provisioning
+build	UNKNOWN STEP	2026-02-16T15:08:55.2586304Z  - Enhancements for Scala plugin and JUnit testing
+build	UNKNOWN STEP	2026-02-16T15:08:55.2587775Z  - Improvements for build authors and plugin developers
+build	UNKNOWN STEP	2026-02-16T15:08:55.2588478Z 
+build	UNKNOWN STEP	2026-02-16T15:08:55.2589124Z For more details see https://docs.gradle.org/8.13/release-notes.html
+build	UNKNOWN STEP	2026-02-16T15:08:55.2589807Z 
+build	UNKNOWN STEP	2026-02-16T15:08:55.3565782Z Starting a Gradle Daemon (subsequent builds will be faster)
+build	UNKNOWN STEP	2026-02-16T15:11:13.6580544Z > Task :app:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.6591545Z > Task :app:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.6592580Z > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+build	UNKNOWN STEP	2026-02-16T15:11:13.6593599Z > Task :app:checkKotlinGradlePluginConfigurationErrors
+build	UNKNOWN STEP	2026-02-16T15:11:13.6594375Z > Task :capacitor-android:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.6595391Z > Task :capacitor-android:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7582406Z > Task :capacitor-app:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7583793Z > Task :capacitor-app:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7584621Z > Task :capacitor-android:writeDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:11:13.7585589Z > Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7589769Z > Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7590538Z > Task :capacitor-app:writeDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:11:13.7591163Z > Task :capacitor-filesystem:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7591845Z > Task :capacitor-filesystem:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7592626Z > Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:11:13.7593399Z > Task :capacitor-filesystem:writeDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:11:13.7594134Z > Task :capacitor-push-notifications:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7594933Z > Task :capacitor-push-notifications:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7595699Z > Task :capacitor-status-bar:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7596650Z > Task :capacitor-status-bar:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7597398Z > Task :capacitor-push-notifications:writeDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:11:13.7598249Z > Task :codetrix-studio-capacitor-google-auth:preBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7599188Z > Task :codetrix-studio-capacitor-google-auth:preDebugBuild UP-TO-DATE
+build	UNKNOWN STEP	2026-02-16T15:11:13.7600020Z > Task :capacitor-status-bar:writeDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:11:13.7600839Z > Task :codetrix-studio-capacitor-google-auth:writeDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:11:13.7601713Z > Task :capacitor-android:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:11:43.7564580Z > Task :app:checkDebugAarMetadata
+build	UNKNOWN STEP	2026-02-16T15:12:18.9587541Z > Task :capacitor-app:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:18.9589027Z > Task :capacitor-cordova-android-plugins:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:18.9593637Z > Task :capacitor-filesystem:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:18.9594662Z > Task :capacitor-push-notifications:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:18.9595622Z > Task :capacitor-status-bar:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:18.9596909Z > Task :codetrix-studio-capacitor-google-auth:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.0566798Z > Task :app:processDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.6585183Z > Task :app:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.6589639Z > Task :app:compileDebugNavigationResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.6594689Z > Task :capacitor-android:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.6597774Z > Task :capacitor-android:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7570187Z > Task :capacitor-android:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7576908Z > Task :capacitor-app:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.7580066Z > Task :capacitor-app:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7584133Z > Task :capacitor-app:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7588981Z > Task :capacitor-cordova-android-plugins:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.7617350Z > Task :capacitor-cordova-android-plugins:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7618565Z > Task :capacitor-cordova-android-plugins:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7622601Z > Task :capacitor-filesystem:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.7623353Z > Task :capacitor-filesystem:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7624066Z > Task :capacitor-filesystem:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7624850Z > Task :capacitor-push-notifications:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.7625702Z > Task :capacitor-push-notifications:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7626700Z > Task :capacitor-push-notifications:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7628185Z > Task :capacitor-status-bar:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.7640648Z > Task :capacitor-status-bar:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7641433Z > Task :capacitor-status-bar:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.7642629Z > Task :codetrix-studio-capacitor-google-auth:generateDebugResValues
+build	UNKNOWN STEP	2026-02-16T15:12:19.7643611Z > Task :codetrix-studio-capacitor-google-auth:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.8570393Z > Task :codetrix-studio-capacitor-google-auth:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:19.8571455Z > Task :app:mapDebugSourceSetPaths
+build	UNKNOWN STEP	2026-02-16T15:12:19.8572166Z > Task :app:generateDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:21.3564992Z > Task :app:packageDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.0565881Z > Task :app:createDebugCompatibleScreenManifests
+build	UNKNOWN STEP	2026-02-16T15:12:22.0567227Z > Task :app:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.0568060Z > Task :capacitor-android:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.1565320Z > Task :app:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.1566655Z > Task :capacitor-app:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.2567320Z > Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.2568734Z > Task :capacitor-app:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.2569814Z > Task :capacitor-android:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.2570918Z > Task :capacitor-filesystem:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.2572045Z > Task :capacitor-cordova-android-plugins:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.2573126Z > Task :capacitor-filesystem:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.2574206Z > Task :capacitor-push-notifications:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.2575183Z > Task :capacitor-status-bar:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.2576084Z > Task :capacitor-status-bar:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.2577280Z > Task :capacitor-push-notifications:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.2578388Z > Task :codetrix-studio-capacitor-google-auth:extractDeepLinksDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.3566935Z > Task :codetrix-studio-capacitor-google-auth:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.3568252Z > Task :capacitor-android:compileDebugLibraryResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.6587600Z > Task :app:mergeDebugResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.6588188Z > Task :app:processDebugMainManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.7594767Z > Task :app:processDebugManifest
+build	UNKNOWN STEP	2026-02-16T15:12:22.7595552Z > Task :app:processDebugManifestForPackage
+build	UNKNOWN STEP	2026-02-16T15:12:22.8588170Z > Task :capacitor-app:compileDebugLibraryResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.8589342Z > Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.8590383Z > Task :capacitor-android:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.8591263Z > Task :capacitor-filesystem:compileDebugLibraryResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.8592054Z > Task :capacitor-app:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.8592963Z > Task :capacitor-cordova-android-plugins:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.8593897Z > Task :capacitor-filesystem:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.8594780Z > Task :capacitor-cordova-android-plugins:generateDebugRFile
+build	UNKNOWN STEP	2026-02-16T15:12:22.8595588Z > Task :capacitor-app:generateDebugRFile
+build	UNKNOWN STEP	2026-02-16T15:12:22.8596297Z > Task :capacitor-android:generateDebugRFile
+build	UNKNOWN STEP	2026-02-16T15:12:22.9564862Z > Task :capacitor-filesystem:generateDebugRFile
+build	UNKNOWN STEP	2026-02-16T15:12:22.9571399Z > Task :capacitor-push-notifications:compileDebugLibraryResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.9578562Z > Task :capacitor-status-bar:compileDebugLibraryResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.9584146Z > Task :capacitor-push-notifications:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.9609628Z > Task :capacitor-push-notifications:generateDebugRFile
+build	UNKNOWN STEP	2026-02-16T15:12:22.9611008Z > Task :codetrix-studio-capacitor-google-auth:compileDebugLibraryResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.9617241Z > Task :capacitor-status-bar:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.9619107Z > Task :codetrix-studio-capacitor-google-auth:parseDebugLocalResources
+build	UNKNOWN STEP	2026-02-16T15:12:22.9619985Z > Task :capacitor-status-bar:generateDebugRFile
+build	UNKNOWN STEP	2026-02-16T15:12:22.9620684Z > Task :capacitor-android:javaPreCompileDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.9621310Z > Task :capacitor-app:javaPreCompileDebug
+build	UNKNOWN STEP	2026-02-16T15:12:22.9622109Z > Task :codetrix-studio-capacitor-google-auth:generateDebugRFile
+build	UNKNOWN STEP	2026-02-16T15:12:39.1581050Z Note: /home/runner/work/KawaiiDoodle/KawaiiDoodle/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/Bridge.java uses or overrides a deprecated API.
+build	UNKNOWN STEP	2026-02-16T15:12:39.1583119Z Note: Recompile with -Xlint:deprecation for details.
+build	UNKNOWN STEP	2026-02-16T15:12:39.1583548Z 
+build	UNKNOWN STEP	2026-02-16T15:12:39.1584078Z Note: Some input files use unchecked or unsafe operations.
+build	UNKNOWN STEP	2026-02-16T15:12:39.1584918Z Note: Recompile with -Xlint:unchecked for details.
+build	UNKNOWN STEP	2026-02-16T15:12:39.1602091Z > Task :capacitor-android:compileDebugJavaWithJavac
+build	UNKNOWN STEP	2026-02-16T15:12:41.9564359Z 
+build	UNKNOWN STEP	2026-02-16T15:12:41.9566180Z > Task :capacitor-cordova-android-plugins:javaPreCompileDebug
+build	UNKNOWN STEP	2026-02-16T15:12:41.9567293Z > Task :capacitor-filesystem:javaPreCompileDebug
+build	UNKNOWN STEP	2026-02-16T15:12:41.9568073Z > Task :capacitor-android:bundleLibCompileToJarDebug
+build	UNKNOWN STEP	2026-02-16T15:12:42.2565136Z > Task :app:processDebugResources FAILED
+build	UNKNOWN STEP	2026-02-16T15:12:53.2570965Z Note: Some input files use or override a deprecated API.
+build	UNKNOWN STEP	2026-02-16T15:12:53.2571457Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.2572323Z Note: Recompile with -Xlint:deprecation for details.
+build	UNKNOWN STEP	2026-02-16T15:12:53.2573197Z > Task :capacitor-cordova-android-plugins:compileDebugJavaWithJavac
+build	UNKNOWN STEP	2026-02-16T15:12:53.6567241Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.6571070Z [Incubating] Problems report is available at: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/build/reports/problems/problems-report.html
+build	UNKNOWN STEP	2026-02-16T15:12:53.6580557Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.6687771Z FAILURE: Build failed with an exception.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6688476Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.6691626Z * What went wrong:
+build	UNKNOWN STEP	2026-02-16T15:12:53.6692874Z Execution failed for task ':app:processDebugResources'.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6694261Z > A failure occurred while executing com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$TaskAction
+build	UNKNOWN STEP	2026-02-16T15:12:53.6695317Z    > Android resource linking failed
+build	UNKNOWN STEP	2026-02-16T15:12:53.6696274Z      ERROR: AAPT: error: resource style/Theme.SplashScreen (aka io.kawaii.doodle:style/Theme.SplashScreen) not found.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6703905Z      error: resource style/Theme.SplashScreen (aka io.kawaii.doodle:style/Theme.SplashScreen) not found.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6704797Z      error: failed linking references.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6705202Z      
+build	UNKNOWN STEP	2026-02-16T15:12:53.6705450Z          
+build	UNKNOWN STEP	2026-02-16T15:12:53.6705610Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.6705725Z * Try:
+build	UNKNOWN STEP	2026-02-16T15:12:53.6706256Z > Run with --info or --debug option to get more log output.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6707063Z > Run with --scan to get full insights.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6707649Z > Get more help at https://help.gradle.org.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6707984Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.6708110Z * Exception is:
+build	UNKNOWN STEP	2026-02-16T15:12:53.6709038Z org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:processDebugResources'.
+build	UNKNOWN STEP	2026-02-16T15:12:53.6710723Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6712091Z 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6713475Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6715768Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6734506Z 	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6736279Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6738183Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6739839Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6741325Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6743119Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6744614Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6745989Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6777534Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6779153Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6780972Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6782626Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6784030Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6785445Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6786931Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6788293Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6789645Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6790880Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6792359Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6794041Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6795846Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6797539Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6799094Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6800929Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6802441Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6803755Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6804982Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6806630Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6808846Z Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$TaskAction
+build	UNKNOWN STEP	2026-02-16T15:12:53.6810908Z 	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6812459Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6813476Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6814476Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6815980Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6817594Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6819227Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6820968Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6822504Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6823921Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6825237Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6826751Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6828329Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6829888Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6831455Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6833031Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6834697Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6836185Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6837692Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6838980Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6840455Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6841830Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6842977Z 	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6844075Z 	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6845087Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6846042Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6847734Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6849522Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6851522Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6852931Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6854337Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6855746Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6857359Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6858560Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6859523Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6860828Z 	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6862125Z 	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6863334Z 	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6864694Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6866316Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6868161Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6869787Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6871498Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6873283Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6875112Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6877181Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6878894Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6880325Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6881779Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6883212Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6884262Z 	at org.gradle.internal.Either$Right.fold(Either.java:175)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6885279Z 	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6886693Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6887944Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6889361Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6890935Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6892444Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6893862Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6895288Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6896785Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6898788Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6900873Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6902916Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6905014Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6907186Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6909231Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6910887Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6912270Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6913541Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6914699Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6916583Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6918797Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6920944Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6922820Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:56)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6924497Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6926566Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6928598Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6930446Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6932104Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6933608Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6935287Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6936963Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6938259Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6939673Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6940988Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6942163Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6943659Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6945457Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6947860Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6949340Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6950481Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6951507Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6952492Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6953633Z 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6955106Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6957094Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6959106Z 	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6961149Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6963071Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6964939Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6966820Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6968445Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6970155Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6971728Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6973252Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6974930Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6977037Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6978676Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6980159Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6981665Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6983208Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6984670Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6987448Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6988916Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6990552Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6992538Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6994670Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6996737Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+build	UNKNOWN STEP	2026-02-16T15:12:53.6998295Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7000110Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7001592Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7002770Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7003987Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7005412Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7006856Z Caused by: com.android.builder.internal.aapt.v2.Aapt2Exception: Android resource linking failed
+build	UNKNOWN STEP	2026-02-16T15:12:53.7008151Z ERROR: AAPT: error: resource style/Theme.SplashScreen (aka io.kawaii.doodle:style/Theme.SplashScreen) not found.
+build	UNKNOWN STEP	2026-02-16T15:12:53.7009400Z error: resource style/Theme.SplashScreen (aka io.kawaii.doodle:style/Theme.SplashScreen) not found.
+build	UNKNOWN STEP	2026-02-16T15:12:53.7010182Z error: failed linking references.
+build	UNKNOWN STEP	2026-02-16T15:12:53.7010438Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.7010536Z     
+build	UNKNOWN STEP	2026-02-16T15:12:53.7011170Z 	at com.android.builder.internal.aapt.v2.Aapt2Exception$Companion.create(Aapt2Exception.kt:45)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7012305Z 	at com.android.builder.internal.aapt.v2.Aapt2Exception$Companion.create$default(Aapt2Exception.kt:31)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7013495Z 	at com.android.build.gradle.internal.res.Aapt2ErrorUtils.rewriteException(Aapt2ErrorUtils.kt:262)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7014756Z 	at com.android.build.gradle.internal.res.Aapt2ErrorUtils.rewriteLinkException(Aapt2ErrorUtils.kt:133)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7016240Z 	at com.android.build.gradle.internal.res.Aapt2ProcessResourcesRunnableKt.processResources(Aapt2ProcessResourcesRunnable.kt:76)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7018264Z 	at com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$Companion.invokeAaptForSplit(LinkApplicationAndroidResourcesTask.kt:1060)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7020298Z 	at com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$Companion.access$invokeAaptForSplit(LinkApplicationAndroidResourcesTask.kt:886)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7022225Z 	at com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$TaskAction.run(LinkApplicationAndroidResourcesTask.kt:463)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7023796Z 	at com.android.build.gradle.internal.profile.ProfileAwareWorkAction.execute(ProfileAwareWorkAction.kt:74)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7025018Z 	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7026169Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7029667Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7031125Z 	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7032859Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7034170Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7035094Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7036905Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7038914Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7040713Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7042126Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7043655Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7045137Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7046801Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7048259Z 	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7049774Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7051058Z 	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7052562Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7054209Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7055822Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7057102Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7058055Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7059356Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7060742Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7062244Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7063851Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+build	UNKNOWN STEP	2026-02-16T15:12:53.7064749Z 	... 2 more
+build	UNKNOWN STEP	2026-02-16T15:12:53.7064897Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.7064907Z 
+build	UNKNOWN STEP	2026-02-16T15:12:53.7065056Z BUILD FAILED in 4m 3s
+build	UNKNOWN STEP	2026-02-16T15:12:53.7065470Z 93 actionable tasks: 93 executed
+build	UNKNOWN STEP	2026-02-16T15:12:54.1421374Z ##[error]Process completed with exit code 1.
+build	UNKNOWN STEP	2026-02-16T15:12:54.1542970Z Post job cleanup.
+build	UNKNOWN STEP	2026-02-16T15:12:54.3319858Z Post job cleanup.
+build	UNKNOWN STEP	2026-02-16T15:12:54.4055077Z [command]/usr/bin/git version
+build	UNKNOWN STEP	2026-02-16T15:12:54.4089534Z git version 2.52.0
+build	UNKNOWN STEP	2026-02-16T15:12:54.4125355Z Copying '/home/runner/.gitconfig' to '/home/runner/work/_temp/0ea55bf4-245e-4c61-bc0b-417ffe55ad0d/.gitconfig'
+build	UNKNOWN STEP	2026-02-16T15:12:54.4135015Z Temporarily overriding HOME='/home/runner/work/_temp/0ea55bf4-245e-4c61-bc0b-417ffe55ad0d' before making global git config changes
+build	UNKNOWN STEP	2026-02-16T15:12:54.4136695Z Adding repository directory to the temporary git global config as a safe directory
+build	UNKNOWN STEP	2026-02-16T15:12:54.4139676Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/KawaiiDoodle/KawaiiDoodle
+build	UNKNOWN STEP	2026-02-16T15:12:54.4170241Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+build	UNKNOWN STEP	2026-02-16T15:12:54.4199198Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+build	UNKNOWN STEP	2026-02-16T15:12:54.4438205Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+build	UNKNOWN STEP	2026-02-16T15:12:54.4458228Z http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-02-16T15:12:54.4470479Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+build	UNKNOWN STEP	2026-02-16T15:12:54.4499274Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+build	UNKNOWN STEP	2026-02-16T15:12:54.4830371Z Cleaning up orphan processes
+build	UNKNOWN STEP	2026-02-16T15:12:54.5119827Z Terminate orphan process: pid (2392) (java)

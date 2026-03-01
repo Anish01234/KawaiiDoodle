@@ -1,0 +1,815 @@
+﻿build	Build APK	・ｿ2026-02-16T18:07:41.3561996Z ##[group]Run cd android
+build	Build APK	2026-02-16T18:07:41.3562320Z [36;1mcd android[0m
+build	Build APK	2026-02-16T18:07:41.3562554Z [36;1mecho "Listing android directory..."[0m
+build	Build APK	2026-02-16T18:07:41.3562822Z [36;1mls -R[0m
+build	Build APK	2026-02-16T18:07:41.3563005Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3563239Z [36;1m# Create the keystore that build.gradle expects[0m
+build	Build APK	2026-02-16T18:07:41.3563737Z [36;1m# Check if keystore exists (e.g., committed to repo), otherwise generate a new ephemeral one[0m
+build	Build APK	2026-02-16T18:07:41.3564218Z [36;1mif [ ! -f "app/release-key.keystore" ]; then[0m
+build	Build APK	2026-02-16T18:07:41.3564761Z [36;1m    echo "笞・・Keystore not found! Generating a new ephemeral key (Updates will require uninstalling old app)..."[0m
+build	Build APK	2026-02-16T18:07:41.3565901Z [36;1m    keytool -genkey -v -keystore app/release-key.keystore -alias kawaii -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=KawaiiDoodle, OU=Dev, O=Kawaii, L=City, S=State, C=US"[0m
+build	Build APK	2026-02-16T18:07:41.3566775Z [36;1melse[0m
+build	Build APK	2026-02-16T18:07:41.3567101Z [36;1m    echo "笨・Found existing keystore! Using for consistent signing."[0m
+build	Build APK	2026-02-16T18:07:41.3567464Z [36;1mfi[0m
+build	Build APK	2026-02-16T18:07:41.3567632Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3567806Z [36;1m# Build APK[0m
+build	Build APK	2026-02-16T18:07:41.3568040Z [36;1m./gradlew assembleDebug --stacktrace[0m
+build	Build APK	2026-02-16T18:07:41.3568303Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3568463Z [36;1m# Find tools[0m
+build	Build APK	2026-02-16T18:07:41.3568826Z [36;1mAPKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -r | head -n 1)[0m
+build	Build APK	2026-02-16T18:07:41.3569415Z [36;1mZIPALIGN=$(find $ANDROID_HOME/build-tools -name zipalign | sort -r | head -n 1)[0m
+build	Build APK	2026-02-16T18:07:41.3569799Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3570004Z [36;1mecho "Found apksigner at: $APKSIGNER"[0m
+build	Build APK	2026-02-16T18:07:41.3570295Z [36;1mecho "Found zipalign at: $ZIPALIGN"[0m
+build	Build APK	2026-02-16T18:07:41.3570544Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3571053Z [36;1mif [ -z "$APKSIGNER" ] || [ -z "$ZIPALIGN" ]; then[0m
+build	Build APK	2026-02-16T18:07:41.3571399Z [36;1m  echo "Error: Signing tools not found!"[0m
+build	Build APK	2026-02-16T18:07:41.3571681Z [36;1m  exit 1[0m
+build	Build APK	2026-02-16T18:07:41.3571854Z [36;1mfi[0m
+build	Build APK	2026-02-16T18:07:41.3572018Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3572257Z [36;1mAPK_PATH="app/build/outputs/apk/debug/app-debug.apk"[0m
+build	Build APK	2026-02-16T18:07:41.3572582Z [36;1mif [ ! -f "$APK_PATH" ]; then[0m
+build	Build APK	2026-02-16T18:07:41.3572898Z [36;1m  # Check if it's named differently due to build type config[0m
+build	Build APK	2026-02-16T18:07:41.3573324Z [36;1m  APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -n 1)[0m
+build	Build APK	2026-02-16T18:07:41.3573712Z [36;1m  echo "Falling back to found APK: $APK_PATH"[0m
+build	Build APK	2026-02-16T18:07:41.3573989Z [36;1mfi[0m
+build	Build APK	2026-02-16T18:07:41.3574153Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3574371Z [36;1mif [ -z "$APK_PATH" ] || [ ! -f "$APK_PATH" ]; then[0m
+build	Build APK	2026-02-16T18:07:41.3574703Z [36;1m  echo "Error: No APK found after build!"[0m
+build	Build APK	2026-02-16T18:07:41.3574964Z [36;1m  exit 1[0m
+build	Build APK	2026-02-16T18:07:41.3575138Z [36;1mfi[0m
+build	Build APK	2026-02-16T18:07:41.3575300Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3575648Z [36;1m# Align the APK[0m
+build	Build APK	2026-02-16T18:07:41.3575999Z [36;1m"$ZIPALIGN" -v -p 4 "$APK_PATH" app/build/outputs/apk/debug/app-debug-aligned.apk[0m
+build	Build APK	2026-02-16T18:07:41.3576395Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3576614Z [36;1m# Sign using apksigner with correct credentials[0m
+build	Build APK	2026-02-16T18:07:41.3577490Z [36;1m"$APKSIGNER" sign --ks app/release-key.keystore --ks-pass pass:password123 --key-pass pass:password123 --out app/build/outputs/apk/debug/app-debug-signed.apk app/build/outputs/apk/debug/app-debug-aligned.apk[0m
+build	Build APK	2026-02-16T18:07:41.3578301Z [36;1m[0m
+build	Build APK	2026-02-16T18:07:41.3578470Z [36;1m# Verify Signature[0m
+build	Build APK	2026-02-16T18:07:41.3578851Z [36;1m"$APKSIGNER" verify --print-certs app/build/outputs/apk/debug/app-debug-signed.apk[0m
+build	Build APK	2026-02-16T18:07:41.3627792Z shell: /usr/bin/bash -e {0}
+build	Build APK	2026-02-16T18:07:41.3628037Z env:
+build	Build APK	2026-02-16T18:07:41.3628295Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	Build APK	2026-02-16T18:07:41.3628701Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.18-8/x64
+build	Build APK	2026-02-16T18:07:41.3629207Z ##[endgroup]
+build	Build APK	2026-02-16T18:07:41.3696800Z Listing android directory...
+build	Build APK	2026-02-16T18:07:41.3716657Z .:
+build	Build APK	2026-02-16T18:07:41.3716982Z app
+build	Build APK	2026-02-16T18:07:41.3717175Z build.gradle
+build	Build APK	2026-02-16T18:07:41.3717472Z capacitor-cordova-android-plugins
+build	Build APK	2026-02-16T18:07:41.3717800Z capacitor.settings.gradle
+build	Build APK	2026-02-16T18:07:41.3718036Z gradle
+build	Build APK	2026-02-16T18:07:41.3718247Z gradle.properties
+build	Build APK	2026-02-16T18:07:41.3718453Z gradlew
+build	Build APK	2026-02-16T18:07:41.3718635Z gradlew.bat
+build	Build APK	2026-02-16T18:07:41.3718833Z settings.gradle
+build	Build APK	2026-02-16T18:07:41.3719180Z variables.gradle
+build	Build APK	2026-02-16T18:07:41.3719396Z 
+build	Build APK	2026-02-16T18:07:41.3719479Z ./app:
+build	Build APK	2026-02-16T18:07:41.3719666Z build.gradle
+build	Build APK	2026-02-16T18:07:41.3719883Z capacitor.build.gradle
+build	Build APK	2026-02-16T18:07:41.3720159Z proguard-rules.pro
+build	Build APK	2026-02-16T18:07:41.3720388Z release-key.keystore
+build	Build APK	2026-02-16T18:07:41.3720599Z src
+build	Build APK	2026-02-16T18:07:41.3720935Z 
+build	Build APK	2026-02-16T18:07:41.3721030Z ./app/src:
+build	Build APK	2026-02-16T18:07:41.3721215Z androidTest
+build	Build APK	2026-02-16T18:07:41.3721399Z main
+build	Build APK	2026-02-16T18:07:41.3721579Z test
+build	Build APK	2026-02-16T18:07:41.3721682Z 
+build	Build APK	2026-02-16T18:07:41.3721793Z ./app/src/androidTest:
+build	Build APK	2026-02-16T18:07:41.3722169Z java
+build	Build APK	2026-02-16T18:07:41.3722276Z 
+build	Build APK	2026-02-16T18:07:41.3722395Z ./app/src/androidTest/java:
+build	Build APK	2026-02-16T18:07:41.3722630Z com
+build	Build APK	2026-02-16T18:07:41.3722726Z 
+build	Build APK	2026-02-16T18:07:41.3722877Z ./app/src/androidTest/java/com:
+build	Build APK	2026-02-16T18:07:41.3723225Z getcapacitor
+build	Build APK	2026-02-16T18:07:41.3723429Z 
+build	Build APK	2026-02-16T18:07:41.3723733Z ./app/src/androidTest/java/com/getcapacitor:
+build	Build APK	2026-02-16T18:07:41.3724201Z myapp
+build	Build APK	2026-02-16T18:07:41.3724371Z 
+build	Build APK	2026-02-16T18:07:41.3724693Z ./app/src/androidTest/java/com/getcapacitor/myapp:
+build	Build APK	2026-02-16T18:07:41.3725132Z ExampleInstrumentedTest.java
+build	Build APK	2026-02-16T18:07:41.3725307Z 
+build	Build APK	2026-02-16T18:07:41.3725399Z ./app/src/main:
+build	Build APK	2026-02-16T18:07:41.3725619Z AndroidManifest.xml
+build	Build APK	2026-02-16T18:07:41.3725829Z assets
+build	Build APK	2026-02-16T18:07:41.3726001Z java
+build	Build APK	2026-02-16T18:07:41.3726177Z res
+build	Build APK	2026-02-16T18:07:41.3726272Z 
+build	Build APK	2026-02-16T18:07:41.3726381Z ./app/src/main/assets:
+build	Build APK	2026-02-16T18:07:41.3726638Z capacitor.config.json
+build	Build APK	2026-02-16T18:07:41.3726889Z capacitor.plugins.json
+build	Build APK	2026-02-16T18:07:41.3727103Z public
+build	Build APK	2026-02-16T18:07:41.3727213Z 
+build	Build APK	2026-02-16T18:07:41.3727328Z ./app/src/main/assets/public:
+build	Build APK	2026-02-16T18:07:41.3727571Z cordova.js
+build	Build APK	2026-02-16T18:07:41.3727772Z cordova_plugins.js
+build	Build APK	2026-02-16T18:07:41.3727976Z index.html
+build	Build APK	2026-02-16T18:07:41.3728161Z manifest.json
+build	Build APK	2026-02-16T18:07:41.3728349Z plugins
+build	Build APK	2026-02-16T18:07:41.3728530Z resources
+build	Build APK	2026-02-16T18:07:41.3728703Z src
+build	Build APK	2026-02-16T18:07:41.3728876Z styles.css
+build	Build APK	2026-02-16T18:07:41.3729053Z sw.js
+build	Build APK	2026-02-16T18:07:41.3729153Z 
+build	Build APK	2026-02-16T18:07:41.3729304Z ./app/src/main/assets/public/plugins:
+build	Build APK	2026-02-16T18:07:41.3729616Z cordova-plugin-file-opener2
+build	Build APK	2026-02-16T18:07:41.3729893Z cordova-plugin-navigationbar
+build	Build APK	2026-02-16T18:07:41.3730176Z cordova-plugin-wallpaper
+build	Build APK	2026-02-16T18:07:41.3730328Z 
+build	Build APK	2026-02-16T18:07:41.3730608Z ./app/src/main/assets/public/plugins/cordova-plugin-file-opener2:
+build	Build APK	2026-02-16T18:07:41.3731232Z www
+build	Build APK	2026-02-16T18:07:41.3731531Z 
+build	Build APK	2026-02-16T18:07:41.3731842Z ./app/src/main/assets/public/plugins/cordova-plugin-file-opener2/www:
+build	Build APK	2026-02-16T18:07:41.3732277Z plugins.FileOpener2.js
+build	Build APK	2026-02-16T18:07:41.3732459Z 
+build	Build APK	2026-02-16T18:07:41.3732741Z ./app/src/main/assets/public/plugins/cordova-plugin-navigationbar:
+build	Build APK	2026-02-16T18:07:41.3733123Z www
+build	Build APK	2026-02-16T18:07:41.3733220Z 
+build	Build APK	2026-02-16T18:07:41.3733526Z ./app/src/main/assets/public/plugins/cordova-plugin-navigationbar/www:
+build	Build APK	2026-02-16T18:07:41.3733932Z navigationbar.js
+build	Build APK	2026-02-16T18:07:41.3734076Z 
+build	Build APK	2026-02-16T18:07:41.3734383Z ./app/src/main/assets/public/plugins/cordova-plugin-wallpaper:
+build	Build APK	2026-02-16T18:07:41.3734750Z www
+build	Build APK	2026-02-16T18:07:41.3734847Z 
+build	Build APK	2026-02-16T18:07:41.3735131Z ./app/src/main/assets/public/plugins/cordova-plugin-wallpaper/www:
+build	Build APK	2026-02-16T18:07:41.3735473Z wallpaper.js
+build	Build APK	2026-02-16T18:07:41.3735590Z 
+build	Build APK	2026-02-16T18:07:41.3735733Z ./app/src/main/assets/public/resources:
+build	Build APK	2026-02-16T18:07:41.3735983Z android
+build	Build APK	2026-02-16T18:07:41.3736148Z icon.png
+build	Build APK	2026-02-16T18:07:41.3736325Z icon_source.jpg
+build	Build APK	2026-02-16T18:07:41.3736653Z splash.png
+build	Build APK	2026-02-16T18:07:41.3736764Z 
+build	Build APK	2026-02-16T18:07:41.3736927Z ./app/src/main/assets/public/resources/android:
+build	Build APK	2026-02-16T18:07:41.3737211Z icon
+build	Build APK	2026-02-16T18:07:41.3737306Z 
+build	Build APK	2026-02-16T18:07:41.3737500Z ./app/src/main/assets/public/resources/android/icon:
+build	Build APK	2026-02-16T18:07:41.3737821Z drawable-hdpi-icon.png
+build	Build APK	2026-02-16T18:07:41.3738063Z drawable-ldpi-icon.png
+build	Build APK	2026-02-16T18:07:41.3738284Z drawable-mdpi-icon.png
+build	Build APK	2026-02-16T18:07:41.3738513Z drawable-xhdpi-icon.png
+build	Build APK	2026-02-16T18:07:41.3738752Z drawable-xxhdpi-icon.png
+build	Build APK	2026-02-16T18:07:41.3739003Z drawable-xxxhdpi-icon.png
+build	Build APK	2026-02-16T18:07:41.3739147Z 
+build	Build APK	2026-02-16T18:07:41.3739286Z ./app/src/main/assets/public/src:
+build	Build APK	2026-02-16T18:07:41.3739514Z app.js
+build	Build APK	2026-02-16T18:07:41.3739680Z assets
+build	Build APK	2026-02-16T18:07:41.3739849Z canvas.js
+build	Build APK	2026-02-16T18:07:41.3740011Z config.js
+build	Build APK	2026-02-16T18:07:41.3740180Z social.js
+build	Build APK	2026-02-16T18:07:41.3740275Z 
+build	Build APK	2026-02-16T18:07:41.3740420Z ./app/src/main/assets/public/src/assets:
+build	Build APK	2026-02-16T18:07:41.3740898Z logo.jpg
+build	Build APK	2026-02-16T18:07:41.3741081Z logo.png
+build	Build APK	2026-02-16T18:07:41.3741177Z 
+build	Build APK	2026-02-16T18:07:41.3741273Z ./app/src/main/java:
+build	Build APK	2026-02-16T18:07:41.3741470Z io
+build	Build APK	2026-02-16T18:07:41.3741560Z 
+build	Build APK	2026-02-16T18:07:41.3741660Z ./app/src/main/java/io:
+build	Build APK	2026-02-16T18:07:41.3741855Z kawaii
+build	Build APK	2026-02-16T18:07:41.3741951Z 
+build	Build APK	2026-02-16T18:07:41.3742076Z ./app/src/main/java/io/kawaii:
+build	Build APK	2026-02-16T18:07:41.3742286Z doodle
+build	Build APK	2026-02-16T18:07:41.3742386Z 
+build	Build APK	2026-02-16T18:07:41.3742519Z ./app/src/main/java/io/kawaii/doodle:
+build	Build APK	2026-02-16T18:07:41.3742779Z MainActivity.java
+build	Build APK	2026-02-16T18:07:41.3742983Z WallpaperPlugin.kt
+build	Build APK	2026-02-16T18:07:41.3743194Z WallpaperWorker.kt
+build	Build APK	2026-02-16T18:07:41.3743306Z 
+build	Build APK	2026-02-16T18:07:41.3743401Z ./app/src/main/res:
+build	Build APK	2026-02-16T18:07:41.3743582Z drawable
+build	Build APK	2026-02-16T18:07:41.3743766Z drawable-land-hdpi
+build	Build APK	2026-02-16T18:07:41.3743963Z drawable-land-mdpi
+build	Build APK	2026-02-16T18:07:41.3744166Z drawable-land-xhdpi
+build	Build APK	2026-02-16T18:07:41.3744376Z drawable-land-xxhdpi
+build	Build APK	2026-02-16T18:07:41.3744588Z drawable-land-xxxhdpi
+build	Build APK	2026-02-16T18:07:41.3744813Z drawable-port-hdpi
+build	Build APK	2026-02-16T18:07:41.3745012Z drawable-port-mdpi
+build	Build APK	2026-02-16T18:07:41.3745217Z drawable-port-xhdpi
+build	Build APK	2026-02-16T18:07:41.3745427Z drawable-port-xxhdpi
+build	Build APK	2026-02-16T18:07:41.3745635Z drawable-port-xxxhdpi
+build	Build APK	2026-02-16T18:07:41.3745833Z drawable-v24
+build	Build APK	2026-02-16T18:07:41.3746009Z layout
+build	Build APK	2026-02-16T18:07:41.3746177Z mipmap-hdpi
+build	Build APK	2026-02-16T18:07:41.3746357Z mipmap-mdpi
+build	Build APK	2026-02-16T18:07:41.3746530Z mipmap-xhdpi
+build	Build APK	2026-02-16T18:07:41.3746716Z mipmap-xxhdpi
+build	Build APK	2026-02-16T18:07:41.3746905Z mipmap-xxxhdpi
+build	Build APK	2026-02-16T18:07:41.3747077Z values
+build	Build APK	2026-02-16T18:07:41.3747240Z values-v27
+build	Build APK	2026-02-16T18:07:41.3747401Z xml
+build	Build APK	2026-02-16T18:07:41.3747497Z 
+build	Build APK	2026-02-16T18:07:41.3747604Z ./app/src/main/res/drawable:
+build	Build APK	2026-02-16T18:07:41.3747853Z ic_launcher_background.xml
+build	Build APK	2026-02-16T18:07:41.3748064Z ic_pencil.xml
+build	Build APK	2026-02-16T18:07:41.3748243Z splash.png
+build	Build APK	2026-02-16T18:07:41.3748345Z 
+build	Build APK	2026-02-16T18:07:41.3748484Z ./app/src/main/res/drawable-land-hdpi:
+build	Build APK	2026-02-16T18:07:41.3748736Z splash.png
+build	Build APK	2026-02-16T18:07:41.3748983Z 
+build	Build APK	2026-02-16T18:07:41.3749143Z ./app/src/main/res/drawable-land-mdpi:
+build	Build APK	2026-02-16T18:07:41.3749387Z splash.png
+build	Build APK	2026-02-16T18:07:41.3749491Z 
+build	Build APK	2026-02-16T18:07:41.3749631Z ./app/src/main/res/drawable-land-xhdpi:
+build	Build APK	2026-02-16T18:07:41.3749885Z splash.png
+build	Build APK	2026-02-16T18:07:41.3749982Z 
+build	Build APK	2026-02-16T18:07:41.3750123Z ./app/src/main/res/drawable-land-xxhdpi:
+build	Build APK	2026-02-16T18:07:41.3750372Z splash.png
+build	Build APK	2026-02-16T18:07:41.3750468Z 
+build	Build APK	2026-02-16T18:07:41.3750794Z ./app/src/main/res/drawable-land-xxxhdpi:
+build	Build APK	2026-02-16T18:07:41.3751309Z splash.png
+build	Build APK	2026-02-16T18:07:41.3751504Z 
+build	Build APK	2026-02-16T18:07:41.3751766Z ./app/src/main/res/drawable-port-hdpi:
+build	Build APK	2026-02-16T18:07:41.3752219Z splash.png
+build	Build APK	2026-02-16T18:07:41.3752393Z 
+build	Build APK	2026-02-16T18:07:41.3752633Z ./app/src/main/res/drawable-port-mdpi:
+build	Build APK	2026-02-16T18:07:41.3753065Z splash.png
+build	Build APK	2026-02-16T18:07:41.3753238Z 
+build	Build APK	2026-02-16T18:07:41.3753489Z ./app/src/main/res/drawable-port-xhdpi:
+build	Build APK	2026-02-16T18:07:41.3753948Z splash.png
+build	Build APK	2026-02-16T18:07:41.3754130Z 
+build	Build APK	2026-02-16T18:07:41.3754402Z ./app/src/main/res/drawable-port-xxhdpi:
+build	Build APK	2026-02-16T18:07:41.3755163Z splash.png
+build	Build APK	2026-02-16T18:07:41.3755371Z 
+build	Build APK	2026-02-16T18:07:41.3755648Z ./app/src/main/res/drawable-port-xxxhdpi:
+build	Build APK	2026-02-16T18:07:41.3756129Z splash.png
+build	Build APK	2026-02-16T18:07:41.3756308Z 
+build	Build APK	2026-02-16T18:07:41.3756550Z ./app/src/main/res/drawable-v24:
+build	Build APK	2026-02-16T18:07:41.3757016Z ic_launcher_foreground.xml
+build	Build APK	2026-02-16T18:07:41.3757273Z 
+build	Build APK	2026-02-16T18:07:41.3757467Z ./app/src/main/res/layout:
+build	Build APK	2026-02-16T18:07:41.3757863Z activity_main.xml
+build	Build APK	2026-02-16T18:07:41.3758077Z 
+build	Build APK	2026-02-16T18:07:41.3758302Z ./app/src/main/res/mipmap-hdpi:
+build	Build APK	2026-02-16T18:07:41.3758708Z ic_launcher.png
+build	Build APK	2026-02-16T18:07:41.3759104Z ic_launcher_foreground.png
+build	Build APK	2026-02-16T18:07:41.3759531Z ic_launcher_round.png
+build	Build APK	2026-02-16T18:07:41.3759873Z 
+build	Build APK	2026-02-16T18:07:41.3760114Z ./app/src/main/res/mipmap-mdpi:
+build	Build APK	2026-02-16T18:07:41.3760575Z ic_launcher.png
+build	Build APK	2026-02-16T18:07:41.3761200Z ic_launcher_foreground.png
+build	Build APK	2026-02-16T18:07:41.3761632Z ic_launcher_round.png
+build	Build APK	2026-02-16T18:07:41.3761870Z 
+build	Build APK	2026-02-16T18:07:41.3762126Z ./app/src/main/res/mipmap-xhdpi:
+build	Build APK	2026-02-16T18:07:41.3762553Z ic_launcher.png
+build	Build APK	2026-02-16T18:07:41.3762929Z ic_launcher_foreground.png
+build	Build APK	2026-02-16T18:07:41.3763341Z ic_launcher_round.png
+build	Build APK	2026-02-16T18:07:41.3763567Z 
+build	Build APK	2026-02-16T18:07:41.3763806Z ./app/src/main/res/mipmap-xxhdpi:
+build	Build APK	2026-02-16T18:07:41.3764223Z ic_launcher.png
+build	Build APK	2026-02-16T18:07:41.3764607Z ic_launcher_foreground.png
+build	Build APK	2026-02-16T18:07:41.3765006Z ic_launcher_round.png
+build	Build APK	2026-02-16T18:07:41.3765223Z 
+build	Build APK	2026-02-16T18:07:41.3765457Z ./app/src/main/res/mipmap-xxxhdpi:
+build	Build APK	2026-02-16T18:07:41.3765878Z ic_launcher.png
+build	Build APK	2026-02-16T18:07:41.3766266Z ic_launcher_foreground.png
+build	Build APK	2026-02-16T18:07:41.3766536Z ic_launcher_round.png
+build	Build APK	2026-02-16T18:07:41.3766659Z 
+build	Build APK	2026-02-16T18:07:41.3766760Z ./app/src/main/res/values:
+build	Build APK	2026-02-16T18:07:41.3766969Z colors.xml
+build	Build APK	2026-02-16T18:07:41.3767173Z ic_launcher_background.xml
+build	Build APK	2026-02-16T18:07:41.3767380Z strings.xml
+build	Build APK	2026-02-16T18:07:41.3767556Z styles.xml
+build	Build APK	2026-02-16T18:07:41.3767654Z 
+build	Build APK	2026-02-16T18:07:41.3767786Z ./app/src/main/res/values-v27:
+build	Build APK	2026-02-16T18:07:41.3768024Z styles.xml
+build	Build APK	2026-02-16T18:07:41.3768121Z 
+build	Build APK	2026-02-16T18:07:41.3768227Z ./app/src/main/res/xml:
+build	Build APK	2026-02-16T18:07:41.3768424Z config.xml
+build	Build APK	2026-02-16T18:07:41.3768605Z file_paths.xml
+build	Build APK	2026-02-16T18:07:41.3768824Z network_security_config.xml
+build	Build APK	2026-02-16T18:07:41.3768966Z 
+build	Build APK	2026-02-16T18:07:41.3769041Z ./app/src/test:
+build	Build APK	2026-02-16T18:07:41.3769220Z java
+build	Build APK	2026-02-16T18:07:41.3769313Z 
+build	Build APK	2026-02-16T18:07:41.3769411Z ./app/src/test/java:
+build	Build APK	2026-02-16T18:07:41.3769600Z com
+build	Build APK	2026-02-16T18:07:41.3769690Z 
+build	Build APK	2026-02-16T18:07:41.3769798Z ./app/src/test/java/com:
+build	Build APK	2026-02-16T18:07:41.3770009Z getcapacitor
+build	Build APK	2026-02-16T18:07:41.3770122Z 
+build	Build APK	2026-02-16T18:07:41.3770264Z ./app/src/test/java/com/getcapacitor:
+build	Build APK	2026-02-16T18:07:41.3770511Z myapp
+build	Build APK	2026-02-16T18:07:41.3770605Z 
+build	Build APK	2026-02-16T18:07:41.3771011Z ./app/src/test/java/com/getcapacitor/myapp:
+build	Build APK	2026-02-16T18:07:41.3771308Z ExampleUnitTest.java
+build	Build APK	2026-02-16T18:07:41.3771438Z 
+build	Build APK	2026-02-16T18:07:41.3771592Z ./capacitor-cordova-android-plugins:
+build	Build APK	2026-02-16T18:07:41.3772032Z build.gradle
+build	Build APK	2026-02-16T18:07:41.3772399Z cordova.variables.gradle
+build	Build APK	2026-02-16T18:07:41.3772610Z src
+build	Build APK	2026-02-16T18:07:41.3772708Z 
+build	Build APK	2026-02-16T18:07:41.3772865Z ./capacitor-cordova-android-plugins/src:
+build	Build APK	2026-02-16T18:07:41.3773124Z main
+build	Build APK	2026-02-16T18:07:41.3773215Z 
+build	Build APK	2026-02-16T18:07:41.3773383Z ./capacitor-cordova-android-plugins/src/main:
+build	Build APK	2026-02-16T18:07:41.3773681Z AndroidManifest.xml
+build	Build APK	2026-02-16T18:07:41.3773874Z java
+build	Build APK	2026-02-16T18:07:41.3774026Z res
+build	Build APK	2026-02-16T18:07:41.3774120Z 
+build	Build APK	2026-02-16T18:07:41.3774304Z ./capacitor-cordova-android-plugins/src/main/java:
+build	Build APK	2026-02-16T18:07:41.3774589Z com
+build	Build APK	2026-02-16T18:07:41.3774739Z fc
+build	Build APK	2026-02-16T18:07:41.3774899Z io
+build	Build APK	2026-02-16T18:07:41.3774986Z 
+build	Build APK	2026-02-16T18:07:41.3775185Z ./capacitor-cordova-android-plugins/src/main/java/com:
+build	Build APK	2026-02-16T18:07:41.3775497Z cranberrygame
+build	Build APK	2026-02-16T18:07:41.3775608Z 
+build	Build APK	2026-02-16T18:07:41.3775878Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame:
+build	Build APK	2026-02-16T18:07:41.3776335Z cordova
+build	Build APK	2026-02-16T18:07:41.3776644Z 
+build	Build APK	2026-02-16T18:07:41.3777117Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame/cordova:
+build	Build APK	2026-02-16T18:07:41.3777519Z plugin
+build	Build APK	2026-02-16T18:07:41.3777618Z 
+build	Build APK	2026-02-16T18:07:41.3777940Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame/cordova/plugin:
+build	Build APK	2026-02-16T18:07:41.3778349Z navigationbar
+build	Build APK	2026-02-16T18:07:41.3778456Z 
+build	Build APK	2026-02-16T18:07:41.3778847Z ./capacitor-cordova-android-plugins/src/main/java/com/cranberrygame/cordova/plugin/navigationbar:
+build	Build APK	2026-02-16T18:07:41.3779323Z NavigationBar.java
+build	Build APK	2026-02-16T18:07:41.3779453Z 
+build	Build APK	2026-02-16T18:07:41.3779653Z ./capacitor-cordova-android-plugins/src/main/java/fc:
+build	Build APK	2026-02-16T18:07:41.3779954Z fcstudio
+build	Build APK	2026-02-16T18:07:41.3780055Z 
+build	Build APK	2026-02-16T18:07:41.3780292Z ./capacitor-cordova-android-plugins/src/main/java/fc/fcstudio:
+build	Build APK	2026-02-16T18:07:41.3780821Z wallpaper.java
+build	Build APK	2026-02-16T18:07:41.3781044Z 
+build	Build APK	2026-02-16T18:07:41.3781253Z ./capacitor-cordova-android-plugins/src/main/java/io:
+build	Build APK	2026-02-16T18:07:41.3781556Z github
+build	Build APK	2026-02-16T18:07:41.3781666Z 
+build	Build APK	2026-02-16T18:07:41.3781894Z ./capacitor-cordova-android-plugins/src/main/java/io/github:
+build	Build APK	2026-02-16T18:07:41.3782208Z pwlin
+build	Build APK	2026-02-16T18:07:41.3782311Z 
+build	Build APK	2026-02-16T18:07:41.3782564Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin:
+build	Build APK	2026-02-16T18:07:41.3782910Z cordova
+build	Build APK	2026-02-16T18:07:41.3783076Z 
+build	Build APK	2026-02-16T18:07:41.3783607Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin/cordova:
+build	Build APK	2026-02-16T18:07:41.3784310Z plugins
+build	Build APK	2026-02-16T18:07:41.3784427Z 
+build	Build APK	2026-02-16T18:07:41.3784765Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin/cordova/plugins:
+build	Build APK	2026-02-16T18:07:41.3785171Z fileopener2
+build	Build APK	2026-02-16T18:07:41.3785284Z 
+build	Build APK	2026-02-16T18:07:41.3785661Z ./capacitor-cordova-android-plugins/src/main/java/io/github/pwlin/cordova/plugins/fileopener2:
+build	Build APK	2026-02-16T18:07:41.3786124Z FileOpener2.java
+build	Build APK	2026-02-16T18:07:41.3786335Z FileProvider.java
+build	Build APK	2026-02-16T18:07:41.3786459Z 
+build	Build APK	2026-02-16T18:07:41.3786643Z ./capacitor-cordova-android-plugins/src/main/res:
+build	Build APK	2026-02-16T18:07:41.3786943Z xml
+build	Build APK	2026-02-16T18:07:41.3787101Z 
+build	Build APK	2026-02-16T18:07:41.3787456Z ./capacitor-cordova-android-plugins/src/main/res/xml:
+build	Build APK	2026-02-16T18:07:41.3787798Z opener_paths.xml
+build	Build APK	2026-02-16T18:07:41.3787912Z 
+build	Build APK	2026-02-16T18:07:41.3787992Z ./gradle:
+build	Build APK	2026-02-16T18:07:41.3788155Z wrapper
+build	Build APK	2026-02-16T18:07:41.3788246Z 
+build	Build APK	2026-02-16T18:07:41.3788341Z ./gradle/wrapper:
+build	Build APK	2026-02-16T18:07:41.3788542Z gradle-wrapper.jar
+build	Build APK	2026-02-16T18:07:41.3788774Z gradle-wrapper.properties
+build	Build APK	2026-02-16T18:07:41.3789338Z 笨・Found existing keystore! Using for consistent signing.
+build	Build APK	2026-02-16T18:07:41.4486673Z Downloading https://services.gradle.org/distributions/gradle-8.13-all.zip
+build	Build APK	2026-02-16T18:07:43.2975728Z ......................10%......................20%......................30%......................40%......................50%......................60%......................70%.......................80%......................90%......................100%
+build	Build APK	2026-02-16T18:07:46.6127417Z 
+build	Build APK	2026-02-16T18:07:46.6135698Z Welcome to Gradle 8.13!
+build	Build APK	2026-02-16T18:07:46.6136884Z 
+build	Build APK	2026-02-16T18:07:46.6137535Z Here are the highlights of this release:
+build	Build APK	2026-02-16T18:07:46.6138438Z  - Daemon JVM auto-provisioning
+build	Build APK	2026-02-16T18:07:46.6139307Z  - Enhancements for Scala plugin and JUnit testing
+build	Build APK	2026-02-16T18:07:46.6140181Z  - Improvements for build authors and plugin developers
+build	Build APK	2026-02-16T18:07:46.6141050Z 
+build	Build APK	2026-02-16T18:07:46.6141871Z For more details see https://docs.gradle.org/8.13/release-notes.html
+build	Build APK	2026-02-16T18:07:46.6143033Z 
+build	Build APK	2026-02-16T18:07:46.7117905Z Starting a Gradle Daemon (subsequent builds will be faster)
+build	Build APK	2026-02-16T18:10:17.8191474Z > Task :app:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.8241490Z > Task :app:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.8242552Z > Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+build	Build APK	2026-02-16T18:10:17.8243565Z > Task :app:checkKotlinGradlePluginConfigurationErrors
+build	Build APK	2026-02-16T18:10:17.8244404Z > Task :capacitor-android:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.8245204Z > Task :capacitor-android:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9104547Z > Task :capacitor-app:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9120813Z > Task :capacitor-app:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9123857Z > Task :capacitor-android:writeDebugAarMetadata
+build	Build APK	2026-02-16T18:10:17.9127150Z > Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9135818Z > Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9138933Z > Task :capacitor-app:writeDebugAarMetadata
+build	Build APK	2026-02-16T18:10:17.9158089Z > Task :capacitor-filesystem:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9165138Z > Task :capacitor-filesystem:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9166230Z > Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+build	Build APK	2026-02-16T18:10:17.9167065Z > Task :capacitor-push-notifications:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9167875Z > Task :capacitor-push-notifications:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9168617Z > Task :capacitor-filesystem:writeDebugAarMetadata
+build	Build APK	2026-02-16T18:10:17.9169260Z > Task :capacitor-status-bar:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9170017Z > Task :capacitor-push-notifications:writeDebugAarMetadata
+build	Build APK	2026-02-16T18:10:17.9170925Z > Task :capacitor-status-bar:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9171723Z > Task :codetrix-studio-capacitor-google-auth:preBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9172644Z > Task :codetrix-studio-capacitor-google-auth:preDebugBuild UP-TO-DATE
+build	Build APK	2026-02-16T18:10:17.9173426Z > Task :capacitor-status-bar:writeDebugAarMetadata
+build	Build APK	2026-02-16T18:10:17.9174401Z > Task :codetrix-studio-capacitor-google-auth:writeDebugAarMetadata
+build	Build APK	2026-02-16T18:10:17.9175240Z > Task :capacitor-android:processDebugNavigationResources
+build	Build APK	2026-02-16T18:10:47.9104625Z > Task :app:checkDebugAarMetadata
+build	Build APK	2026-02-16T18:11:16.9126966Z > Task :capacitor-app:processDebugNavigationResources
+build	Build APK	2026-02-16T18:11:16.9151780Z > Task :capacitor-cordova-android-plugins:processDebugNavigationResources
+build	Build APK	2026-02-16T18:11:16.9156241Z > Task :capacitor-filesystem:processDebugNavigationResources
+build	Build APK	2026-02-16T18:11:16.9158288Z > Task :capacitor-push-notifications:processDebugNavigationResources
+build	Build APK	2026-02-16T18:11:16.9159307Z > Task :capacitor-status-bar:processDebugNavigationResources
+build	Build APK	2026-02-16T18:11:16.9160314Z > Task :codetrix-studio-capacitor-google-auth:processDebugNavigationResources
+build	Build APK	2026-02-16T18:11:17.0104034Z > Task :app:processDebugNavigationResources
+build	Build APK	2026-02-16T18:11:18.2104382Z > Task :app:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.2105470Z > Task :capacitor-android:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.2106334Z > Task :app:compileDebugNavigationResources
+build	Build APK	2026-02-16T18:11:18.2107038Z > Task :capacitor-android:generateDebugResources
+build	Build APK	2026-02-16T18:11:18.3104212Z > Task :capacitor-android:packageDebugResources
+build	Build APK	2026-02-16T18:11:18.3110912Z > Task :capacitor-app:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.3117060Z > Task :capacitor-app:generateDebugResources
+build	Build APK	2026-02-16T18:11:18.3127229Z > Task :capacitor-app:packageDebugResources
+build	Build APK	2026-02-16T18:11:18.3142463Z > Task :capacitor-cordova-android-plugins:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.3154882Z > Task :capacitor-cordova-android-plugins:generateDebugResources
+build	Build APK	2026-02-16T18:11:18.4106660Z > Task :capacitor-cordova-android-plugins:packageDebugResources
+build	Build APK	2026-02-16T18:11:18.4128351Z > Task :capacitor-filesystem:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.4130356Z > Task :capacitor-filesystem:generateDebugResources
+build	Build APK	2026-02-16T18:11:18.4145416Z > Task :capacitor-filesystem:packageDebugResources
+build	Build APK	2026-02-16T18:11:18.4146537Z > Task :capacitor-push-notifications:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.4147345Z > Task :capacitor-push-notifications:generateDebugResources
+build	Build APK	2026-02-16T18:11:18.4148145Z > Task :capacitor-push-notifications:packageDebugResources
+build	Build APK	2026-02-16T18:11:18.4148906Z > Task :capacitor-status-bar:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.4149581Z > Task :capacitor-status-bar:generateDebugResources
+build	Build APK	2026-02-16T18:11:18.4150258Z > Task :capacitor-status-bar:packageDebugResources
+build	Build APK	2026-02-16T18:11:18.4161235Z > Task :codetrix-studio-capacitor-google-auth:generateDebugResValues
+build	Build APK	2026-02-16T18:11:18.4162725Z > Task :codetrix-studio-capacitor-google-auth:generateDebugResources
+build	Build APK	2026-02-16T18:11:18.4163757Z > Task :codetrix-studio-capacitor-google-auth:packageDebugResources
+build	Build APK	2026-02-16T18:11:18.5103919Z > Task :app:mapDebugSourceSetPaths
+build	Build APK	2026-02-16T18:11:18.5105836Z > Task :app:generateDebugResources
+build	Build APK	2026-02-16T18:11:19.8113902Z > Task :app:packageDebugResources
+build	Build APK	2026-02-16T18:11:20.4103352Z > Task :app:createDebugCompatibleScreenManifests
+build	Build APK	2026-02-16T18:11:20.4108753Z > Task :app:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.4114165Z > Task :capacitor-android:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.8103195Z > Task :capacitor-app:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.8108564Z > Task :app:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:20.8113593Z > Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.8116114Z > Task :capacitor-android:processDebugManifest
+build	Build APK	2026-02-16T18:11:20.8118279Z > Task :capacitor-app:processDebugManifest
+build	Build APK	2026-02-16T18:11:20.8119030Z > Task :capacitor-filesystem:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.8119775Z > Task :capacitor-push-notifications:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.8120512Z > Task :capacitor-filesystem:processDebugManifest
+build	Build APK	2026-02-16T18:11:20.8121494Z > Task :capacitor-cordova-android-plugins:processDebugManifest
+build	Build APK	2026-02-16T18:11:20.9123942Z > Task :capacitor-status-bar:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.9124832Z > Task :capacitor-push-notifications:processDebugManifest
+build	Build APK	2026-02-16T18:11:20.9125730Z > Task :codetrix-studio-capacitor-google-auth:extractDeepLinksDebug
+build	Build APK	2026-02-16T18:11:20.9126523Z > Task :capacitor-status-bar:processDebugManifest
+build	Build APK	2026-02-16T18:11:20.9127324Z > Task :codetrix-studio-capacitor-google-auth:processDebugManifest
+build	Build APK	2026-02-16T18:11:20.9128159Z > Task :capacitor-android:compileDebugLibraryResources
+build	Build APK	2026-02-16T18:11:21.1103518Z > Task :app:mergeDebugResources
+build	Build APK	2026-02-16T18:11:21.2122070Z > Task :app:processDebugMainManifest
+build	Build APK	2026-02-16T18:11:21.3113812Z > Task :app:processDebugManifest
+build	Build APK	2026-02-16T18:11:21.3118440Z > Task :capacitor-app:compileDebugLibraryResources
+build	Build APK	2026-02-16T18:11:21.3121066Z > Task :app:processDebugManifestForPackage
+build	Build APK	2026-02-16T18:11:21.3124342Z > Task :capacitor-android:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:21.4124076Z > Task :capacitor-app:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:21.4125052Z > Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
+build	Build APK	2026-02-16T18:11:21.4125894Z > Task :capacitor-android:generateDebugRFile
+build	Build APK	2026-02-16T18:11:21.4126512Z > Task :capacitor-app:generateDebugRFile
+build	Build APK	2026-02-16T18:11:21.4127203Z > Task :capacitor-filesystem:compileDebugLibraryResources
+build	Build APK	2026-02-16T18:11:21.4128057Z > Task :capacitor-push-notifications:compileDebugLibraryResources
+build	Build APK	2026-02-16T18:11:21.4129004Z > Task :capacitor-cordova-android-plugins:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:21.4129838Z > Task :capacitor-filesystem:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:21.4130872Z > Task :capacitor-push-notifications:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:21.5104054Z > Task :capacitor-cordova-android-plugins:generateDebugRFile
+build	Build APK	2026-02-16T18:11:21.5113764Z > Task :capacitor-filesystem:generateDebugRFile
+build	Build APK	2026-02-16T18:11:21.5147824Z > Task :capacitor-status-bar:compileDebugLibraryResources
+build	Build APK	2026-02-16T18:11:21.5148813Z > Task :capacitor-push-notifications:generateDebugRFile
+build	Build APK	2026-02-16T18:11:21.5149819Z > Task :codetrix-studio-capacitor-google-auth:compileDebugLibraryResources
+build	Build APK	2026-02-16T18:11:21.5150904Z > Task :capacitor-status-bar:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:21.5151788Z > Task :codetrix-studio-capacitor-google-auth:parseDebugLocalResources
+build	Build APK	2026-02-16T18:11:21.5152585Z > Task :capacitor-status-bar:generateDebugRFile
+build	Build APK	2026-02-16T18:11:21.5153224Z > Task :capacitor-android:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:21.5153985Z > Task :codetrix-studio-capacitor-google-auth:generateDebugRFile
+build	Build APK	2026-02-16T18:11:37.6129231Z 
+build	Build APK	2026-02-16T18:11:37.6129978Z > Task :capacitor-android:compileDebugJavaWithJavac
+build	Build APK	2026-02-16T18:11:37.6132451Z Note: /home/runner/work/KawaiiDoodle/KawaiiDoodle/node_modules/@capacitor/android/capacitor/src/main/java/com/getcapacitor/Bridge.java uses or overrides a deprecated API.
+build	Build APK	2026-02-16T18:11:37.6136614Z Note: Recompile with -Xlint:deprecation for details.
+build	Build APK	2026-02-16T18:11:37.6137415Z Note: Some input files use unchecked or unsafe operations.
+build	Build APK	2026-02-16T18:11:37.6138148Z Note: Recompile with -Xlint:unchecked for details.
+build	Build APK	2026-02-16T18:11:40.2102559Z 
+build	Build APK	2026-02-16T18:11:40.2103780Z > Task :capacitor-app:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:40.2105087Z > Task :capacitor-cordova-android-plugins:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:40.2106105Z > Task :capacitor-filesystem:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:40.2107006Z > Task :capacitor-android:bundleLibCompileToJarDebug
+build	Build APK	2026-02-16T18:11:40.9102858Z > Task :app:processDebugResources
+build	Build APK	2026-02-16T18:11:51.2107418Z Note: Some input files use or override a deprecated API.
+build	Build APK	2026-02-16T18:11:51.2108327Z Note: Recompile with -Xlint:deprecation for details.
+build	Build APK	2026-02-16T18:11:51.2108706Z 
+build	Build APK	2026-02-16T18:11:51.2109202Z > Task :capacitor-cordova-android-plugins:compileDebugJavaWithJavac
+build	Build APK	2026-02-16T18:11:51.7102727Z 
+build	Build APK	2026-02-16T18:11:51.7118558Z > Task :capacitor-app:compileDebugJavaWithJavac
+build	Build APK	2026-02-16T18:11:51.7124692Z > Task :capacitor-app:bundleLibCompileToJarDebug
+build	Build APK	2026-02-16T18:11:51.7130221Z > Task :capacitor-cordova-android-plugins:bundleLibCompileToJarDebug
+build	Build APK	2026-02-16T18:11:51.9103953Z > Task :capacitor-filesystem:compileDebugJavaWithJavac
+build	Build APK	2026-02-16T18:11:51.9110280Z > Task :capacitor-filesystem:bundleLibCompileToJarDebug
+build	Build APK	2026-02-16T18:11:51.9114607Z > Task :capacitor-push-notifications:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:51.9118534Z > Task :capacitor-status-bar:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:53.7103282Z > Task :capacitor-push-notifications:compileDebugJavaWithJavac
+build	Build APK	2026-02-16T18:11:53.7105515Z > Task :capacitor-push-notifications:bundleLibCompileToJarDebug
+build	Build APK	2026-02-16T18:11:54.9102060Z 
+build	Build APK	2026-02-16T18:11:54.9105318Z Note: /home/runner/work/KawaiiDoodle/KawaiiDoodle/node_modules/@capacitor/status-bar/android/src/main/java/com/capacitorjs/plugins/statusbar/StatusBar.java uses or overrides a deprecated API.
+build	Build APK	2026-02-16T18:11:54.9107082Z > Task :capacitor-status-bar:compileDebugJavaWithJavac
+build	Build APK	2026-02-16T18:11:54.9112071Z Note: Recompile with -Xlint:deprecation for details.
+build	Build APK	2026-02-16T18:11:54.9112471Z 
+build	Build APK	2026-02-16T18:11:54.9112924Z > Task :codetrix-studio-capacitor-google-auth:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:54.9113734Z > Task :capacitor-status-bar:bundleLibCompileToJarDebug
+build	Build APK	2026-02-16T18:11:54.9114369Z > Task :app:javaPreCompileDebug
+build	Build APK	2026-02-16T18:11:56.8203704Z > Task :codetrix-studio-capacitor-google-auth:compileDebugJavaWithJavac
+build	Build APK	2026-02-16T18:11:56.8210365Z > Task :codetrix-studio-capacitor-google-auth:bundleLibCompileToJarDebug
+build	Build APK	2026-02-16T18:11:56.8211609Z > Task :app:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.5109460Z > Task :app:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.5110604Z > Task :app:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.5141686Z > Task :capacitor-android:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.5143141Z > Task :capacitor-android:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.5144094Z > Task :capacitor-android:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.5144785Z > Task :capacitor-android:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.5145348Z > Task :capacitor-app:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.5145961Z > Task :capacitor-app:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.5146661Z > Task :capacitor-app:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.5147237Z > Task :capacitor-app:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.5147879Z > Task :capacitor-cordova-android-plugins:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.5148721Z > Task :capacitor-cordova-android-plugins:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.5149656Z > Task :capacitor-cordova-android-plugins:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.5150486Z > Task :capacitor-cordova-android-plugins:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.5181602Z > Task :capacitor-filesystem:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.5182665Z > Task :capacitor-filesystem:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.5183477Z > Task :capacitor-filesystem:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.6102960Z > Task :capacitor-filesystem:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.6104262Z > Task :capacitor-push-notifications:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.6105647Z > Task :capacitor-push-notifications:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.6106949Z > Task :capacitor-push-notifications:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.6107957Z > Task :capacitor-push-notifications:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.6108817Z > Task :capacitor-status-bar:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.6109714Z > Task :capacitor-status-bar:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.6111177Z > Task :capacitor-status-bar:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.6112229Z > Task :capacitor-status-bar:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.6113188Z > Task :codetrix-studio-capacitor-google-auth:mergeDebugShaders
+build	Build APK	2026-02-16T18:12:00.6114561Z > Task :codetrix-studio-capacitor-google-auth:compileDebugShaders NO-SOURCE
+build	Build APK	2026-02-16T18:12:00.6116026Z > Task :codetrix-studio-capacitor-google-auth:generateDebugAssets UP-TO-DATE
+build	Build APK	2026-02-16T18:12:00.6117269Z > Task :codetrix-studio-capacitor-google-auth:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.8103637Z > Task :app:mergeDebugAssets
+build	Build APK	2026-02-16T18:12:00.8104903Z > Task :capacitor-app:bundleLibRuntimeToJarDebug
+build	Build APK	2026-02-16T18:12:00.8106103Z > Task :capacitor-filesystem:bundleLibRuntimeToJarDebug
+build	Build APK	2026-02-16T18:12:00.8107265Z > Task :capacitor-android:bundleLibRuntimeToJarDebug
+build	Build APK	2026-02-16T18:12:00.8108383Z > Task :capacitor-push-notifications:bundleLibRuntimeToJarDebug
+build	Build APK	2026-02-16T18:12:00.9103307Z > Task :app:compressDebugAssets
+build	Build APK	2026-02-16T18:12:04.1103379Z > Task :capacitor-status-bar:bundleLibRuntimeToJarDebug
+build	Build APK	2026-02-16T18:12:04.2103449Z > Task :codetrix-studio-capacitor-google-auth:bundleLibRuntimeToJarDebug
+build	Build APK	2026-02-16T18:12:04.4103146Z > Task :capacitor-cordova-android-plugins:bundleLibRuntimeToJarDebug
+build	Build APK	2026-02-16T18:12:05.8121063Z > Task :app:desugarDebugFileDependencies
+build	Build APK	2026-02-16T18:12:05.8122411Z > Task :capacitor-android:processDebugJavaRes NO-SOURCE
+build	Build APK	2026-02-16T18:12:05.8123368Z > Task :capacitor-app:processDebugJavaRes NO-SOURCE
+build	Build APK	2026-02-16T18:12:05.8124374Z > Task :capacitor-cordova-android-plugins:processDebugJavaRes NO-SOURCE
+build	Build APK	2026-02-16T18:12:05.8125435Z > Task :capacitor-filesystem:processDebugJavaRes NO-SOURCE
+build	Build APK	2026-02-16T18:12:05.8126459Z > Task :capacitor-push-notifications:processDebugJavaRes NO-SOURCE
+build	Build APK	2026-02-16T18:12:05.8127692Z > Task :capacitor-status-bar:processDebugJavaRes NO-SOURCE
+build	Build APK	2026-02-16T18:12:05.8128770Z > Task :codetrix-studio-capacitor-google-auth:processDebugJavaRes NO-SOURCE
+build	Build APK	2026-02-16T18:12:06.6103495Z > Task :app:mergeDebugJniLibFolders
+build	Build APK	2026-02-16T18:12:06.6191373Z > Task :capacitor-android:mergeDebugJniLibFolders
+build	Build APK	2026-02-16T18:12:06.6192211Z > Task :capacitor-android:mergeDebugNativeLibs NO-SOURCE
+build	Build APK	2026-02-16T18:12:06.7103555Z > Task :capacitor-android:copyDebugJniLibsProjectOnly
+build	Build APK	2026-02-16T18:12:06.7104840Z > Task :app:checkDebugDuplicateClasses
+build	Build APK	2026-02-16T18:12:06.7105474Z > Task :capacitor-app:mergeDebugJniLibFolders
+build	Build APK	2026-02-16T18:12:11.1105137Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:15:17 Unresolved reference: work
+build	Build APK	2026-02-16T18:12:11.1106359Z 
+build	Build APK	2026-02-16T18:12:11.1109540Z > Task :app:compileDebugKotlin
+build	Build APK	2026-02-16T18:12:11.1115851Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:16:17 Unresolved reference: work
+build	Build APK	2026-02-16T18:12:11.1122641Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:22:58 Unresolved reference: WorkerParameters
+build	Build APK	2026-02-16T18:12:11.1129115Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:23:5 Unresolved reference: Worker
+build	Build APK	2026-02-16T18:12:11.1135614Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:25:5 'doWork' overrides nothing
+build	Build APK	2026-02-16T18:12:11.1162440Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:25:28 One type argument expected for class Result<out T>
+build	Build APK	2026-02-16T18:12:11.1168903Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:26:24 Unresolved reference: inputData
+build	Build APK	2026-02-16T18:12:11.1171798Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:26:74 Not enough information to infer type variable T
+build	Build APK	2026-02-16T18:12:11.1174362Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:26:81 No value passed for parameter 'exception'
+build	Build APK	2026-02-16T18:12:11.1176891Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:52:39 Not enough information to infer type variable T
+build	Build APK	2026-02-16T18:12:11.1179530Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:52:46 No value passed for parameter 'value'
+build	Build APK	2026-02-16T18:12:11.1182219Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:58:20 Unresolved reference: retry
+build	Build APK	2026-02-16T18:12:11.1185735Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:61:20 Not enough information to infer type variable T
+build	Build APK	2026-02-16T18:12:11.1190184Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:61:27 No value passed for parameter 'exception'
+build	Build APK	2026-02-16T18:12:11.1192591Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:67:35 Unresolved reference: applicationContext
+build	Build APK	2026-02-16T18:12:11.1195006Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:75:45 Unresolved reference: applicationContext
+build	Build APK	2026-02-16T18:12:11.1197265Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:78:67 Unresolved reference: applicationContext
+build	Build APK	2026-02-16T18:12:11.1199483Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:80:68 Unresolved reference: applicationContext
+build	Build APK	2026-02-16T18:12:11.1201841Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:97:27 Unresolved reference: applicationContext
+build	Build APK	2026-02-16T18:12:11.1203984Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:113:20 Overload resolution ambiguity: 
+build	Build APK	2026-02-16T18:12:11.1205728Z public open fun drawBitmap(p0: Bitmap, p1: Rect?, p2: Rect, p3: Paint?): Unit defined in android.graphics.Canvas
+build	Build APK	2026-02-16T18:12:11.1210864Z public open fun drawBitmap(p0: Bitmap, p1: Rect?, p2: RectF, p3: Paint?): Unit defined in android.graphics.Canvas
+build	Build APK	2026-02-16T18:12:11.1275569Z public open fun drawBitmap(p0: Bitmap, p1: Float, p2: Float, p3: Paint?): Unit defined in android.graphics.Canvas
+build	Build APK	2026-02-16T18:12:11.1277693Z e: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/app/src/main/java/io/kawaii/doodle/WallpaperWorker.kt:115:51 Unresolved reference: applicationContext
+build	Build APK	2026-02-16T18:12:30.7111004Z 
+build	Build APK	2026-02-16T18:12:30.7111688Z > Task :app:compileDebugKotlin FAILED
+build	Build APK	2026-02-16T18:12:36.7104309Z > Task :app:mergeExtDexDebug
+build	Build APK	2026-02-16T18:12:39.5102016Z 
+build	Build APK	2026-02-16T18:12:39.5107266Z [Incubating] Problems report is available at: file:///home/runner/work/KawaiiDoodle/KawaiiDoodle/android/build/reports/problems/problems-report.html
+build	Build APK	2026-02-16T18:12:39.6101846Z 
+build	Build APK	2026-02-16T18:12:39.6107104Z FAILURE: Build failed with an exception.
+build	Build APK	2026-02-16T18:12:39.6112487Z 
+build	Build APK	2026-02-16T18:12:39.6117020Z * What went wrong:
+build	Build APK	2026-02-16T18:12:39.6122328Z Execution failed for task ':app:compileDebugKotlin'.
+build	Build APK	2026-02-16T18:12:39.6128164Z > A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+build	Build APK	2026-02-16T18:12:39.6133617Z    > Compilation error. See log for more details
+build	Build APK	2026-02-16T18:12:39.6137940Z 
+build	Build APK	2026-02-16T18:12:39.6143189Z * Try:
+build	Build APK	2026-02-16T18:12:39.6146422Z > Run with --info or --debug option to get more log output.
+build	Build APK	2026-02-16T18:12:39.6157926Z > Run with --scan to get full insights.
+build	Build APK	2026-02-16T18:12:39.6158914Z > Get more help at https://help.gradle.org.
+build	Build APK	2026-02-16T18:12:39.6159434Z 
+build	Build APK	2026-02-16T18:12:39.6181663Z * Exception is:
+build	Build APK	2026-02-16T18:12:39.6182192Z 140 actionable tasks: 140 executed
+build	Build APK	2026-02-16T18:12:39.6184014Z org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+build	Build APK	2026-02-16T18:12:39.6193761Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+build	Build APK	2026-02-16T18:12:39.6195337Z 	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+build	Build APK	2026-02-16T18:12:39.6196763Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+build	Build APK	2026-02-16T18:12:39.6198594Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+build	Build APK	2026-02-16T18:12:39.6200577Z 	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+build	Build APK	2026-02-16T18:12:39.6202810Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+build	Build APK	2026-02-16T18:12:39.6204733Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+build	Build APK	2026-02-16T18:12:39.6206634Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+build	Build APK	2026-02-16T18:12:39.6208388Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+build	Build APK	2026-02-16T18:12:39.6210048Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+build	Build APK	2026-02-16T18:12:39.6211976Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+build	Build APK	2026-02-16T18:12:39.6213490Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+build	Build APK	2026-02-16T18:12:39.6214823Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+build	Build APK	2026-02-16T18:12:39.6216423Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	Build APK	2026-02-16T18:12:39.6218508Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	Build APK	2026-02-16T18:12:39.6251226Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	Build APK	2026-02-16T18:12:39.6252958Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6254592Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	Build APK	2026-02-16T18:12:39.6256192Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6257779Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	Build APK	2026-02-16T18:12:39.6259373Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+build	Build APK	2026-02-16T18:12:39.6261024Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+build	Build APK	2026-02-16T18:12:39.6262968Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+build	Build APK	2026-02-16T18:12:39.6264897Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+build	Build APK	2026-02-16T18:12:39.6266958Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+build	Build APK	2026-02-16T18:12:39.6268745Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+build	Build APK	2026-02-16T18:12:39.6270507Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+build	Build APK	2026-02-16T18:12:39.6272774Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+build	Build APK	2026-02-16T18:12:39.6274521Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+build	Build APK	2026-02-16T18:12:39.6275905Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+build	Build APK	2026-02-16T18:12:39.6277322Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+build	Build APK	2026-02-16T18:12:39.6278760Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+build	Build APK	2026-02-16T18:12:39.6314480Z Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction
+build	Build APK	2026-02-16T18:12:39.6316941Z 	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+build	Build APK	2026-02-16T18:12:39.6318728Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+build	Build APK	2026-02-16T18:12:39.6320078Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+build	Build APK	2026-02-16T18:12:39.6321490Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
+build	Build APK	2026-02-16T18:12:39.6323041Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
+build	Build APK	2026-02-16T18:12:39.6324597Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
+build	Build APK	2026-02-16T18:12:39.6326328Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+build	Build APK	2026-02-16T18:12:39.6328118Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+build	Build APK	2026-02-16T18:12:39.6329699Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+build	Build APK	2026-02-16T18:12:39.6363760Z 	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+build	Build APK	2026-02-16T18:12:39.6365414Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+build	Build APK	2026-02-16T18:12:39.6366789Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+build	Build APK	2026-02-16T18:12:39.6368398Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+build	Build APK	2026-02-16T18:12:39.6370021Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	Build APK	2026-02-16T18:12:39.6371981Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6373584Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	Build APK	2026-02-16T18:12:39.6375196Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6376740Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+build	Build APK	2026-02-16T18:12:39.6378575Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+build	Build APK	2026-02-16T18:12:39.6380055Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+build	Build APK	2026-02-16T18:12:39.6381924Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+build	Build APK	2026-02-16T18:12:39.6383500Z 	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+build	Build APK	2026-02-16T18:12:39.6384856Z 	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+build	Build APK	2026-02-16T18:12:39.6386099Z 	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+build	Build APK	2026-02-16T18:12:39.6387206Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+build	Build APK	2026-02-16T18:12:39.6388273Z 	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+build	Build APK	2026-02-16T18:12:39.6389887Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	Build APK	2026-02-16T18:12:39.6392156Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	Build APK	2026-02-16T18:12:39.6393966Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	Build APK	2026-02-16T18:12:39.6395537Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6397085Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	Build APK	2026-02-16T18:12:39.6398684Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6400281Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	Build APK	2026-02-16T18:12:39.6401900Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+build	Build APK	2026-02-16T18:12:39.6403078Z 	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+build	Build APK	2026-02-16T18:12:39.6404312Z 	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+build	Build APK	2026-02-16T18:12:39.6405649Z 	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+build	Build APK	2026-02-16T18:12:39.6406834Z 	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+build	Build APK	2026-02-16T18:12:39.6408186Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+build	Build APK	2026-02-16T18:12:39.6409779Z 	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+build	Build APK	2026-02-16T18:12:39.6411680Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+build	Build APK	2026-02-16T18:12:39.6413498Z 	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+build	Build APK	2026-02-16T18:12:39.6415096Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+build	Build APK	2026-02-16T18:12:39.6416755Z 	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+build	Build APK	2026-02-16T18:12:39.6418490Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+build	Build APK	2026-02-16T18:12:39.6420306Z 	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+build	Build APK	2026-02-16T18:12:39.6422124Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+build	Build APK	2026-02-16T18:12:39.6423601Z 	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+build	Build APK	2026-02-16T18:12:39.6425023Z 	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+build	Build APK	2026-02-16T18:12:39.6426569Z 	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$1(BuildCacheStep.java:75)
+build	Build APK	2026-02-16T18:12:39.6427537Z 	at org.gradle.internal.Either$Right.fold(Either.java:175)
+build	Build APK	2026-02-16T18:12:39.6428424Z 	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+build	Build APK	2026-02-16T18:12:39.6429544Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+build	Build APK	2026-02-16T18:12:39.6430860Z 	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+build	Build APK	2026-02-16T18:12:39.6432200Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+build	Build APK	2026-02-16T18:12:39.6433657Z 	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+build	Build APK	2026-02-16T18:12:39.6435059Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+build	Build APK	2026-02-16T18:12:39.6436430Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+build	Build APK	2026-02-16T18:12:39.6437703Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+build	Build APK	2026-02-16T18:12:39.6438919Z 	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+build	Build APK	2026-02-16T18:12:39.6440559Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+build	Build APK	2026-02-16T18:12:39.6442850Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+build	Build APK	2026-02-16T18:12:39.6444898Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+build	Build APK	2026-02-16T18:12:39.6446921Z 	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+build	Build APK	2026-02-16T18:12:39.6448754Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+build	Build APK	2026-02-16T18:12:39.6450564Z 	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+build	Build APK	2026-02-16T18:12:39.6452326Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+build	Build APK	2026-02-16T18:12:39.6453619Z 	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+build	Build APK	2026-02-16T18:12:39.6454800Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+build	Build APK	2026-02-16T18:12:39.6455908Z 	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+build	Build APK	2026-02-16T18:12:39.6457514Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+build	Build APK	2026-02-16T18:12:39.6459427Z 	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+build	Build APK	2026-02-16T18:12:39.6462592Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+build	Build APK	2026-02-16T18:12:39.6464462Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+build	Build APK	2026-02-16T18:12:39.6466009Z 	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+build	Build APK	2026-02-16T18:12:39.6467752Z 	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+build	Build APK	2026-02-16T18:12:39.6469533Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+build	Build APK	2026-02-16T18:12:39.6471338Z 	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+build	Build APK	2026-02-16T18:12:39.6472874Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+build	Build APK	2026-02-16T18:12:39.6479666Z 	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+build	Build APK	2026-02-16T18:12:39.6481436Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+build	Build APK	2026-02-16T18:12:39.6482897Z 	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+build	Build APK	2026-02-16T18:12:39.6484298Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+build	Build APK	2026-02-16T18:12:39.6485839Z 	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+build	Build APK	2026-02-16T18:12:39.6487200Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+build	Build APK	2026-02-16T18:12:39.6488438Z 	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+build	Build APK	2026-02-16T18:12:39.6490088Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+build	Build APK	2026-02-16T18:12:39.6492229Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+build	Build APK	2026-02-16T18:12:39.6494055Z 	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+build	Build APK	2026-02-16T18:12:39.6495560Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+build	Build APK	2026-02-16T18:12:39.6496771Z 	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+build	Build APK	2026-02-16T18:12:39.6497889Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+build	Build APK	2026-02-16T18:12:39.6498937Z 	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+build	Build APK	2026-02-16T18:12:39.6500137Z 	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:61)
+build	Build APK	2026-02-16T18:12:39.6501879Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+build	Build APK	2026-02-16T18:12:39.6503569Z 	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+build	Build APK	2026-02-16T18:12:39.6505377Z 	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:40)
+build	Build APK	2026-02-16T18:12:39.6507239Z 	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+build	Build APK	2026-02-16T18:12:39.6509028Z 	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+build	Build APK	2026-02-16T18:12:39.6511038Z 	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+build	Build APK	2026-02-16T18:12:39.6512538Z 	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+build	Build APK	2026-02-16T18:12:39.6514299Z 	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+build	Build APK	2026-02-16T18:12:39.6515850Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+build	Build APK	2026-02-16T18:12:39.6517275Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+build	Build APK	2026-02-16T18:12:39.6518771Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+build	Build APK	2026-02-16T18:12:39.6520537Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	Build APK	2026-02-16T18:12:39.6522580Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	Build APK	2026-02-16T18:12:39.6524651Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	Build APK	2026-02-16T18:12:39.6526266Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6527877Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	Build APK	2026-02-16T18:12:39.6529504Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6531283Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	Build APK	2026-02-16T18:12:39.6532887Z 	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+build	Build APK	2026-02-16T18:12:39.6534332Z 	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+build	Build APK	2026-02-16T18:12:39.6535966Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+build	Build APK	2026-02-16T18:12:39.6537918Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+build	Build APK	2026-02-16T18:12:39.6539997Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+build	Build APK	2026-02-16T18:12:39.6542023Z 	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+build	Build APK	2026-02-16T18:12:39.6543861Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+build	Build APK	2026-02-16T18:12:39.6545947Z 	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+build	Build APK	2026-02-16T18:12:39.6547702Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+build	Build APK	2026-02-16T18:12:39.6549078Z 	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+build	Build APK	2026-02-16T18:12:39.6550521Z 	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+build	Build APK	2026-02-16T18:12:39.6552184Z 	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+build	Build APK	2026-02-16T18:12:39.6553813Z Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+build	Build APK	2026-02-16T18:12:39.6555387Z 	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:20)
+build	Build APK	2026-02-16T18:12:39.6556914Z 	at org.jetbrains.kotlin.compilerRunner.GradleKotlinCompilerWork.run(GradleKotlinCompilerWork.kt:141)
+build	Build APK	2026-02-16T18:12:39.6558814Z 	at org.jetbrains.kotlin.compilerRunner.GradleCompilerRunnerWithWorkers$GradleKotlinCompilerWorkAction.execute(GradleCompilerRunnerWithWorkers.kt:73)
+build	Build APK	2026-02-16T18:12:39.6560537Z 	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+build	Build APK	2026-02-16T18:12:39.6562296Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+build	Build APK	2026-02-16T18:12:39.6563719Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+build	Build APK	2026-02-16T18:12:39.6565151Z 	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+build	Build APK	2026-02-16T18:12:39.6566646Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+build	Build APK	2026-02-16T18:12:39.6567899Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+build	Build APK	2026-02-16T18:12:39.6568900Z 	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+build	Build APK	2026-02-16T18:12:39.6570440Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+build	Build APK	2026-02-16T18:12:39.6572643Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+build	Build APK	2026-02-16T18:12:39.6574643Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+build	Build APK	2026-02-16T18:12:39.6576233Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6577826Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+build	Build APK	2026-02-16T18:12:39.6579406Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+build	Build APK	2026-02-16T18:12:39.6581142Z 	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+build	Build APK	2026-02-16T18:12:39.6582728Z 	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+build	Build APK	2026-02-16T18:12:39.6584215Z 	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+build	Build APK	2026-02-16T18:12:39.6585688Z 	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+build	Build APK	2026-02-16T18:12:39.6587427Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+build	Build APK	2026-02-16T18:12:39.6589383Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+build	Build APK	2026-02-16T18:12:39.6591420Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+build	Build APK	2026-02-16T18:12:39.6592739Z 	at org.gradle.internal.Factories$1.create(Factories.java:31)
+build	Build APK	2026-02-16T18:12:39.6593880Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+build	Build APK	2026-02-16T18:12:39.6595424Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+build	Build APK	2026-02-16T18:12:39.6597066Z 	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+build	Build APK	2026-02-16T18:12:39.6598878Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+build	Build APK	2026-02-16T18:12:39.6611048Z 	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+build	Build APK	2026-02-16T18:12:39.6612173Z 	... 2 more
+build	Build APK	2026-02-16T18:12:39.6612366Z 
+build	Build APK	2026-02-16T18:12:39.6612379Z 
+build	Build APK	2026-02-16T18:12:39.6612564Z BUILD FAILED in 4m 58s
+build	Build APK	2026-02-16T18:12:40.0136780Z ##[error]Process completed with exit code 1.
