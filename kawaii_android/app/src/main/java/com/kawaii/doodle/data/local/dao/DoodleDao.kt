@@ -13,10 +13,10 @@ interface DoodleDao {
     suspend fun insertAll(doodles: List<DoodleEntity>): List<Long>
 
     @Query("UPDATE doodles SET isRead = 1 WHERE receiverId = :userId AND isRead = 0")
-    suspend fun markAllRead(userId: String): Int
+    suspend fun markAllRead(userId: String)
 
     @Query("UPDATE doodles SET wallpaperSetAt = :timestamp WHERE id = :doodleId")
-    suspend fun markWallpaperSet(doodleId: String, timestamp: String): Int
+    suspend fun markWallpaperSet(doodleId: String, timestamp: String)
 
     @Query("SELECT * FROM doodles WHERE (senderId = :userId OR receiverId = :userId) ORDER BY createdAt DESC LIMIT 1")
     fun observeLatest(userId: String): LiveData<DoodleEntity>
